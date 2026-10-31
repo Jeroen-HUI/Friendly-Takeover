@@ -2,13 +2,17 @@
 
 Multiplayer business game for friend groups: everyone runs a company in the same market, competes round by round, and can buy each other out.
 
-This repository holds **phase 1** of the plan: the game engine, a bot simulator to test balance, a playable single-player prototype, and the Supabase backend (database plus the `game` server function). The multiplayer web app (lobby, round screen, results screen on top of Supabase) is phase 2.
+This repository holds the game engine, a bot simulator to test balance, the playable game (single-player against bots, and online multiplayer with friends), and the Supabase backend (database plus the `game` server function).
 
 ## Play it
 
 The whole game is one HTML file. Open `docs/index.html` in a browser, or play the hosted version on GitHub Pages once it is switched on (repo Settings → Pages → Deploy from a branch → `main`, folder `/docs`): `https://jeroen-hui.github.io/Friendly-Takeover/`.
 
-It runs against bots in single-player for now; your game saves in your browser.
+**Single-player:** New game, against bots. Your game saves in your browser.
+
+**Online with friends:** Multiplayer → Create a game. You get a 6-character code and an invite link (`…/Friendly-Takeover/?join=CODE`). Friends choose Multiplayer → Join (or open the link). The host picks industry, difficulty, rounds, time per round and up to 4 bots, then starts. Everyone plans their round on their own screen and submits; the host can skip the timer once everyone is ready, otherwise the round closes when time runs out (players who didn't submit repeat last round's plan). Rivals' secret numbers stay on the server. If you close the tab, Multiplayer → Rejoin brings you back.
+
+Online play needs the hosted page (GitHub Pages) or the local file with internet access; it does not work inside the Claude artifact preview.
 
 ## Quick start
 
@@ -20,6 +24,8 @@ npm run sim         # 500 bot matches, Chocolate / Standard
 npm run trace       # one match, round by round, with the news feed
 node scripts/build-web.mjs        # builds dist/friendly-takeover.html from src/web/game.html (playable prototype, you vs bots)
 node test/prototype.smoke.mjs     # plays a full match in that page headlessly
+npx tsx test/multiplayer.smoke.ts # plays an online match against an in-memory copy of the backend
+npm run smoke                     # build + both smoke tests
 ```
 
 The prototype is one self-contained HTML file: the engine runs in the browser, so no server is needed. It is also published as a private Claude artifact.
@@ -90,6 +96,13 @@ Server function `game` (`supabase/functions/game`, deployed):
 
 - `{ "action": "start", "game_id" }`: host only, in the lobby. Builds the engine state, opens round 1 with a deadline, and writes round-0 results and each player's starting report.
 - `{ "action": "resolve", "game_id" }`: resolves the open round when everyone has submitted and the host skips the timer, or when the deadline has passed (any player may call it then). A claim on `games.current_round` makes sure two calls can never both resolve the same round. Players who did not submit repeat last round's decisions.
+- `{ "action": "rename", "game_id", "target_id", "name" }`: whoever controls a company renames it.
+
+The edge function loads `engine.js` from jsDelivr pinned to a commit (see the import in `index.ts`); after rebuilding `engine.js`, commit it, update that commit hash and redeploy.
+
+The web page talks to Supabase with plain `fetch` (anonymous sign-in, REST, the `game` function) and polls every 2.5 seconds; no client library needed.
+
+Tested end to end against the live project: create → join → settings → start → submit (spoofed submit refused) → early resolve refused → resolve with private views per player.
 
 `engine.js` in that folder is generated: rebuild it with `npx esbuild supabase/functions/game/entry.ts --bundle --format=esm --target=es2022 --legal-comments=none --outfile=supabase/functions/game/engine.js` after changing the engine, then redeploy.
 
@@ -99,17 +112,17 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 ## Not built yet
 
-- The multiplayer web app (lobby, round and results screens on Supabase). The server function is deployed but has only been smoke-tested (it boots and rejects unsigned calls); the full start-and-resolve flow gets tested once the client exists.
+- In-game chat and private deal messages between players (the `messages` table is ready).
 - Automatic deadline resolution for daily mode (a scheduled job calling the `game` function; `pg_net` is already enabled).
 - Tycoon extras beyond staff (multiple products, logistics).
-- The server function still runs the previous engine; `engine.js` is rebuilt and gets deployed together with the multiplayer web app. Round results now carry the auction and summit and hide everyone's secret mission until the game ends.
 
 ## Structure
 
 ```
 src/engine/   types, config (balance, industries, news), engine (resolveRound, scoring), rng
 src/sim/      bots (naive, exploit habits), smart (rule-of-thumb bot), oracle (pro bot), simulate, analyze (skill vs luck), balance, diagnose
-src/web/      single-file playable prototype (game.html + build script)
-test/         engine tests
-supabase/     migrations
+src/server/   online match logic shared by the edge function and tests (bots, per-player views)
+src/web/      the game page (game.html + build script → docs/index.html)
+test/         engine and server tests, page smoke tests (single-player and online)
+supabase/     migrations and the game edge function
 ```

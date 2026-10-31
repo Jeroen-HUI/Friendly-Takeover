@@ -25,7 +25,7 @@ await wait(50);
 if (!doc.querySelector(".title-screen")) throw new Error("title screen did not render");
 if (doc.querySelectorAll(".tcard").length !== 5) throw new Error("title cards missing");
 if (!doc.getElementById("t-continue").disabled) throw new Error("continue should be disabled without a save");
-click("#t-online"); if (!/Coming soon/.test(doc.querySelector(".overlay").textContent)) throw new Error("online modal"); click("#btn-close");
+click("#t-online"); if (!/Host a game/.test(doc.querySelector(".overlay").textContent)) throw new Error("online modal"); click("#btn-close");
 click("#t-options"); click("#btn-close");
 click("#t-new");
 click("#btn-start");

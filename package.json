@@ -14,7 +14,8 @@
     "trace": "tsx src/sim/simulate.ts trace chocolate 7",
     "diagnose": "tsx src/sim/diagnose.ts chocolate",
     "analyze": "tsx src/sim/analyze.ts 80",
-    "balance": "tsx src/sim/balance.ts 60"
+    "balance": "tsx src/sim/balance.ts 60",
+    "smoke": "node scripts/build-web.mjs && node test/prototype.smoke.mjs && tsx test/multiplayer.smoke.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
