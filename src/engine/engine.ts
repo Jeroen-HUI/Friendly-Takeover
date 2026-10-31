@@ -637,11 +637,13 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const avgHype = offers.length ? avg((w) => w.c.hype) : 10;
   const avgPrice = offers.length ? avg((w) => w.d.price) : 0;
   const refAvg = SEGMENTS.reduce((a, s) => a + industry.segments[s].weight * industry.segments[s].refPrice, 0);
+  const potentials = { budget: 0, mainstream: 0, premium: 0, hype: 0 } as Record<SegmentId, number>;
   const drift = avgPrice > 0 ? Math.max(0.6, Math.min(1.6, 1 + BALANCE.priceAnchorDrift * (avgPrice / refAvg - 1))) : 1;
   for (const s of SEGMENTS) {
     const seg = industry.segments[s];
     const ref = seg.refPrice * drift;
     const potential = marketSize * seg.weight * fx.segmentMultiplier[s];
+    potentials[s] = Math.round(potential);
     const attraction = work.map((w) => {
       if (w.available <= 0) return 0;
       const { c, d } = w;
@@ -709,6 +711,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const segSold: Record<SegmentId, number> = { budget: 0, mainstream: 0, premium: 0, hype: 0 };
   const segOf = (w: Work, s: SegmentId) => (w.demand > 0 ? (w.sold * w.demandBySeg[s]) / w.demand : 0);
   for (const w of work) for (const s of SEGMENTS) segSold[s] += segOf(w, s);
+  state.marketLog = [...(state.marketLog ?? []), { round, potential: potentials, sold: Object.fromEntries(SEGMENTS.map((s) => [s, Math.round(segSold[s])])) as Record<SegmentId, number> }];
 
   // 3. Accounting ---------------------------------------------------------------
   const profitById: Record<string, number> = {};

@@ -265,6 +265,13 @@ export interface GameState {
   finished: boolean;
   /** The news that breaks next round (drawn a round early so insiders can learn it). undefined = not drawn yet. */
   upcomingNews?: ActiveNews[];
+  /** Online games: which companies are bots, and their strategy. */
+  bots?: Record<string, string>;
+  /** Online games: what each player may see (set on per-player views only). */
+  publicValues?: Record<string, number>;
+  publicSharePrices?: Record<string, number>;
+  /** Market size and total sales per segment for every round played (year 0 included). */
+  marketLog?: { round: number; potential: Record<SegmentId, number>; sold: Record<SegmentId, number> }[];
   /** Special rounds announced a round ahead (Black Friday, Investor Day). */
   specialEvents?: { round: number; id: "blackFriday" | "investorDay" }[];
   /** Bankrupt companies whose factory and stores are auctioned off in a given round. */

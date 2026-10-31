@@ -1,1 +1,2 @@
-export { createGame, resolveRound, standings, publicInfo, companyValues, INDUSTRIES } from "../../../src/engine";
+export { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany } from "../../../src/server/core";
+export { INDUSTRIES } from "../../../src/engine";
