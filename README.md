@@ -31,7 +31,7 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **Daily challenge:** the same market, rivals (4 hard bots) and starting news for everyone each day (chocolate or AI, 6 rounds). One scored try per day; practice runs after that don't count. **Leaderboards:** today's daily (everyone or friends) and all-time (wins, achievements, best daily).
 
-**Live market (from round 3):** a stock exchange is open during the round. Buy or sell rivals' shares right away (up to 30 a round and 50% of a company; every share moves the price 0.5%, 2% fee); everyone sees the trades on the ticker. Taking control past 50% still goes through an end-of-round takeover bid. **Live auctions:** the boardroom auction and bankruptcy sales are open bidding: every bid restarts a 45-second hammer ("going once… going twice… sold!"), and the winner pays when the round closes. In single-player the bots trade and bid too.
+**Live market (from round 3):** a stock exchange is open during the round. Buy or sell rivals' shares right away (up to 50% of a company; every share moves the price 0.5%, 2% fee); everyone sees the trades on the ticker. Taking control past 50% still goes through an end-of-round takeover bid. You can buy at most 15 shares of each company per round (20 in Cutthroat), exchange and takeover bids together, so control (51 shares) takes at least 4 rounds. **Live auctions:** the boardroom auction and bankruptcy sales are open bidding: every bid restarts a 45-second hammer ("going once… going twice… sold!"), and the winner pays when the round closes. In single-player the bots trade and bid too.
 
 **Raw materials, bought a round ahead:** you buy materials now at today's price index for next round's production. The news carries an outlook ("analysts expect prices to RISE/FALL…", right about 3 times out of 4). Stocked up before a rise: you're safe. Stocked up before a fall: you paid too much. Anything you run short of is bought on the spot market at the price then +15%; leftover materials cost 2% a round to hold.
 
@@ -118,7 +118,7 @@ Three kinds of bots test the balance. **Pro** bots try out candidate plans with 
 
 Quick per-industry balance check: `npm run balance` (all-pro field). Try rule changes without editing code: `npx tsx src/sim/experiment.ts 24 ai '{"COSTS":{"overtimePremium":0}}'`.
 
-All-pro win rates (60 matches per industry, with materials and the bulk buyer): chocolate 23–28%, AI 20–32%, weed 18–30% for every positioning; average scores within 10% (chocolate), 9% (AI) and 12% (weed). AI and weed use slightly different buyer-group sizes (AI: premium 14%, hype 17%; weed: premium 14.5%, hype 16%), because their faster growth and their news favoured premium or hype. Before the hidden mechanics, budget won only 2–5% and premium 38–50%.
+All-pro win rates (60 matches per industry, with materials, the bulk buyer and the 15-shares-a-round limit): chocolate 22–27%, AI 20–30%, weed 22–30% for every positioning; average scores within 10% (chocolate), 9% (AI) and 12% (weed). AI and weed use slightly different buyer-group sizes (AI: premium 14%, hype 17%; weed: premium 14.5%, hype 16%), because their faster growth and their news favoured premium or hype. Before the hidden mechanics, budget won only 2–5% and premium 38–50%.
 
 ## Database (Supabase)
 

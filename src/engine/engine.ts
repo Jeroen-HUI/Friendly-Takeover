@@ -1152,12 +1152,15 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         const price = startPrices[target.id] * (1 + premium);
         if (price <= 0) continue;
         const afford = Math.floor(Math.max(0, buyer.cash) / price);
-        let qty = Math.min(requested, target.shares.float, difficulty.maxSharesPerRound, afford);
+        // One limit per company per round, shared with what was bought on the live exchange.
+        const already = (live?.trades ?? []).filter((t) => t.trader === buyer.id && t.target === target.id && t.qty > 0).reduce((a, t) => a + t.qty, 0);
+        const room = Math.max(0, difficulty.maxSharesPerRound - already);
+        let qty = Math.min(requested, target.shares.float, room, afford);
         if (qty < requested) {
           // Tell the buyer why they got fewer shares than they asked for.
-          const why = qty === afford && afford < Math.min(target.shares.float, difficulty.maxSharesPerRound)
+          const why = qty === afford && afford < Math.min(target.shares.float, room)
             ? `not enough cash left after this round's other costs (shares cost €${Math.round(price).toLocaleString("en")} each)`
-            : qty === target.shares.float ? `only ${target.shares.float} were for sale` : `you can buy at most ${difficulty.maxSharesPerRound} per company per round`;
+            : qty === target.shares.float ? `only ${target.shares.float} were for sale` : `you can buy at most ${difficulty.maxSharesPerRound} per company per round${already ? ` and already bought ${already} on the exchange` : ""}`;
           w.events.push(qty > 0 ? `Wanted ${requested} shares of ${target.companyName}, got ${qty}: ${why}` : `Couldn't buy shares of ${target.companyName}: ${why}`);
         }
         if (qty <= 0) continue;
@@ -1406,8 +1409,8 @@ export function exchangeTrade(input: GameState, traderId: string, targetId: stri
     if (target.controlledBy && target.controlledBy !== trader.id) throw new Error(`${target.companyName} is controlled by someone else`);
     if (n > target.shares.float) throw new Error(`Only ${target.shares.float} shares of ${target.companyName} are for sale`);
     if (held + n > EXCHANGE.maxHolding) throw new Error(`On the exchange you can own up to ${EXCHANGE.maxHolding}%. Control takes a takeover bid (Takeovers tab)`);
-    const boughtThisRound = live.trades.filter((t) => t.trader === trader.id && t.target === target.id).reduce((a, t) => a + t.qty, 0);
-    if (boughtThisRound + n > EXCHANGE.maxPerRound) throw new Error(`At most ${EXCHANGE.maxPerRound} shares of one company per round on the exchange`);
+    const boughtThisRound = liveBought(state, trader.id, target.id);
+    if (boughtThisRound + n > diff.maxSharesPerRound) throw new Error(`You can buy at most ${diff.maxSharesPerRound} shares of one company per round${boughtThisRound ? ` (${boughtThisRound} bought already)` : ""}`);
     const cost = gross * (1 + EXCHANGE.fee);
     if (trader.cash < cost) throw new Error(`Not enough cash: ${n} shares cost €${Math.round(cost).toLocaleString("en")}`);
     trader.cash -= cost;
@@ -1428,6 +1431,12 @@ export function exchangeTrade(input: GameState, traderId: string, targetId: stri
   const trade = { t: now, trader: trader.id, target: target.id, qty: n, price: gross / m, cash: proceeds };
   live.trades.push(trade);
   return { state, trade };
+}
+
+/** Shares of `targetId` that `traderId` bought on the live exchange this round (sales don't free up room). */
+export function liveBought(state: GameState, traderId: string, targetId: string): number {
+  const live = state.live && state.live.round === state.round ? state.live : null;
+  return (live?.trades ?? []).filter((t) => t.trader === traderId && t.target === targetId && t.qty > 0).reduce((a, t) => a + t.qty, 0);
 }
 
 /** Minimum next bid on a live lot. */

@@ -79,13 +79,14 @@ test("share purchases are blocked before the unlock round in Standard", () => {
 
 test("buying more than 50 shares gives control, then a cooldown", () => {
   let g = newGame(7, "cutthroat");
-  // Cutthroat: unlocked from round 1, no cooldown, up to 35 shares a round.
+  // Cutthroat: unlocked from round 1, no cooldown, up to 20 shares a round.
   g.companies[0].cash = 50_000_000;
   g = resolveRound(g, { a: { buyShares: { b: 35 } } });
-  assert.equal(g.companies[1].shares.holders.a, 35);
+  assert.equal(g.companies[1].shares.holders.a, 20, "capped at 20 a round");
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
   assert.equal(g.companies[1].controlledBy, null);
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
-  assert.equal(g.companies[1].shares.holders.a, 70);
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  assert.equal(g.companies[1].shares.holders.a, 60);
   assert.equal(g.companies[1].controlledBy, "a");
   assert.equal(shareTotal(g, "b"), 100);
   assert.ok(g.feed.some((f) => f.headline.includes("friendly takeover")));
@@ -95,8 +96,11 @@ test("Standard: takeover cooldown stops the buyer for two rounds", () => {
   let g = newGame(9);
   g.companies[0].cash = 80_000_000;
   for (let r = 1; r <= 2; r++) g = resolveRound(g, {});
-  // Rounds 3, 4, 5: 25 shares each -> control after round 5.
+  // Rounds 3-6: 15 shares each (the most per round) -> control only after round 6.
   for (let r = 3; r <= 5; r++) g = resolveRound(g, { a: { buyShares: { b: 25 } } });
+  assert.equal(g.companies[1].shares.holders.a, 45, "capped at 15 a round");
+  assert.equal(g.companies[1].controlledBy, null);
+  g = resolveRound(g, { a: { buyShares: { b: 15 } } });
   assert.equal(g.companies[1].controlledBy, "a");
   const heldC = () => g.companies[2].shares.holders.a ?? 0;
   g = resolveRound(g, { a: { buyShares: { c: 10 } } });
@@ -107,8 +111,8 @@ test("buybacks protect a company from losing control", () => {
   let g = newGame(11, "cutthroat");
   g.companies[0].cash = 50_000_000;
   g.companies[1].cash = 50_000_000;
-  g = resolveRound(g, { a: { buyShares: { b: 35 } }, b: { buyback: 35 } });
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } }, b: { buyback: 35 } });
+  for (let r = 0; r < 3; r++) g = resolveRound(g, { a: { buyShares: { b: 20 } } });
   const b = g.companies[1];
   assert.equal(b.shares.treasury, 35);
   assert.ok((b.shares.holders.a ?? 0) <= 35);
@@ -210,8 +214,9 @@ test("a sealed defense fund can stop a takeover in a boardroom showdown", () => 
   let g = newGame(7, "cutthroat");
   g.companies[0].cash = 50_000_000;
   g.companies[1].cash = 5_000_000;
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
-  g = resolveRound(g, { a: { buyShares: { b: 35 }, takeoverStake: 200_000 }, b: { defenseStake: 400_000 } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 }, takeoverStake: 200_000 }, b: { defenseStake: 400_000 } });
   const b = g.companies[1];
   assert.equal(b.controlledBy, null);
   assert.equal(b.shares.holders.a, 50, "defender's win caps the attacker at 50%");
@@ -285,7 +290,8 @@ test("quality can't go down after round 1", () => {
 test("dumping shares pays out at a discount, hurts the target's value and fades", () => {
   let g = newGame(23, "cutthroat");
   g.companies[0].cash = 50_000_000;
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 15 } } });
   g = resolveRound(g, { b: { buyback: 0 } });
   const before = companyValues(g).b;
   const priceBefore = sharePrices(g).b;
@@ -347,7 +353,7 @@ test("owning a majority of every other company ends the game: monopoly win", () 
   let g = newGame(41, "cutthroat");
   g.companies[0].cash = 500_000_000;
   for (const c of g.companies.slice(1)) c.cash = 0;
-  for (let r = 0; r < 2 && !g.finished; r++) g = resolveRound(g, { a: { buyShares: { b: 35, c: 35, d: 35 } } });
+  for (let r = 0; r < 3 && !g.finished; r++) g = resolveRound(g, { a: { buyShares: { b: 20, c: 20, d: 20 } } });
   assert.ok(g.finished, "game ends early");
   assert.equal(g.monopolyBy, "a");
   const t = standings(g);
@@ -384,7 +390,8 @@ test("the round report explains when you get fewer shares than you asked for", (
 test("a board seat (25%+) delivers the company's round report", () => {
   let g = newGame(61, "cutthroat");
   g.companies[0].cash = 50_000_000;
-  g = resolveRound(g, { a: { buyShares: { b: 25 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 5 } } });
   const seats = g.companies[0].history.at(-1)!.research?.boardSeats;
   assert.equal(seats?.length, 1);
   assert.equal(seats![0].companyId, "b");
@@ -405,9 +412,10 @@ test("special rounds: Black Friday and Investor Day are scheduled, announced and
 test("only the controller can rename a company", () => {
   let g = newGame(7, "cutthroat");
   g.companies[0].cash = 50_000_000;
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
   assert.equal(renameCompany(g, "a", "b", "Nope"), g, "no control yet");
-  g = resolveRound(g, { a: { buyShares: { b: 35 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
   g = renameCompany(g, "a", "b", "ChocoLoco's Little Helper");
   assert.equal(g.companies[1].companyName, "ChocoLoco's Little Helper");
   assert.equal(g.companies[1].originalName, "Bar None");
@@ -567,6 +575,13 @@ test("live exchange: prices move with every trade, holdings change at once, 50% 
   assert.equal(g.companies[1].shares.holders.a, 6);
   // c dumps nothing, d buys; the round then resolves and the cash flow adds up.
   g = exchangeTrade(g, "d", "c", 5, 1003).state;
+  // One limit per round for exchange and takeover bids together (20 in Cutthroat); selling doesn't free up room.
+  g = exchangeTrade(g, "a", "b", 10, 1004).state;
+  assert.throws(() => exchangeTrade(g, "a", "b", 1, 1005), /at most 20 shares/);
+  const heldBefore = g.companies[1].shares.holders.a!;
+  const g2 = resolveRound(g, { a: { buyShares: { b: 10 } } });
+  assert.equal(g2.companies[1].shares.holders.a, heldBefore, "no takeover-bid room left this round");
+  assert.ok(g2.companies[0].history.at(-1)!.events.some((e) => /already bought 20 on the exchange/.test(e)));
   const before = g.companies.map((c) => c.cash);
   g = resolveRound(g, {});
   const ra = g.companies[0].history.at(-1)!;

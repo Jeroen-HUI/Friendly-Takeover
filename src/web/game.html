@@ -2467,14 +2467,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!exchangeOpen()) return `<div class="card"><h3>Stock exchange</h3><div class="locked">The live stock exchange opens in round ${diff().takeoverUnlockRound}.</div></div>`;
     const rows = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
       const p = FT.livePrice(S.game, o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
-      const blocked = o.controlledBy && o.controlledBy !== "you", canBuy = !blocked && c.takeoverCooldown <= 0 && o.shares.float > 0 && held < FT.EXCHANGE.maxHolding;
+      const blocked = o.controlledBy && o.controlledBy !== "you", room = Math.min(diff().maxSharesPerRound - FT.liveBought(S.game, "you", o.id), o.shares.float, FT.EXCHANGE.maxHolding - held), canBuy = !blocked && c.takeoverCooldown <= 0 && room > 0;
       return `<tr><td><span class="dot" style="background:${colVar(o.id)}"></span>${esc(o.companyName)}</td>${td(eur(p), "Live price " + eurX(p) + (p0 ? "\\nAt the start of the round " + eurX(p0) : ""))}<td class="r num ${ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted"}">${Math.abs(ch) < 0.0005 ? "—" : (ch > 0 ? "▲" : "▼") + Math.abs(ch * 100).toFixed(1) + "%"}</td>${td(held + "%")}${td(o.shares.float + "%")}
-        <td class="r exbtns"><button class="btn small go" type="button" data-trade="${o.id}" data-qty="1" ${canBuy ? "" : "disabled"}>+1</button><button class="btn small go" type="button" data-trade="${o.id}" data-qty="5" ${canBuy ? "" : "disabled"}>+5</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-1" ${held ? "" : "disabled"}>−1</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-5" ${held >= 5 ? "" : "disabled"}>−5</button></td></tr>`;
+        <td class="r exbtns"><button class="btn small go" type="button" data-trade="${o.id}" data-qty="1" ${canBuy ? "" : "disabled"} title="${canBuy ? room + " more this round" : "No more this round"}">+1</button><button class="btn small go" type="button" data-trade="${o.id}" data-qty="5" ${canBuy && room >= 5 ? "" : "disabled"} title="${canBuy ? room + " more this round" : "No more this round"}">+5</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-1" ${held ? "" : "disabled"}>−1</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-5" ${held >= 5 ? "" : "disabled"}>−5</button></td></tr>`;
     }).join("");
     const X = FT.EXCHANGE;
     return `<div class="card exchange" id="live-exchange"><h3>Stock exchange <span class="livepill">LIVE</span></h3>
       ${tbl(["Company", "Price", "Today", "Yours", "For sale", "Trade (shares)"], rows).replace('class="tbl"', 'class="tbl compact"')}
-      <div class="hint" id="ex-msg">Trades happen right now and everyone sees them on the ticker. Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here (${X.maxPerRound} a round); taking control needs a takeover bid below. Your cash: <b>${eur(c.cash)}</b>.</div></div>`;
+      <div class="hint" id="ex-msg">Trades happen right now and everyone sees them on the ticker. Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here. You can buy at most <b>${diff().maxSharesPerRound} shares of each company per round</b>, exchange and takeover bids together; taking control needs a takeover bid below. Your cash: <b>${eur(c.cash)}</b>.</div></div>`;
   }
   // Refresh just the live parts of the screen (ticker, exchange, lots), not the whole page.
   function updateLiveUI() {
@@ -3182,7 +3182,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const how = `<details class="card howto" ${seenHow ? "" : "open"}><summary><h3>How takeovers work</h3></summary><ol class="steps">
       <li><span><b>Trade live.</b> The stock exchange (top) is open during the round: buy and sell right now, everyone sees it on the ticker, and every share moves the price. You can build up to 50% there.</span></li>
       <li><span><b>Takeover bid.</b> Every company has 100 shares. The founder keeps ${B.startShares.founder}; the rest are for sale to anyone. One share costs 1% of the company's value (its share price) plus a takeover premium of ${Math.round(B.takeoverPremium * 100)}%, which rises the more shares you already own.</span></li>
-      <li><span><b>Own more than 50 shares and you control the company.</b> Your shares add up over the rounds. You can buy at most ${D.maxSharesPerRound} per company per round, so it takes at least ${Math.ceil(51 / D.maxSharesPerRound)} rounds.</span></li>
+      <li><span><b>Own more than 50 shares and you control the company.</b> Your shares add up over the rounds. You can buy at most ${D.maxSharesPerRound} per company per round (live on the exchange and with takeover bids together), so it takes at least ${Math.ceil(51 / D.maxSharesPerRound)} rounds.</span></li>
       <li><span><b>Control everyone, win the game.</b> If you control every other company still in business, it's a monopoly: the game ends right away and you win.</span></li>
       <li><span><b>Control pays off.</b> Every round the company you control pays half its profit to its shareholders (you get your %). At the end you get a bonus of ${Math.round(B.controllerBonusRate * 100)}% of its value, and its owner only scores ${Math.round(B.controlledScoreMultiplier * 100)}%. Your shares also count in your own company value.</span></li>
       <li><span><b>Sell or dump shares.</b> Sell shares you own any time during the round on the live stock exchange (${Math.round(FT.EXCHANGE.fee * 100)}% fee). Every share sold pushes the price down ${(FT.EXCHANGE.impactPerShare * 100).toFixed(1)}%, and dumping scares investors: each share also knocks ${(FT.BALANCE.dumpImpactPerShare * 100).toFixed(1)}% off that company's value when the round closes (at most ${Math.round(FT.BALANCE.dumpImpactCapPerRound * 100)}% a round). The panic halves every round. Use it to cash out a stake you can't use, or to hit a rival where it hurts.</span></li>
@@ -3195,7 +3195,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const canBuy = unlocked && c.takeoverCooldown <= 0;
     const list = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
       const held = o.shares.holders.you || 0, blocked = o.controlledBy && o.controlledBy !== "you", mine = o.controlledBy === "you";
-      const max = !canBuy || blocked ? 0 : Math.min(o.shares.float, D.maxSharesPerRound);
+      const max = !canBuy || blocked ? 0 : Math.max(0, Math.min(o.shares.float, D.maxSharesPerRound - FT.liveBought(S.game, "you", o.id)));
       const pay = p[o.id] * (1 + premiumFor(o)), need = Math.max(0, 51 - held);
       const line = mine ? `<span class="pos">You control this company.</span>` : blocked ? `Controlled by ${esc(byId(o.controlledBy).companyName)}: you can't buy in.${held ? ` Your ${held}% still counts in your value and earns dividends, or you can dump it.` : ""}` : `You own <b>${held}%</b> · ${o.shares.float}% for sale · you need <b>${need}</b> more for control${need > o.shares.float ? ` <span class="neg">(only ${o.shares.float}% is left for sale, so you can't get control right now)</span>` : ""}`;
       return `<div class="rival" style="--pc:${colVar(o.id)}"><div style="min-width:0"><b>${esc(o.companyName)}</b> <span class="muted" style="font-size:12.5px">· ${esc(o.playerName)}</span>
@@ -4734,7 +4734,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     });
     on("[data-buy-step]", "click", (e) => {
       const id = e.currentTarget.dataset.buyStep;
-      const max = Math.min(byId(id).shares.float, diff().maxSharesPerRound);
+      const max = Math.max(0, Math.min(byId(id).shares.float, diff().maxSharesPerRound - FT.liveBought(S.game, "you", id)));
       const v = Math.max(0, Math.min(max, (S.draft.buyShares[id] || 0) + Number(e.currentTarget.dataset.dir) * 5));
       if (v) S.draft.buyShares[id] = v; else delete S.draft.buyShares[id];
       document.getElementById("buy-" + id).textContent = v;

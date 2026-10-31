@@ -272,7 +272,8 @@ export const COSTS = {
 export const BULK = { priceShare: [0.4, 0.55] as [number, number], maxShareOfCapacity: 0.5 };
 
 /** Live stock exchange during a round: price impact per share traded, fee, and the cap (control needs a takeover bid). */
-export const EXCHANGE = { impactPerShare: 0.005, fee: 0.02, maxHolding: 50, maxPerRound: 30 };
+// Shares bought on the exchange count towards the difficulty's maxSharesPerRound, together with end-of-round takeover bids.
+export const EXCHANGE = { impactPerShare: 0.005, fee: 0.02, maxHolding: 50 };
 
 /** Live auctions: minimum raise and the "going once, going twice" timer after each bid. */
 export const LIVE_AUCTION = { minRaise: 10_000, raiseShare: 0.05, goingMs: 45_000 };
@@ -315,10 +316,10 @@ export const TRAIT_EFFECTS = {
 };
 
 export const DIFFICULTIES: Record<DifficultyId, DifficultyConfig> = {
-  standard: { id: "standard", takeoverUnlockRound: 3, takeoverCooldown: 2, maxSharesPerRound: 25, newsChance: 0.6, retailUnlockRound: 3 },
+  standard: { id: "standard", takeoverUnlockRound: 3, takeoverCooldown: 2, maxSharesPerRound: 15, newsChance: 0.6, retailUnlockRound: 3 },
   // Tycoon uses the Standard rules until its extra mechanics (hiring, multi-product, logistics) are built.
-  tycoon: { id: "tycoon", takeoverUnlockRound: 3, takeoverCooldown: 2, maxSharesPerRound: 25, newsChance: 0.6, retailUnlockRound: 3 },
-  cutthroat: { id: "cutthroat", takeoverUnlockRound: 1, takeoverCooldown: 0, maxSharesPerRound: 35, newsChance: 0.75, retailUnlockRound: 2 },
+  tycoon: { id: "tycoon", takeoverUnlockRound: 3, takeoverCooldown: 2, maxSharesPerRound: 15, newsChance: 0.6, retailUnlockRound: 3 },
+  cutthroat: { id: "cutthroat", takeoverUnlockRound: 1, takeoverCooldown: 0, maxSharesPerRound: 20, newsChance: 0.75, retailUnlockRound: 2 },
 };
 
 const CHOCOLATE: IndustryConfig = {
