@@ -199,6 +199,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .choice input:checked + span small { color: #3d1c00; }
 .choice input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 2px; }
 .choice input:disabled + span { opacity: 0.35; cursor: not-allowed; }
+.choices.traits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 520px) { .choices.traits { grid-template-columns: 1fr; } }
+:root[data-theme="light"] .trait-card em { color: #8a5a00; }
+.trait-card > span { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; align-content: start; }
+.trait-card canvas { grid-row: 1 / span 3; width: 34px; height: 34px; image-rendering: pixelated; background: rgba(0,0,0,0.25); border-radius: 6px; padding: 4px; box-sizing: border-box; }
+.trait-card em { font-style: normal; font-size: 12.5px; font-weight: 900; color: var(--gold); }
+.trait-card input:checked + span em { color: #3d1c00; }
+.trait-card small { grid-column: 2; }
 .qual { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .qual .choice span { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 18px; padding: 8px 0; }
 
@@ -529,6 +537,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const app = $("#app"), modal = $("#modal");
   const COLORS = ["--c0", "--c1", "--c2", "--c3", "--c4", "--c5"];
   const TRAITS = { ruthless: ["Ruthless", "Takeovers 15% cheaper"], visionary: ["Visionary", "R&D 15% more effective"], influencer: ["Influencer", "Hype gains 15% higher"], pennyPincher: ["Penny-Pincher", "Production 8% cheaper"] };
+  // What each trait means for a new player: who it suits, in plain words.
+  const TRAIT_FIT = {
+    ruthless: "For raiders: buying rivals' shares and taking companies over costs less.",
+    visionary: "For quality: every euro of R&D goes further, so better products sooner. A safe all-round pick.",
+    influencer: "For hype: viral stunts and campaigns pull in more hype buyers.",
+    pennyPincher: "For cheap and lots of it: lower cost per unit, so you can undercut on price.",
+  };
+  // CEO trait picker in the game's own card style (radio cards with the pixel icon).
+  function traitPicker(name, cur) {
+    return `<div class="choices traits" role="radiogroup" aria-label="CEO trait">${Object.entries(TRAITS).map(([k, [n, t]]) => `<label class="choice trait-card"><input type="radio" name="${name}" value="${k}" ${cur === k ? "checked" : ""}><span><canvas data-trait="${k}" width="8" height="8" aria-hidden="true"></canvas><b>${n}</b><em>${t}</em><small>${TRAIT_FIT[k]}</small></span></label>`).join("")}</div>
+      <div class="hint" style="margin-top:6px">Your trait is a small permanent bonus for the whole game. Not sure? Pick the one that matches how you want to play.</div>`;
+  }
   const CAMPAIGNS = { discount: ["Discount promo", "Strong with budget shoppers"], tv: ["TV ad", "Steady boost in mainstream"], luxury: ["Luxury sponsor", "Wins premium buyers, builds brand"], viral: ["Viral stunt", "Huge hype, 35% chance it flops"] };
   const SEG = { budget: "Budget", mainstream: "Mainstream", premium: "Premium", hype: "Hype" };
   const BOT_NAMES = ["Barbara", "Kees", "Ingrid", "Mo", "Fenna", "Sem"];
@@ -1205,14 +1225,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ----- Create / join (from the title screen)
   function onlineModal() {
     const o = S.opts || DEFAULT_OPTS, saved = mpLocal(), code = S.joinCode || "";
-    const traits = Object.entries(TRAITS).map(([k, [n]]) => `<option value="${k}" ${o.trait === k ? "selected" : ""}>${n}</option>`).join("");
     return `<div class="win"><div class="win-title">Multiplayer<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       ${S.onlineError ? `<div class="note neg">${esc(S.onlineError)}</div>` : ""}
       <div class="form">
         <div class="ctl"><label for="mp-name">Your name</label><input type="text" id="mp-name" maxlength="24" value="${esc(o.name === "You" ? "" : o.name)}" placeholder="Jeroen"></div>
         <div class="ctl"><label for="mp-company">Company name</label><input type="text" id="mp-company" maxlength="32" value="${esc(o.company)}"></div>
-        <div class="ctl"><label for="mp-trait">CEO trait</label><select id="mp-trait" class="sel">${traits}</select></div>
       </div>
+      <div class="ctl"><span class="lbl">CEO trait</span>${traitPicker("mp-trait", o.trait)}</div>
       <div class="grid2">
         <div class="card"><h3>Host a game</h3><div class="hint">You get a code to share. You pick the settings and start when everyone's in.</div><button class="btn go" type="button" id="btn-mp-create" ${S.onlineBusy ? "disabled" : ""}>Create a game</button></div>
         <div class="card"><h3>Join a friend</h3><div class="ctl"><label for="mp-code">Game code</label><input type="text" id="mp-code" maxlength="6" value="${esc(code)}" placeholder="ABC123" style="text-transform:uppercase;letter-spacing:.2em;font-family:var(--font-display)"></div><button class="btn go" type="button" id="btn-mp-join" ${S.onlineBusy ? "disabled" : ""}>Join</button></div>
@@ -1224,10 +1243,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   async function onlineAction(kind) {
     const val = (id) => (modal.querySelector(id) || {}).value || "";
-    const name = val("#mp-name").trim(), company = val("#mp-company").trim(), trait = val("#mp-trait") || "visionary", code = val("#mp-code").trim().toUpperCase();
+    const name = val("#mp-name").trim(), company = val("#mp-company").trim(), trait = (modal.querySelector('input[name="mp-trait"]:checked') || {}).value || "visionary", code = val("#mp-code").trim().toUpperCase();
+    S.opts = { ...(S.opts || DEFAULT_OPTS), name: name || (S.opts || {}).name, company: company || (S.opts || {}).company, trait };
     if (kind !== "rejoin" && (!name || !company)) { S.onlineError = "Fill in your name and company name first."; renderModal(); bindModal(); return; }
     if (kind === "join" && !/^[A-Z0-9]{6}$/.test(code)) { S.onlineError = "Game codes are 6 letters and numbers."; renderModal(); bindModal(); return; }
-    S.opts = { ...(S.opts || DEFAULT_OPTS), name: name || (S.opts || {}).name, company: company || (S.opts || {}).company, trait };
     S.onlineBusy = true; S.onlineError = ""; renderModal(); bindModal();
     try {
       await api().signIn();
@@ -2565,6 +2584,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "options") inner = optionsModal();
     modal.innerHTML = `<div class="overlay" role="dialog" aria-modal="true">${inner}</div>`;
     modal.querySelectorAll("canvas[data-avatar]").forEach((cv) => drawAvatar(cv, cv.dataset.avatar, colRaw(cv.dataset.avatar)));
+    modal.querySelectorAll("canvas[data-trait]").forEach((cv) => drawTrait(cv, cv.dataset.trait));
     countUp(modal);
     if (S.modal === "show") runShow();
     if (S.modal === "board") runBoard();
@@ -2912,7 +2932,6 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function setupModal() {
     const o = S.opts;
-    const traits = Object.entries(TRAITS).map(([k, [n, t]]) => `<label class="choice"><input type="radio" name="trait" value="${k}" ${o.trait === k ? "checked" : ""}><span><b>${n}</b><small>${t}</small></span></label>`).join("");
     const pick = (name, opts, cur) => opts.map(([v, n, t]) => `<label class="choice"><input type="radio" name="${name}" value="${v}" ${String(cur) === String(v) ? "checked" : ""}><span><b>${n}</b>${t ? `<small>${t}</small>` : ""}</span></label>`).join("");
     return `<div class="win"><div class="win-title">New game<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       <div class="form">
@@ -2926,7 +2945,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       </div>
       <div class="ctl"><span class="lbl">Rounds</span><div class="choices">${pick("rounds", [[6, "6", "Quick game"], [8, "8", "Standard"], [10, "10", "Longer"], [12, "12", "Long game"]], o.rounds || 8)}</div></div>
       <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
-      <div class="ctl"><span class="lbl">CEO trait</span><div class="choices">${traits}</div></div>
+      <div class="ctl"><span class="lbl">CEO trait</span>${traitPicker("trait", o.trait)}</div>
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="btn-start" data-autofocus>Start game</button></div>
     </div></div>`;
   }
