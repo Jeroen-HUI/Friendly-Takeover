@@ -42,7 +42,7 @@ Each round:
 2. **Specials before the market**: Tycoon staff (hiring, wages, layoffs), wildcards (crazy launch, poach, spy, lobby, scandal, lawsuit; one per round, two uses each), the sealed-bid auction (rounds 3 and 6), the industry summit vote (rounds 4 and 7; the winning rule runs for 2 rounds), and journalists (bankrupt players) publishing an exposé.
 3. **Market**: total demand is split into four segments (Budget, Mainstream, Premium, Hype). In each segment, every company gets an attractiveness score from price, quality, brand, hype and its marketing campaign, all measured against the other companies (quality, brand and hype relative to the market average; the reference price drifts toward the average price charged). Demand is shared by those scores (a logit model), with an outside option so very high prices shrink the market.
 4. **Stock limits**: a company can only sell what it has; half of the unmet demand switches to rivals with stock left.
-5. **Accounting**: revenue, production cost, holding cost on unsold stock, factory upkeep, marketing, R&D, brand, interest.
+5. **Accounting**: revenue, production cost, holding cost on unsold stock, factory upkeep, idle machines, marketing, R&D, brand, interest. Then the **investor call**: if you gave guidance, it's compared with what happened.
 6. **Brand, hype, R&D, capacity** update. Viral stunts can flop (25%) and produce a news headline.
 7. **Shares**: sales first (you get the share price minus 5%; every share dumped knocks 0.3% off that company's value, max 15% a round, and the panic halves each round), then buybacks (defense), then purchases in random order. More than 50 shares = control, then a cooldown. A purchase that would take control of a company with a defense fund triggers a **boardroom showdown**: sealed stakes, higher wins, tie goes to the defender, both pay.
 8. **Subsidiaries** pay half their profit as dividends to shareholders.
@@ -50,6 +50,20 @@ Each round:
 10. **Valuation** and **next round's news**.
 
 Score at the end = company value (cash − debt + factory + stores + stock + brand + earnings power + stakes in others). Controlled companies score at 75%; controllers get 10% of each subsidiary's value as a bonus. A completed **secret mission** adds €750k.
+
+### Hidden mechanics (find them in the numbers)
+
+Like TOPSIM, the game doesn't forecast for you. The Production tab shows your factory's limits, not the demand; the free market report shows totals only.
+
+- **Experience curve:** every doubling of your total production saves about 8% of the basic process cost per unit (the same euro amount at every quality, so it rewards volume rather than premium).
+- **Factory load:** units above 90% of capacity run in overtime (+25%); capacity left idle below 60% costs money.
+- **Raw material price index:** a random walk around 1.00 (0.80–1.30). Material is 45% of the standard unit cost. Shown in the market report each round.
+- **Buyer-group trends:** each game one group slowly grows (+1.5–3% a round), one shrinks, the others drift. Never announced; visible in market studies and sales history.
+- **Price sensitivity per game:** each buyer group is 85–115% as price-sensitive as usual. Inferable from price and sales changes, or bought via the Buyer panel.
+- **Investor call:** optional guidance on units sold and profit. Within 10% (units) and 15% (profit) = trust +1; more than 25% / 40% off = trust −1 (range −2..+3). Each trust point moves company value 3% and interest 0.4 points.
+- **Research:** Competitor spending (€60k), Customer survey (€30k), Insider tip (€50k), Market study (€40k, per-group market size and next round's outlook), Buyer panel (€35k).
+
+The game page has a **Calc** desk: a calculator (keyboard, memory, tape; click any number in a table to paste it) and notes per game.
 
 All balance numbers live in `src/engine/config.ts`. AI and Weed are derived from Chocolate's tuned market, scaled by unit cost, so balance carries over.
 
@@ -74,7 +88,9 @@ Three kinds of bots test the balance. **Pro** bots try out candidate plans with 
 - **Renaming:** whoever takes over a company can rename it (`renameCompany`); the original name is kept for the final screen.
 - **Bankruptcy sales:** a bankrupt company's factory (75%), stores and a quarter of its brand go to the highest sealed bid the next round.
 
-Quick per-industry balance check: `npm run balance` (all-pro field).
+Quick per-industry balance check: `npm run balance` (all-pro field). Try rule changes without editing code: `npx tsx src/sim/experiment.ts 24 ai '{"COSTS":{"overtimePremium":0}}'`.
+
+All-pro win rates after the hidden mechanics (60 matches per industry): chocolate 22–27% for every positioning; AI premium 45%, others 17–22%; weed premium 40%, others 15–23%. Before, budget won only 2–5% and premium 38–50%.
 
 ## Database (Supabase)
 
