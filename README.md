@@ -71,12 +71,13 @@ All balance numbers live in `src/engine/config.ts`. AI and Weed are derived from
 
 Three kinds of bots test the balance. **Pro** bots try out candidate plans with the engine before deciding, like a player who does the maths, but without seeing the dice: rivals are assumed to repeat their last plan and every try uses a different random seed. **Smart** bots follow good rules of thumb (read the reports, buy the forecast, steer price by sell-through, open stores when they fill up, use wildcards, auctions, votes and missions). **Naive** bots repeat one fixed plan.
 
-| Test (60 matches each, €1M start, relative market, milder news) | Result |
+| Test (80 matches each, €1M start, relative market, hidden mechanics, investor call) | Result |
 | --- | --- |
-| Pro vs naive bot with the same positioning | Pro finishes higher 95–98% (budget, mainstream, premium), 38% (hype) |
-| Pro vs smart vs naive, same lineup | Pro beats smart 82% and naive 87% of the time |
-| Four identical pro players (pure luck) | Final scores differ by about 13% (std dev), down from 17% with the old news |
-| All-pro field, average score per positioning | Within about 8% of each other in every industry and difficulty |
+| Pro vs naive bot with the same positioning | Pro finishes higher 98% (budget), 93% (mainstream), 98% (premium), 44% (hype) |
+| Pro vs smart vs naive, same lineup | Pro beats smart 76% and naive 85% of the time |
+| Four mainstream bots of different skill | Pro wins 55% (was 49%); skill explains 25% of score differences (was 21%) |
+| Four identical pro players (pure luck) | Final scores differ by about 16% (std dev), up from 13%: trends and material prices add some uncertainty |
+| Exploit hunt | No habit beats plain good play: best exploit (hoarding) scores like the smart bot, far below the pro |
 
 - **News is closer to TOPSIM now.** Every round has a market report with 2–3 small indicators (economy, raw material prices, one customer group buying more or less, interest, consumer confidence; ±1–8%, one round each) plus a funny story about 60% of the time. Story effects are 35% of what they used to be, so a recession nudges budget demand up ~14% instead of 40%.
 - **The market is relative.** Buyers judge quality, brand and hype against the market average, and their sense of a normal price drifts 30% toward what companies actually charge.
