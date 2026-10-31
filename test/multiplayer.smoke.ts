@@ -10,7 +10,7 @@ import { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany
 
 // ---------------------------------------------------------------- fake backend
 type Row = Record<string, any>;
-const db = { games: [] as Row[], players: [] as Row[], states: new Map<string, any>(), decisions: [] as Row[], reports: [] as Row[], messages: [] as Row[], deals: [] as Row[], results: [] as Row[] };
+const db = { invites: [] as Row[], games: [] as Row[], players: [] as Row[], states: new Map<string, any>(), decisions: [] as Row[], reports: [] as Row[], messages: [] as Row[], deals: [] as Row[], results: [] as Row[] };
 let seq = 1;
 const listeners = new Map<string, Set<() => void>>();
 const notify = (gameId: string) => setTimeout(() => listeners.get(gameId)?.forEach((f) => f()), 1);
@@ -133,6 +133,15 @@ const fakeApi = {
       return null;
     }
     if (name === "leave_game") return null;
+    // Accounts and friends: the host has one friend, Kim, who can invite them.
+    if (name === "ensure_profile") return { name: "Jeroen", friend_code: "JRN234", stats: {}, email: null, anonymous: true };
+    if (name === "touch_profile" || name === "grant_achievements" || name === "set_profile_name") return null;
+    if (name === "record_result") return { games: 1 };
+    if (name === "my_friends") return [{ user_id: "user-kim", name: "Kim", friend_code: "KIM234", status: "friends", online: true, last_seen: new Date().toISOString() }];
+    if (name === "my_invites") return db.invites.filter((i) => i.to === HOST && i.status === "pending").map((i) => { const g = db.games.find((x) => x.id === i.game_id)!; return { id: i.id, game_id: g.id, code: g.code, from_name: "Kim", industry: g.industry, players: db.players.filter((pp) => pp.game_id === g.id).length, created_at: new Date().toISOString() }; });
+    if (name === "answer_invite") { const i = db.invites.find((x) => x.id === a.p_id)!; i.status = a.p_accept ? "accepted" : "declined"; return db.games.find((x) => x.id === i.game_id)!.code; }
+    if (name === "invite_friend") { db.invites.push({ id: seq++, game_id: a.p_game_id, from: HOST, to: a.p_user, status: "pending" }); return null; }
+    if (name === "lobby_invites") return db.invites.filter((i) => i.game_id === a.p_game_id).map((i) => ({ to_user: i.to, status: i.status }));
     throw new Error("unknown rpc " + name);
   },
   async game(id: string) { return JSON.parse(JSON.stringify(db.games.find((g) => g.id === id) ?? null)); },
@@ -206,6 +215,20 @@ const closeResults = () => {
 const D = () => window.__ftDebug.S;
 
 await wait(30);
+// A friend's invite shows up on the main menu; one tap joins their lobby.
+{
+  const kim = server.createGame("user-kim", "Kim", "Kim Konfect", "influencer");
+  db.invites.push({ id: seq++, game_id: kim.game_id, from: "user-kim", to: HOST, status: "pending" });
+  await until("invite bar", () => /Kim/.test($(".invitebar:not([hidden])")?.textContent || ""), 12000);
+  if (!/Profile|Jeroen/.test($("#t-account")!.textContent!)) throw new Error("account chip missing");
+  click("[data-inv-join]");
+  await until("joined Kim's lobby", () => $(".lobby") && /Kim/.test($(".lobby")!.textContent!));
+  if (db.invites[0].status !== "accepted" || !db.players.some((p) => p.game_id === kim.game_id && p.user_id === HOST)) throw new Error("invite join failed");
+  click("#btn-leave");
+  await until("back on the title", () => $(".title-screen"));
+}
+// The host's own game is the second one (the first is Kim's).
+const HG = () => db.games[1];
 // Title → Multiplayer → create a game.
 click("#t-online");
 if (!/Host a game/.test($(".overlay")!.textContent!)) throw new Error("online modal missing");
@@ -218,17 +241,21 @@ const code = $(".bigcode")!.textContent!;
 if (!/^[A-Z0-9]{6}$/.test(code)) throw new Error("bad code " + code);
 if (!($("#invite-link") as any).value.includes("?join=" + code)) throw new Error("invite link wrong");
 if (!($("#btn-mp-start") as any).disabled) throw new Error("start should wait for a second company");
+// Invite a friend from the lobby.
+await until("friends in lobby", () => $("[data-invite]"), 12000);
+click("[data-invite]");
+await until("invite sent", () => db.invites.some((i) => i.to === "user-kim" && i.game_id === db.games.at(-1)!.id));
 
 // A friend joins from another device.
 const friend = server.join("user-friend", code, "Sanne", "Bar None", "ruthless");
 await until("friend in lobby", () => /Sanne/.test($(".lobby")!.textContent!));
 // Host settings: 6 rounds, one hard bot.
 click('[data-set="rounds"][data-val="6"]');
-await until("rounds saved", () => db.games[0].rounds === 6 && $('[data-set="rounds"][data-val="6"]')?.getAttribute("aria-checked") === "true");
+await until("rounds saved", () => HG().rounds === 6 && $('[data-set="rounds"][data-val="6"]')?.getAttribute("aria-checked") === "true");
 click('[data-set="bot_count"][data-val="1"]');
-await until("bot saved", () => db.games[0].bot_count === 1 && /Bot 1/.test($(".lobby")!.textContent!));
+await until("bot saved", () => HG().bot_count === 1 && /Bot 1/.test($(".lobby")!.textContent!));
 click('[data-set="bot_skill"][data-val="hard"]');
-await until("bot skill saved", () => db.games[0].bot_skill === "hard");
+await until("bot skill saved", () => HG().bot_skill === "hard");
 
 click("#btn-mp-start");
 await until("game screen", () => $("#btn-submit"));
@@ -249,7 +276,7 @@ for (let r = 1; r <= 6; r++) {
   if (!rival || rival.inventory !== 0 || rival.rndProgress !== 0) throw new Error("rival secrets visible in round " + r);
   if (r === 1) {
     // Group chat both ways, and a loan offer from the friend that I accept in the chat window.
-    const gid = db.games[0].id, myId = db.players.find((p) => p.user_id === HOST && p.game_id === gid)!.id;
+    const gid = HG().id, myId = db.players.find((p) => p.user_id === HOST && p.game_id === gid)!.id;
     click("#btn-chat");
     const inp = $("#t-input") as any; inp.value = "Good luck, you'll need it"; $("#tsend")!.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
     await until("my message on the server", () => db.messages.some((m) => m.body === "Good luck, you'll need it" && m.to_player_id === null));
@@ -283,7 +310,7 @@ for (let r = 1; r <= 6; r++) {
     await until("waiting again", () => /waiting for the others/.test($(".overlay")?.textContent || ""));
   }
   // The friend submits (an empty plan = repeat last round).
-  server.submit(db.games[0].id, r, friend.player_id, {});
+  server.submit(HG().id, r, friend.player_id, {});
   await until("everyone ready", () => $("#btn-skip") && !($("#btn-skip") as any).disabled);
   click("#btn-skip");
   await until("results of round " + r, () => D().game.round === r + 1 || D().game.finished);
@@ -293,12 +320,12 @@ await until("final screen", () => /Final results/.test(doc.body.textContent || "
 // Season table and rematch: the rematch is a new lobby in the same league.
 await until("season table", () => /Season standings/.test(doc.body.textContent || "") && $("#btn-rematch"), 8000);
 if (!/Jeroen/.test($(".overlay")!.textContent!)) throw new Error("season table should list me");
-if (db.games[0].status !== "finished") throw new Error("server game should be finished");
+if (HG().status !== "finished") throw new Error("server game should be finished");
 // The final view is the full state: everyone's secrets are revealed.
 if (!D().game.companies.every((c: any) => c.mission && c.mission.id)) throw new Error("final view should show missions");
 click("#btn-rematch");
 await until("rematch lobby", () => $(".lobby"));
-if (db.games.at(-1)!.league_id !== db.games[0].id) throw new Error("rematch should be in the same league");
+if (db.games.at(-1)!.league_id !== HG().id) throw new Error("rematch should be in the same league");
 if (db.games.at(-1)!.rounds !== 6 || db.games.at(-1)!.bot_count !== 1) throw new Error("rematch should keep the settings");
 if (errors.length) throw new Error("script errors: " + errors.join(" | "));
 console.log(`multiplayer smoke ok: lobby code ${code}, 6 online rounds with a friend and a bot, chat, a loan deal, season table and rematch; ${db.reports.length} reports written`);

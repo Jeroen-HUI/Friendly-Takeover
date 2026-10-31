@@ -366,6 +366,30 @@ button[data-tip] { cursor: pointer; }
 .coach-hl { outline: 3px solid var(--gold) !important; outline-offset: 2px; animation: coachpulse 1.1s ease-in-out infinite; position: relative; z-index: 2; }
 @keyframes coachpulse { 50% { outline-color: rgba(255, 207, 74, 0.25); } }
 @media (max-width: 640px) { .coach { bottom: auto; top: 8px; } }
+.acc-chip { position: absolute; top: 14px; right: 14px; z-index: 3; display: grid; justify-items: end; gap: 1px; padding: 7px 12px; border: 0; border-radius: 8px; cursor: pointer; background: rgba(22, 30, 64, 0.94); color: var(--ink); box-shadow: 0 0 0 3px var(--frame-dark), inset 0 -3px 0 rgba(0,0,0,0.3); font: inherit; }
+:root[data-theme="light"] .acc-chip { background: rgba(255, 250, 240, 0.95); }
+.acc-chip b { font-family: var(--font-display); font-size: 14px; }
+.acc-chip span { font-size: 11.5px; font-weight: 900; color: var(--muted); letter-spacing: 0.06em; }
+.acc-chip .badge { position: absolute; top: -6px; left: -6px; }
+.tside .soon.new { background: var(--good); color: #062614; }
+.invitebar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 24px); padding: 10px 14px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px #8a6420; }
+.invitebar[hidden] { display: none; }
+.frow { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.frow .btn { padding: 5px 10px; }
+.odot { width: 10px; height: 10px; border-radius: 50%; background: #5b6690; }
+.odot.on { background: var(--good); box-shadow: 0 0 8px var(--good); }
+.achwin { width: min(860px, 100%) !important; }
+.achgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.achcard { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px; border-radius: 9px; background: var(--panel-3); opacity: 0.7; }
+.achcard.got { opacity: 1; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; box-shadow: 0 0 0 2px #8a6420; }
+.achcard small { display: block; font-size: 12px; font-weight: 700; }
+.achcard .mbar { height: 7px; margin-top: 4px; }
+.ach-ico { font-size: 30px; text-align: center; }
+.toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -140%); z-index: 70; display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 3px #8a6420; transition: transform 300ms cubic-bezier(.2, 1.3, .4, 1); pointer-events: none; }
+.toast.show { transform: translate(-50%, 0); }
+.toast small { display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
+.toast b { font-family: var(--font-display); font-size: 16px; }
+input[type="email"] { padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
 .talkwin { position: fixed; right: 16px; top: 16px; bottom: 16px; width: 380px; z-index: 31; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .talkwin[hidden] { display: none; }
 .talkwin .win-title { gap: 8px; }
@@ -781,6 +805,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   // ---------------- title screen ----------------
   const TITLE_ICONS = {
+    friends: ["............", "..yy....rr..", ".yyyy..rrrr.", ".yyyy..rrrr.", "..yy....rr..", "............", ".bbbb..gggg.", "bbbbbbgggggg", "bbbbbbgggggg", "bbbbbbgggggg", "............", "............"],
     help: ["..wwwwwwww..", ".wbbbbbbbbw.", ".wbwwwwwwbw.", ".wbwyyyywbw.", ".wbwwwwwwbw.", ".wbwyyywwbw.", ".wbwwwwwwbw.", ".wbwyyyywbw.", ".wbwwwwwwbw.", ".wbbbbbbbbw.", "..wwwwwwww..", "............"],
     trophy: ["............", ".yyyyyyyyyy.", "y.yyyyyyyy.y", "y.yyyyyyyy.y", ".yyyyyyyyyy.", "...yyyyyy...", "....yyyy....", ".....yy.....", ".....yy.....", "...dddddd...", "...dddddd...", "............"],
     calendar: ["..r......r..", ".rrrrrrrrrr.", ".rrrrrrrrrr.", ".wwwwwwwwww.", ".wgwgwgwgww.", ".wwwwwwwwww.", ".wgwgwyywgw.", ".wwwwwyywww.", ".wgwgwgwgww.", ".wwwwwwwwww.", "............", "............"],
@@ -866,11 +891,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${r.id === "you" ? `<span class="wave" aria-hidden="true">👋</span>` : ""}<div class="ring" style="--p:${Math.round(r.share * 100)}"><span>${Math.round(r.share * 100)}%</span></div>
       <div class="name">${esc(r.name)}</div><div class="co">${esc(r.co)}</div><div class="val">${eur(r.value, 2)}</div></div>`).join("");
     const signs = rows.map((r) => `<div class="sign ${r.id === "you" ? "me" : ""}" data-tsign="${r.id}" style="--pc:var(${COLORS[r.color % COLORS.length]})">${esc(r.co)}</div>`).join("");
-    const side = [["help", "help", "How to play", ""], ["trophy", "achievements", "Achievements", "soon"], ["calendar", "daily", "Daily game", "soon"], ["podium", "leaderboard", "Leaderboards", "soon"]]
-      .map(([icon, act, label, soon]) => `<button class="tside" type="button" data-title="${act}"><canvas data-ticon="${icon}" width="12" height="12" aria-hidden="true"></canvas>${label}${soon ? `<span class="soon">SOON</span>` : ""}</button>`).join("");
+    const dSt = localGet("ft-daily", null), dNew = !(dSt && dSt.day === todayUTC());
+    const side = [["help", "help", "How to play", ""], ["friends", "friends", "Friends", ACC.friends.some((f) => f.status === "incoming") ? "NEW" : ""], ["trophy", "achievements", "Achievements", ""], ["calendar", "daily", "Daily game", dNew ? "NEW" : ""], ["podium", "leaderboard", "Leaderboards", ""]]
+      .map(([icon, act, label, tag]) => `<button class="tside" type="button" data-title="${act}"><canvas data-ticon="${icon}" width="12" height="12" aria-hidden="true"></canvas>${label}${tag ? `<span class="soon new">${tag}</span>` : ""}</button>`).join("");
     const cont = save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game";
     return `<section class="title-screen" aria-label="Main menu">
       <canvas class="title-bg" id="title-bg" aria-hidden="true"></canvas>${signs}
+      ${accountChip()}
       <header class="title-logo"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly<br>Takeover</h1><p>Company tycoon for friend groups · Voted #1 by our moms</p></div></header>
       <div class="title-low">
         <nav class="win title-side" aria-label="Manage"><h2>Manage</h2>${side}</nav>
@@ -1040,10 +1067,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#t-continue", "click", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
     on("#t-online", "click", () => { S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
     on("#t-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
+    bindAccountChip(); renderInviteBar();
     on("[data-title]", "click", (e) => {
       const a = e.currentTarget.dataset.title;
-      if (a === "help") S.modal = "help"; else { S.modal = "soon"; S.soon = a; }
-      renderModal(); bindModal();
+      if (a === "help") { S.modal = "help"; renderModal(); bindModal(); } else openModal(a === "leaderboard" ? "leaderboard" : a);
     });
   }
   function soonModal() {
@@ -1091,6 +1118,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const SB_URL = "https://jdtoluouqkaughquyjqx.supabase.co", SB_KEY = "sb_publishable_2pgQZ8LpIh2roQxnhbl9uA_BZBB2qN9";
   // Online play needs a normal web page; some previews (like the Claude artifact viewer) block outside connections.
   const PLAY_URL = "https://jeroen-hui.github.io/Friendly-Takeover/";
+  // Email links come back to this page (the hosted game when we're anywhere else).
+  const backUrl = () => { try { return /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin + location.pathname : PLAY_URL; } catch (e) { return PLAY_URL; } };
   const onHostedPage = () => { try { return /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === "file:"; } catch (e) { return false; } };
   const OFFLINE = "Couldn't reach the online service from this page.";
   // Plain REST calls (no extra library): auth, database (row-level security does the guarding) and the game server.
@@ -1104,7 +1133,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { res = await fetch(SB_URL + path, { ...opts, headers }); } catch (e) { throw Object.assign(new Error(OFFLINE), { offline: true }); }
     const text = await res.text();
     let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
-    if (!res.ok) throw Object.assign(new Error((j && (j.error || j.message || j.msg || j.error_description)) || "Online service error " + res.status), { status: res.status, code: j && (j.error_code || j.code) });
+    if (!res.ok) {
+      let msg = (j && (j.error || j.message || j.msg || j.error_description)) || "Online service error " + res.status;
+      if (/rate limit/i.test(msg)) msg = "Too many emails were sent in the last hour. Try again later.";
+      if (/signups not allowed for otp|user not found/i.test(msg)) msg = "There's no saved account with that email yet. Save this one first (Profile → Save with email).";
+      throw Object.assign(new Error(msg), { status: res.status, code: j && (j.error_code || j.code) });
+    }
     return j;
   }
   async function session() {
@@ -1136,6 +1170,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async sendMessage(gameId, round, from, to, body, kind) { await http("/rest/v1/messages", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, body, kind }) }); },
     async deals(gameId) { return (await http(`/rest/v1/deals?game_id=eq.${q(gameId)}&select=*&order=id`)) || []; },
     async offerDeal(gameId, round, from, to, kind, terms) { await http("/rest/v1/deals", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, kind, terms }) }); },
+    async myAchievements() { return (await http("/rest/v1/achievements?select=id,earned_at")) || []; },
+    async linkEmail(email) { await http("/auth/v1/user?redirect_to=" + q(backUrl()), { method: "PUT", body: JSON.stringify({ email }) }); },
+    async emailLogin(email) { await http("/auth/v1/otp?redirect_to=" + q(backUrl()), { method: "POST", body: JSON.stringify({ email, create_user: false }) }, false); },
+    async logout() { try { await http("/auth/v1/logout", { method: "POST" }); } catch (e) {} AUTH = null; try { localStorage.removeItem("ft-auth"); } catch (e) {} },
     async feedback(row) { await http("/rest/v1/feedback", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(row) }, !!loadAuth()); },
   };
   const api = () => window.__ftApi || realApi;
@@ -1309,6 +1347,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
             <div class="hint">Friends open the game, choose Multiplayer → Join, and type this code. Or send them the link:</div>
             <div style="display:flex;gap:8px"><input type="text" id="invite-link" readonly value="${esc(link)}" style="flex:1"><button class="btn small" type="button" id="btn-copy">Copy</button></div></div>
           <div class="card"><h3>Players (${total} of 8)</h3>${players}</div>
+          ${lobbyFriends()}
           ${g.league_id ? `<div class="card"><h3>Season rematch</h3><div class="hint">This game counts for your group's season. The season table is on the final screen.</div></div>` : ""}
         </div>
         <div class="card"><h3>Settings ${host ? "" : '<span class="muted" style="font-size:12px">(the host decides)</span>'}</h3>
@@ -1933,9 +1972,365 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (t) t.classList.add("coach-hl");
   }
 
+
+  // ======================================================================
+  // Accounts, friends, invites, achievements, daily challenge, leaderboards.
+  // Everyone gets a quiet anonymous account; saving it with an email makes it follow you to other devices.
+  // ======================================================================
+  const ACC = { profile: null, friends: [], invites: [], lobbyInv: [], ach: new Set(), err: "", msg: "", busy: false, online: false, timer: 0, tick: 0, board: null, boardTab: "today", boardFriends: false };
+  const localGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? d; } catch (e) { return d; } };
+  const localSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  for (const id of localGet("ft-ach", [])) ACC.ach.add(id);
+  const rpcSafe = async (name, args) => { try { return await api().rpc(name, args); } catch (e) { return undefined; } };
+  async function accountSync(full) {
+    try {
+      await api().signIn();
+      const prof = await api().rpc("ensure_profile", { p_name: (S && S.opts && S.opts.name !== "You" ? S.opts.name : null) || null });
+      if (prof) { ACC.profile = prof; ACC.online = true; }
+      if (full) {
+        const rows = (api().myAchievements ? await api().myAchievements() : []) || [];
+        const server = new Set(rows.map((r) => r.id));
+        const missing = [...ACC.ach].filter((id) => !server.has(id) && ACH_BY_ID[id]);
+        if (missing.length) await rpcSafe("grant_achievements", { p_achievements: missing });
+        for (const id of server) ACC.ach.add(id);
+        localSet("ft-ach", [...ACC.ach]);
+      }
+      return true;
+    } catch (e) { ACC.online = false; return false; }
+  }
+  async function accTick() {
+    if (!S) return;
+    ACC.tick++;
+    if (S.screen === "game" && ACC.tick % 8) return; // in a game: presence about once a minute
+    if (!ACC.online && !(await accountSync(false))) return;
+    if (S.screen === "title" || S.modal === "friends") {
+      const inv = (await rpcSafe("my_invites")) || [];
+      if (JSON.stringify(inv) !== JSON.stringify(ACC.invites)) { ACC.invites = inv; if (S.screen === "title") renderInviteBar(); }
+    }
+    if (S.screen === "lobby" || S.modal === "friends") {
+      const fr = await rpcSafe("my_friends");
+      const li = S.screen === "lobby" && MP.gameId ? await rpcSafe("lobby_invites", { p_game_id: MP.gameId }) : [];
+      const sig = JSON.stringify([fr, li]);
+      if (fr && sig !== ACC.fsig) {
+        ACC.fsig = sig; ACC.friends = fr; ACC.lobbyInv = li || [];
+        if (fr.filter((f) => f.status === "friends").length >= 3) earn(["friends3"]);
+        if (S.screen === "lobby") { const c = $("#lobby-friends"); if (c) { c.outerHTML = lobbyFriends(); bindLobbyFriends(); } }
+        if (S.modal === "friends") { renderModal(); bindModal(); }
+      }
+    } else rpcSafe("touch_profile");
+  }
+  function accStart() {
+    if (!ACC.timer) ACC.timer = setInterval(accTick, 8000);
+    accountSync(true).then(() => { if (S && S.screen === "title") { const c = $("#t-account"); if (c) c.outerHTML = accountChip(); bindAccountChip(); } accTick(); });
+  }
+  // Coming back from an email link: the tokens are in the address bar.
+  function readLoginFromUrl() {
+    try {
+      const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+      if (h.get("access_token")) {
+        saveAuth({ access_token: h.get("access_token"), refresh_token: h.get("refresh_token"), expires_in: Number(h.get("expires_in")) || 3600 });
+        ACC.msg = h.get("type") === "email_change" ? "Your account is saved with your email. It now works on every device you log in on." : "You're logged in.";
+        history.replaceState(null, "", location.pathname + location.search);
+        return "profile";
+      }
+      if (h.get("error_description")) { ACC.err = h.get("error_description").replace(/\+/g, " "); history.replaceState(null, "", location.pathname + location.search); return "profile"; }
+    } catch (e) {}
+    return null;
+  }
+  function accountChip() {
+    const p = ACC.profile;
+    return `<button class="acc-chip" id="t-account" type="button">${p ? `<b>${esc(p.name)}</b><span>${p.anonymous ? "Guest" : "Saved"} · ${esc(p.friend_code)}</span>` : `<b>Profile</b><span>${ACC.online ? "…" : "offline"}</span>`}${ACC.invites.length ? `<i class="badge">${ACC.invites.length}</i>` : ""}</button>`;
+  }
+  function bindAccountChip() { const c = $("#t-account"); if (c) c.addEventListener("click", () => openModal("profile")); }
+  function openModal(m) { S.modal = m; ACC.err = ""; if (m === "leaderboard") loadBoard(); if (m === "friends") { ACC.fsig = ""; accTick(); } renderModal(); bindModal(); }
+
+  // ----- Invite inbox on the title screen.
+  let inviteEl = null;
+  function renderInviteBar() {
+    if (!inviteEl) { inviteEl = document.createElement("div"); inviteEl.className = "invitebar"; document.body.appendChild(inviteEl); inviteEl.addEventListener("click", onInviteClick); }
+    const inv = S && S.screen === "title" ? ACC.invites[0] : null;
+    inviteEl.hidden = !inv;
+    if (!inv) return;
+    inviteEl.innerHTML = `<span>📨 <b>${esc(inv.from_name)}</b> invited you to a ${esc((FT.INDUSTRIES[inv.industry] || {}).name || "")} game (${inv.players} in the lobby)</span><button class="btn small go" type="button" data-inv-join="${inv.id}">Join</button><button class="btn small" type="button" data-inv-no="${inv.id}">Not now</button>`;
+  }
+  async function onInviteClick(e) {
+    const j = e.target.closest("[data-inv-join]"), n = e.target.closest("[data-inv-no]");
+    if (n) { await rpcSafe("answer_invite", { p_id: Number(n.dataset.invNo), p_accept: false }); ACC.invites = ACC.invites.filter((i) => String(i.id) !== n.dataset.invNo); renderInviteBar(); }
+    if (j) {
+      const inv = ACC.invites.find((i) => String(i.id) === j.dataset.invJoin);
+      const code = await rpcSafe("answer_invite", { p_id: Number(j.dataset.invJoin), p_accept: true });
+      ACC.invites = ACC.invites.filter((i) => i !== inv); renderInviteBar();
+      const o = S.opts || DEFAULT_OPTS;
+      try {
+        const res = await api().rpc("join_game", { p_code: code || inv.code, p_player_name: (ACC.profile && ACC.profile.name) || (o.name === "You" ? "Player" : o.name), p_company_name: o.company, p_trait: o.trait });
+        await mpEnter(res.game_id, res.player_id);
+      } catch (er) { S.modal = "online"; S.onlineError = er.message; S.joinCode = inv.code; renderModal(); bindModal(); }
+    }
+  }
+
+  // ----- Lobby: invite friends with one tap.
+  function lobbyFriends() {
+    const fr = ACC.friends.filter((f) => f.status === "friends");
+    const inGame = new Set(MP.players.map((p) => p.user_id));
+    const invited = new Map((ACC.lobbyInv || []).map((i) => [i.to_user, i.status]));
+    const rows = fr.map((f) => {
+      const st = inGame.has(f.user_id) ? "in" : invited.get(f.user_id);
+      return `<div class="frow"><span class="odot ${f.online ? "on" : ""}" title="${f.online ? "Online" : "Offline"}"></span><b>${esc(f.name)}</b><span class="muted">${f.online ? "online" : "offline"}</span>${st === "in" ? `<span class="pos">in the lobby</span>` : st === "pending" ? `<span class="muted">invited</span>` : st === "declined" ? `<span class="neg">said no</span>` : `<button class="btn small go" type="button" data-invite="${f.user_id}" ${MP.game && MP.game.status === "lobby" ? "" : "disabled"}>Invite</button>`}</div>`;
+    }).join("");
+    return `<div class="card" id="lobby-friends"><h3>Invite friends</h3>${rows || `<div class="hint">${ACC.online ? "No friends yet. Add them from the main menu (Friends) with their friend code." : "Connecting…"}</div>`}<div class="hint">They get the invite on their main menu. The game code works too.</div></div>`;
+  }
+  function bindLobbyFriends() {
+    document.querySelectorAll("[data-invite]").forEach((b) => b.addEventListener("click", async (e) => {
+      const id = e.currentTarget.dataset.invite; e.currentTarget.disabled = true; e.currentTarget.textContent = "Sending…";
+      try { await api().rpc("invite_friend", { p_game_id: MP.gameId, p_user: id }); } catch (er) { MP.error = er.message; }
+      ACC.fsig = ""; accTick();
+    }));
+  }
+
+  // ----- Profile & account.
+  function profileModal() {
+    const p = ACC.profile;
+    if (!p) return `<div class="win"><div class="win-title">Profile<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${ACC.err ? `<div class="note neg">${esc(ACC.err)}</div>` : ""}<div class="hint">${ACC.online ? "Loading your profile…" : "Your profile lives online. Open the game on the hosted page with an internet connection."}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Close</button></div></div></div>`;
+    const st = p.stats || {};
+    return `<div class="win"><div class="win-title">Profile<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${ACC.msg ? `<div class="note pos">${esc(ACC.msg)}</div>` : ""}${ACC.err ? `<div class="note neg">${esc(ACC.err)}</div>` : ""}
+      <div class="form"><div class="ctl"><label for="p-name">Your name</label><div style="display:flex;gap:6px"><input type="text" id="p-name" maxlength="24" value="${esc(p.name)}" style="flex:1"><button class="btn small" type="button" id="p-save-name">Save</button></div></div>
+        <div class="ctl"><span class="lbl">Friend code</span><div class="bigcode" style="font-size:30px">${esc(p.friend_code)}</div><button class="btn small" type="button" id="p-copy-friend">Copy invite link</button></div></div>
+      <div class="kv"><div><span>Games</span><b>${st.games || 0}</b></div><div><span>Wins</span><b>${st.wins || 0}</b></div><div><span>Online wins</span><b>${st.online_wins || 0}</b></div><div><span>Achievements</span><b>${ACC.ach.size} / ${ACH.length}</b></div></div>
+      <div class="card"><h3>${p.anonymous ? "Save your account" : "Account"}</h3>
+        ${p.anonymous ? `<div class="hint">Right now you're a guest on this device. Add your email to keep your friends, achievements and scores, and to log in on your phone or another computer. We'll email you a link to confirm.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><input type="email" id="p-email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:200px"><button class="btn small go" type="button" id="p-link" ${ACC.busy ? "disabled" : ""}>Save with email</button></div>
+          <details><summary class="muted" style="cursor:pointer;font-weight:800">Already saved an account? Log in</summary>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><input type="email" id="p-login-email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:200px"><button class="btn small" type="button" id="p-login" ${ACC.busy ? "disabled" : ""}>Email me a login link</button></div>
+            <div class="hint">Logging in switches this device to that account; this guest profile stays behind.</div></details>`
+        : `<div class="sumline"><span class="muted">Email</span><b>${esc(p.email || "")}</b></div><div class="hint">Log in with this email on any device to play as ${esc(p.name)}.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" id="p-logout">Log out on this device</button><input type="email" id="p-login-email" placeholder="other account email" style="flex:1;min-width:180px"><button class="btn small" type="button" id="p-login" ${ACC.busy ? "disabled" : ""}>Switch account</button></div>`}
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" data-open="friends">Friends</button><button class="btn" type="button" id="btn-close">Close</button></div>
+    </div></div>`;
+  }
+  async function accAction(fn, okMsg) {
+    ACC.busy = true; ACC.err = ""; ACC.msg = ""; renderModal(); bindModal();
+    try { await fn(); ACC.msg = okMsg || ""; } catch (e) { ACC.err = e.message; }
+    ACC.busy = false; renderModal(); bindModal();
+  }
+  const validEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || "");
+  function bindAccount() {
+    const on = (sel, fn) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", fn); };
+    on("#p-save-name", () => accAction(async () => { const v = modal.querySelector("#p-name").value.trim(); if (!v) throw new Error("Type a name first."); await api().rpc("set_profile_name", { p_name: v }); ACC.profile.name = v.slice(0, 24); S.opts = { ...(S.opts || DEFAULT_OPTS), name: ACC.profile.name }; }, "Name saved."));
+    on("#p-copy-friend", () => { const link = backUrl() + "?friend=" + ACC.profile.friend_code; try { navigator.clipboard.writeText(link); ACC.msg = "Link copied: send it to a friend."; } catch (e) { ACC.msg = link; } renderModal(); bindModal(); });
+    on("#p-link", () => accAction(async () => { const v = modal.querySelector("#p-email").value.trim(); if (!validEmail(v)) throw new Error("That doesn't look like an email address."); await api().linkEmail(v); }, "Check your inbox and click the link to confirm. Then you can log in with that email anywhere."));
+    on("#p-login", () => accAction(async () => { const v = modal.querySelector("#p-login-email").value.trim(); if (!validEmail(v)) throw new Error("That doesn't look like an email address."); await api().emailLogin(v); }, "Check your inbox: the login link opens the game logged in."));
+    on("#p-logout", () => accAction(async () => { await api().logout(); ACC.profile = null; ACC.online = false; ACC.friends = []; await accountSync(true); }, "Logged out. You're a guest on this device now."));
+    modal.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", (e) => openModal(e.currentTarget.dataset.open)));
+  }
+
+  // ----- Friends.
+  function friendsModal() {
+    const p = ACC.profile, F = ACC.friends;
+    const row = (f, actions) => `<div class="frow"><span class="odot ${f.online ? "on" : ""}"></span><b>${esc(f.name)}</b><span class="muted">${f.status === "friends" ? (f.online ? "online" : "last seen " + ago(f.last_seen)) : esc(f.friend_code)}</span>${actions}</div>`;
+    const inc = F.filter((f) => f.status === "incoming"), fr = F.filter((f) => f.status === "friends"), out = F.filter((f) => f.status === "outgoing");
+    return `<div class="win"><div class="win-title">Friends<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${ACC.msg ? `<div class="note pos">${esc(ACC.msg)}</div>` : ""}${ACC.err ? `<div class="note neg">${esc(ACC.err)}</div>` : ""}
+      ${p ? `<div class="grid2"><div class="card"><h3>Your friend code</h3><div class="bigcode" style="font-size:34px">${esc(p.friend_code)}</div><button class="btn small" type="button" id="p-copy-friend">Copy invite link</button></div>
+        <div class="card"><h3>Add a friend</h3><div class="ctl"><label for="f-code">Their friend code</label><input type="text" id="f-code" maxlength="6" value="${esc(S.friendCode || "")}" placeholder="ABC234" style="text-transform:uppercase;letter-spacing:.2em;font-family:var(--font-display)"></div><button class="btn small go" type="button" id="f-add" ${ACC.busy ? "disabled" : ""}>Send request</button></div></div>` : `<div class="hint">${ACC.online ? "Loading…" : "Friends live online. Open the hosted game with an internet connection."}</div>`}
+      ${inc.length ? `<div class="card"><h3>Requests</h3>${inc.map((f) => row(f, `<button class="btn small go" type="button" data-f-yes="${f.user_id}">Accept</button><button class="btn small" type="button" data-f-no="${f.user_id}">Decline</button>`)).join("")}</div>` : ""}
+      <div class="card"><h3>Friends (${fr.length})</h3>${fr.length ? fr.map((f) => row(f, `<button class="btn small" type="button" data-f-remove="${f.user_id}">Remove</button>`)).join("") : `<div class="hint">Share your code or invite link. Once you're friends you can invite each other straight into a lobby.</div>`}</div>
+      ${out.length ? `<div class="card"><h3>Waiting for an answer</h3>${out.map((f) => row(f, `<button class="btn small" type="button" data-f-remove="${f.user_id}">Cancel</button>`)).join("")}</div>` : ""}
+      <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Close</button></div>
+    </div></div>`;
+  }
+  const ago = (t) => { const m = Math.round((Date.now() - new Date(t).getTime()) / 60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
+  function bindFriends() {
+    const on = (sel, fn) => modal.querySelectorAll(sel).forEach((el) => el.addEventListener("click", fn));
+    const refresh = async () => { ACC.fsig = ""; await accTick(); renderModal(); bindModal(); };
+    on("#f-add", () => accAction(async () => { const v = modal.querySelector("#f-code").value.trim().toUpperCase(); if (!/^[A-Z0-9]{6}$/.test(v)) throw new Error("Friend codes are 6 letters and numbers."); const r = await api().rpc("add_friend", { p_code: v }); S.friendCode = ""; await refresh(); ACC.msg = r === "friends" ? "You're friends now!" : "Request sent. You'll be friends as soon as they accept."; }));
+    on("[data-f-yes]", (e) => accAction(async () => { await api().rpc("respond_friend", { p_user: e.currentTarget.dataset.fYes, p_accept: true }); await refresh(); }, "Friend added."));
+    on("[data-f-no]", (e) => accAction(async () => { await api().rpc("respond_friend", { p_user: e.currentTarget.dataset.fNo, p_accept: false }); await refresh(); }));
+    on("[data-f-remove]", (e) => accAction(async () => { await api().rpc("remove_friend", { p_user: e.currentTarget.dataset.fRemove }); await refresh(); }));
+    on("#p-copy-friend", () => { const link = backUrl() + "?friend=" + ACC.profile.friend_code; try { navigator.clipboard.writeText(link); ACC.msg = "Link copied: send it to a friend."; } catch (e) { ACC.msg = link; } renderModal(); bindModal(); });
+  }
+
+  // ----- Achievements.
+  const ACH = [
+    { id: "first_game", icon: "🎬", name: "Day one", desc: "Finish a game" },
+    { id: "first_win", icon: "🥇", name: "Top of the pile", desc: "Win a game" },
+    { id: "online_win", icon: "👑", name: "Bragging rights", desc: "Win an online game against a friend" },
+    { id: "hard_win", icon: "🤖", name: "Bot slayer", desc: "Win against hard bots" },
+    { id: "tycoon_win", icon: "🏭", name: "Tycoon", desc: "Win on Tycoon difficulty" },
+    { id: "monopoly", icon: "🎩", name: "Monopoly", desc: "Control every other company" },
+    { id: "takeover", icon: "🤗", name: "Hostile hugger", desc: "Take over a company" },
+    { id: "handshake", icon: "🤝", name: "Handshake deal", desc: "Take control of a company through a share deal" },
+    { id: "crystal", icon: "🔮", name: "Crystal ball", desc: "Three spot-on investor calls in one game" },
+    { id: "trusted", icon: "📈", name: "Boringly accurate", desc: "Reach investor trust +3" },
+    { id: "mission", icon: "🕵️", name: "Mission accomplished", desc: "Complete your secret mission" },
+    { id: "missions5", icon: "🗂️", name: "Secret agent", desc: "Complete 5 secret missions", goal: 5, stat: "missions" },
+    { id: "debtfree", icon: "🧾", name: "Clean books", desc: "Finish with no debt and €3M+ cash" },
+    { id: "betrayer", icon: "🗡️", name: "Et tu?", desc: "Break a pact" },
+    { id: "comeback", icon: "🚀", name: "Comeback kid", desc: "Win after being last halfway through" },
+    { id: "nerd", icon: "🤓", name: "Data nerd", desc: "Buy 5 research reports in one game" },
+    { id: "tourist", icon: "🧳", name: "Industry tourist", desc: "Play all three industries", goal: 3, stat: "industries" },
+    { id: "daily1", icon: "📅", name: "Daily grind", desc: "Finish a daily challenge" },
+    { id: "daily7", icon: "🔥", name: "Habit", desc: "Finish 7 daily challenges", goal: 7, stat: "dailies" },
+    { id: "friends3", icon: "👯", name: "Social butterfly", desc: "Have 3 friends" },
+    { id: "veteran", icon: "🎖️", name: "Veteran", desc: "Finish 10 games", goal: 10, stat: "games" },
+  ];
+  const ACH_BY_ID = Object.fromEntries(ACH.map((a) => [a.id, a]));
+  function statVal(st, key) { const v = (st || {})[key]; return Array.isArray(v) ? v.length : Number(v) || 0; }
+  function achievementsModal() {
+    const st = (ACC.profile && ACC.profile.stats) || localGet("ft-stats", {});
+    const cards = ACH.map((a) => {
+      const got = ACC.ach.has(a.id), prog = a.goal ? Math.min(a.goal, statVal(st, a.stat)) : null;
+      return `<div class="achcard ${got ? "got" : ""}"><span class="ach-ico" aria-hidden="true">${got ? a.icon : "🔒"}</span><div><b>${esc(a.name)}</b><small>${esc(a.desc)}</small>${prog !== null && !got ? `<div class="mbar"><i style="width:${Math.round((prog / a.goal) * 100)}%"></i></div><small>${prog} / ${a.goal}</small>` : ""}</div></div>`;
+    }).join("");
+    return `<div class="win achwin"><div class="win-title">Achievements · ${ACC.ach.size} of ${ACH.length}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="achgrid">${cards}</div>
+      <div class="hint">${ACC.profile && !ACC.profile.anonymous ? "Saved to your account." : "Saved on this device. Save your account with email (Profile) to keep them everywhere."}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Close</button></div></div></div>`;
+  }
+  let toastEl = null, toastQ = [];
+  function toast(html) {
+    toastQ.push(html);
+    if (toastQ.length > 1) return;
+    const next = () => {
+      if (!toastQ.length) return;
+      if (!toastEl) { toastEl = document.createElement("div"); toastEl.className = "toast"; toastEl.setAttribute("role", "status"); document.body.appendChild(toastEl); }
+      toastEl.innerHTML = toastQ[0]; toastEl.classList.remove("show"); void toastEl.offsetWidth; toastEl.classList.add("show");
+      setTimeout(() => { toastQ.shift(); toastEl.classList.remove("show"); setTimeout(next, 250); }, window.__ftFast ? 10 : 3200);
+    };
+    next();
+  }
+  function earn(ids) {
+    const fresh = ids.filter((id) => ACH_BY_ID[id] && !ACC.ach.has(id));
+    if (!fresh.length) return [];
+    for (const id of fresh) { ACC.ach.add(id); toast(`<span class="ach-ico">${ACH_BY_ID[id].icon}</span><div><small>Achievement unlocked</small><b>${esc(ACH_BY_ID[id].name)}</b></div>`); }
+    localSet("ft-ach", [...ACC.ach]);
+    sfx("win");
+    rpcSafe("grant_achievements", { p_achievements: fresh });
+    return fresh;
+  }
+  // Called once when a game ends: stats, achievements, and the daily score.
+  async function recordGameEnd() {
+    const key = S.mp ? "ft-rec-" + MP.gameId : null;
+    if (S.recorded || (key && localGet(key, false))) return;
+    S.recorded = true; if (key) localSet(key, true);
+    const g = S.game, t = FT.standings(g), mine = t.find((x) => x.companyId === "you") || {}, place = t.findIndex((x) => x.companyId === "you") + 1;
+    const won = place === 1, c = me(), H = c.history.filter((h) => h.round >= 1);
+    const mode = S.daily ? "daily" : S.mp ? "online" : "single";
+    // Local stats too, so offline play still counts toward progress.
+    const st = localGet("ft-stats", {});
+    st.games = (st.games || 0) + 1; if (won) st.wins = (st.wins || 0) + 1;
+    if (mode === "daily") st.dailies = (st.dailies || 0) + 1;
+    if (mine.missionDone) st.missions = (st.missions || 0) + 1;
+    st.industries = [...new Set([...(st.industries || []), g.config.industry])];
+    localSet("ft-stats", st);
+    const half = Math.ceil(g.config.rounds / 2), atHalf = g.companies.filter((o) => !o.bankrupt || true).map((o) => ({ id: o.id, v: (S.hist[o.id] || [])[half] ?? 0 }));
+    const lastAtHalf = atHalf.length && atHalf.every((x) => x.id === "you" || x.v >= (atHalf.find((y) => y.id === "you") || {}).v);
+    const humans = S.mp ? g.companies.filter((o) => !/^bot-/.test(o.id)).length : 1;
+    const ids = ["first_game"];
+    if (won) ids.push("first_win");
+    if (won && S.mp && humans >= 2) ids.push("online_win");
+    if (won && ((S.opts && S.opts.botSkill === "hard") || (S.mp && MP.game && MP.game.bot_skill === "hard" && MP.game.bot_count > 0))) ids.push("hard_win");
+    if (won && g.config.difficulty === "tycoon") ids.push("tycoon_win");
+    if (g.monopolyBy === "you") ids.push("monopoly");
+    if (g.companies.some((o) => o.controlledBy === "you") || H.some((h) => h.events.some((e) => e.startsWith("Took control")))) ids.push("takeover");
+    if (g.feed.some((f) => f.headline.includes("sealed with a handshake") && f.headline.startsWith(c.playerName))) ids.push("handshake");
+    if (H.filter((h) => h.guidance && h.guidance.result === "hit").length >= 3) ids.push("crystal");
+    if ((c.credibility || 0) >= 3) ids.push("trusted");
+    if (mine.missionDone) ids.push("mission");
+    if (c.debt <= 0 && c.cash >= 3_000_000) ids.push("debtfree");
+    if (g.feed.some((f) => f.headline.startsWith("Betrayal! " + c.companyName))) ids.push("betrayer");
+    if (won && lastAtHalf && g.config.rounds >= 6) ids.push("comeback");
+    if (H.reduce((a, h) => a + (h.researchCost > 0 ? Object.keys(h.research || {}).filter((k) => k !== "boardSeats" && k !== "spy").length : 0), 0) >= 5) ids.push("nerd");
+    if (mode === "daily") ids.push("daily1");
+    const fresh = earn(ids);
+    try {
+      await accountSync(false);
+      const stats = await api().rpc("record_result", { p_mode: mode, p_won: won, p_industry: g.config.industry, p_difficulty: g.config.difficulty, p_mission: !!mine.missionDone, p_achievements: [...ACC.ach] });
+      if (stats && ACC.profile) ACC.profile.stats = stats;
+      const counters = ACH.filter((a) => a.goal && statVal(stats || st, a.stat) >= a.goal).map((a) => a.id);
+      earn(counters);
+      if (S.daily) {
+        S.dailyRank = await api().rpc("submit_daily", { p_day: S.daily, p_score: Math.round(mine.score || 0), p_place: place, p_industry: g.config.industry, p_details: { company: c.companyName, trait: c.trait } });
+        localSet("ft-daily", { day: S.daily, status: "done", score: Math.round(mine.score || 0), rank: S.dailyRank });
+        if (S.modal === "final") { renderModal(); bindModal(); }
+      }
+    } catch (e) {
+      earn(ACH.filter((a) => a.goal && statVal(st, a.stat) >= a.goal).map((a) => a.id));
+      if (S.daily) localSet("ft-daily", { day: S.daily, status: "done", score: Math.round(mine.score || 0), rank: null, offline: true });
+    }
+    saveGame();
+    return fresh;
+  }
+
+  // ----- Daily challenge: same seed for everyone, one scored try per day (UTC).
+  const todayUTC = () => new Date().toISOString().slice(0, 10);
+  function dailySetup(day) {
+    let h = 2166136261; for (const ch of "ft-daily-" + day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    const n = Math.floor(Date.parse(day + "T00:00:00Z") / 86400000);
+    return { day, seed: (h >>> 1) & 0x7fffffff, industry: n % 2 ? "ai" : "chocolate", rounds: 6, bots: 4, difficulty: "standard", botSkill: "hard" };
+  }
+  function dailyModal() {
+    const d = dailySetup(todayUTC()), st = localGet("ft-daily", null), mine = st && st.day === d.day ? st : null, save = loadSave();
+    const inProgress = mine && mine.status === "started" && save && save.daily === d.day && !save.game.finished;
+    const used = mine && (mine.status === "done" || (mine.status === "started" && !inProgress));
+    return `<div class="win"><div class="win-title">Daily challenge · ${esc(d.day)}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="kv"><div><span>Industry</span><b>${esc(FT.INDUSTRIES[d.industry].name)}</b></div><div><span>Rounds</span><b>${d.rounds}</b></div><div><span>Rivals</span><b>${d.bots} hard bots</b></div><div><span>Your try</span><b>${mine ? (mine.status === "done" ? "Done" : inProgress ? "In progress" : "Used") : "1 left"}</b></div></div>
+      <div class="hint">Everyone gets the same market, the same rivals and the same starting news today. You get one scored try; your final company value goes on today's leaderboard. A new challenge starts every day at midnight UTC (01:00 Dutch winter time, 02:00 in summer).</div>
+      ${mine && mine.status === "done" ? `<div class="note pos" style="color:var(--ink)">Your score today: <b>${eurX(mine.score)}</b>${mine.rank ? ` · #${mine.rank} so far` : ""}</div>` : ""}
+      ${used && mine.status !== "done" ? `<div class="note neg">You already used today's try. Practice runs don't count.</div>` : ""}
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn" type="button" id="btn-close">Close</button>
+        <button class="btn" type="button" data-open="leaderboard">Leaderboard</button>
+        ${inProgress ? `<button class="btn go" type="button" id="d-continue">Continue your try</button>` : used ? `<button class="btn go" type="button" id="d-practice">Practice (not ranked)</button>` : `<button class="btn go" type="button" id="d-start">Start today's challenge</button>`}
+      </div></div></div>`;
+  }
+  function startDaily(ranked) {
+    const d = dailySetup(todayUTC()), o = S.opts || DEFAULT_OPTS;
+    if (ranked) localSet("ft-daily", { day: d.day, status: "started" });
+    newGame({ ...o, keepOpts: o, name: (ACC.profile && ACC.profile.name) || o.name, industry: d.industry, bots: d.bots, difficulty: d.difficulty, botSkill: d.botSkill, rounds: d.rounds, seed: d.seed, daily: ranked ? d.day : null }, true);
+  }
+  function bindDaily() {
+    const on = (sel, fn) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", fn); };
+    on("#d-start", () => startDaily(true));
+    on("#d-practice", () => startDaily(false));
+    on("#d-continue", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
+    modal.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", (e) => openModal(e.currentTarget.dataset.open)));
+  }
+
+  // ----- Leaderboards.
+  async function loadBoard() {
+    ACC.board = null; ACC.boardErr = "";
+    try {
+      await accountSync(false);
+      ACC.board = ACC.boardTab === "today" ? await api().rpc("daily_board", { p_day: todayUTC(), p_friends: ACC.boardFriends }) : await api().rpc("alltime_board", { p_friends: ACC.boardFriends });
+    } catch (e) { ACC.boardErr = ACC.online ? e.message : "Leaderboards live online. Open the hosted game with an internet connection."; }
+    if (S.modal === "leaderboard") { renderModal(); bindModal(); }
+  }
+  function leaderboardModal() {
+    const B = ACC.board, tab = (k, n) => `<button type="button" role="radio" aria-checked="${ACC.boardTab === k}" data-btab="${k}">${n}</button>`;
+    let table = `<div class="hint">${ACC.boardErr ? esc(ACC.boardErr) : "Loading…"}</div>`;
+    if (B && ACC.boardTab === "today") table = B.length ? tbl(["#", "Player", "Score", "Place"], B.map((r) => `<tr class="${r.me ? "me" : ""}"><td>${r.rank}</td><td>${esc(r.name)}</td>${td(eur(Number(r.score)), eurX(Number(r.score)))}${td("#" + r.place)}</tr>`).join("")) : `<div class="hint">Nobody has finished today's challenge yet. Be the first!</div>`;
+    if (B && ACC.boardTab === "all") table = B.length ? tbl(["#", "Player", "Wins", "Games", "Online wins", "Badges", "Best daily"], B.map((r) => `<tr class="${r.me ? "me" : ""}"><td>${r.rank}</td><td>${esc(r.name)}</td>${td(String(r.wins))}${td(String(r.games))}${td(String(r.online_wins))}${td(String(r.achievements))}${td(r.best_daily == null ? "—" : eur(Number(r.best_daily)))}</tr>`).join("")) : `<div class="hint">No finished games on the board yet.</div>`;
+    return `<div class="win"><div class="win-title">Leaderboards<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between"><div class="seg" role="radiogroup">${tab("today", "Today's daily")}${tab("all", "All-time")}</div>
+        <div class="seg" role="radiogroup"><button type="button" role="radio" aria-checked="${!ACC.boardFriends}" data-bfr="0">Everyone</button><button type="button" role="radio" aria-checked="${ACC.boardFriends}" data-bfr="1">Friends</button></div></div>
+      ${table}
+      <div class="hint">${ACC.boardTab === "today" ? "Final company value in today's daily challenge (one try each)." : "Wins first, then achievements, then best daily score."}</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" data-open="daily">Daily challenge</button><button class="btn" type="button" id="btn-close">Close</button></div></div></div>`;
+  }
+  function bindBoard() {
+    modal.querySelectorAll("[data-btab]").forEach((b) => b.addEventListener("click", (e) => { ACC.boardTab = e.currentTarget.dataset.btab; renderModal(); bindModal(); loadBoard(); }));
+    modal.querySelectorAll("[data-bfr]").forEach((b) => b.addEventListener("click", (e) => { ACC.boardFriends = e.currentTarget.dataset.bfr === "1"; renderModal(); bindModal(); loadBoard(); }));
+    modal.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", (e) => openModal(e.currentTarget.dataset.open)));
+  }
+
   // ---------------- game flow ----------------
   function newGame(o, showTv) {
-    const rng = new FT.Rng(Date.now() & 0x7fffffff);
+    const seed0 = o.seed || (Date.now() & 0x7fffffff);
+    const rng = new FT.Rng(seed0);
     const lvl = o.botSkill === "hard" ? "pro-" : "smart-";
     const strategies = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider"]).slice(0, o.bots).map((x) => (x === "raider" ? "smart-raider" : lvl + x));
     const names = rng.shuffle(COMPANY_NAMES[o.industry].filter((n) => n.toLowerCase() !== o.company.toLowerCase()));
@@ -1944,12 +2339,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const players = [{ id: "you", playerName: o.name, companyName: o.company, trait: o.trait }];
     const strat = {};
     strategies.forEach((st, i) => { strat["bot" + i] = st; players.push({ id: "bot" + i, playerName: bots[i], companyName: names[i], trait: rng.pick(traits) }); });
-    const game = FT.createGame({ industry: o.industry, difficulty: o.difficulty, rounds: o.rounds || 8, seed: Date.now() & 0x7fffffff }, players);
+    const game = FT.createGame({ industry: o.industry, difficulty: o.difficulty, rounds: o.rounds || 8, seed: seed0 }, players);
     const color = {}; players.forEach((p, i) => (color[p.id] = i));
     const v = CV(game);
     const hist = {}; players.forEach((p) => (hist[p.id] = [v[p.id]]));
     cancelAnimationFrame(titleRaf);
-    S = { screen: "game", game, strat, color, hist, opts: o, tab: "production", modal: null, draft: null, chat: [], seed: Date.now() & 0x7fffffff, anim: null, marketHist: [], reportTab: "income", newsIdx: 0, tvQueue: [], tvIndex: 0 };
+    S = { screen: "game", game, strat, color, hist, opts: o.keepOpts || { ...o, seed: undefined, daily: undefined }, daily: o.daily || null, tab: "production", modal: null, draft: null, chat: [], seed: seed0, anim: null, marketHist: [], reportTab: "income", newsIdx: 0, tvQueue: [], tvIndex: 0 };
     const y0 = { ...game, round: 0, news: [] };
     const sold0 = { budget: 0, mainstream: 0, premium: 0, hype: 0 };
     for (const c of game.companies) for (const k of Object.keys(sold0)) sold0[k] += c.history[0].segments[k].sold;
@@ -2119,6 +2514,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.flash = Object.fromEntries(S.game.companies.map((c) => [c.id, v[c.id] >= prevValues[c.id] ? "up" : "down"]));
     S.show = { round, before: prevValues, after: v };
     S.modal = PREFS.show ? "show" : S.game.finished ? (S.boardQueue.length ? "board" : "final") : "results";
+    if (S.game.finished) setTimeout(recordGameEnd, 0);
     resetDraft();
     saveGame();
     render();
@@ -2150,11 +2546,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.screen === "lobby") {
       app.innerHTML = lobbyScreen();
       document.querySelectorAll("canvas[data-tavatar]").forEach((cv) => drawAvatar(cv, cv.dataset.tavatar, css(COLORS[Number(cv.dataset.color) % COLORS.length])));
-      bindLobby(); renderModal(); bindModal();
+      bindLobby(); bindLobbyFriends(); renderModal(); bindModal();
+      if (inviteEl) inviteEl.hidden = true;
       return;
     }
     if (S.screen === "title") {
       app.innerHTML = titleScreen();
+      setTimeout(renderInviteBar, 0);
       paintTitle();
       runTitle();
       bindTitle();
@@ -3348,6 +3746,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "show") inner = showModal();
     if (S.modal === "online") inner = onlineModal();
     if (S.modal === "mission") inner = briefingModal();
+    if (S.modal === "profile") inner = profileModal();
+    if (S.modal === "friends") inner = friendsModal();
+    if (S.modal === "achievements") inner = achievementsModal();
+    if (S.modal === "daily") inner = dailyModal();
+    if (S.modal === "leaderboard") inner = leaderboardModal();
     if (S.modal === "wait") inner = waitModal();
     if (S.modal === "board") inner = boardModal();
     if (S.modal === "soon") inner = soonModal();
@@ -3711,7 +4114,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="muted" style="font-size:12.5px"${tipAttr(mt.text)}>Mission: ${esc(mt.name)} ${r.missionDone ? `<span class="pos">✓ +${eur(r.missionBonus)}</span>` : `<span class="neg">✗</span>`}</div></div><b class="num"${tipAttr("Final score: " + eurX(r.score))} data-count="${r.score}" data-fmt="eur">${eur(r.score)}</b></div>`; }).join("");
     return `${w.id === "you" ? fxLayer("confetti") : ""}<div class="win"><div class="win-title">Final results<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       <h2 style="margin:0;font-family:var(--font-display);font-weight:400;font-size:24px">${S.game.monopolyBy ? (w.id === "you" ? "MONOPOLY! You own the whole industry." : "MONOPOLY! " + esc(w.playerName) + " owns the whole industry.") : w.id === "you" ? "You win. Champagne for the board!" : esc(w.playerName) + " wins with " + esc(w.companyName) + "."}</h2>
-      <div class="muted">You finished #${myRank} of ${t.length}.</div>
+      <div class="muted">You finished #${myRank} of ${t.length}.${S.daily ? ` Daily challenge ${esc(S.daily)}: ${S.dailyRank ? `<b>#${S.dailyRank}</b> on today's leaderboard so far.` : "score saved on this device."} <button class="linkbtn" type="button" data-open-board>Leaderboard</button>` : ""}</div>
       <div class="podium pop">${rows}</div>
       ${emojiBar()}
       <div class="card"><h3>Company value per round</h3>${valueChart(640, 210)}</div>
@@ -4051,8 +4454,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.modal = null; renderModal(); bindModal();
     });
     on("#btn-menu-final", "click", goTitle);
+    if (S.modal === "profile") bindAccount();
+    if (S.modal === "friends") bindFriends();
+    if (S.modal === "daily") bindDaily();
+    if (S.modal === "leaderboard") bindBoard();
     on("[data-star]", "click", (e) => { S.fbRating = Number(e.currentTarget.dataset.star); S.fbText = ($("#fb-text") || {}).value || S.fbText; renderModal(); bindModal(); });
     on("#fb-send", "click", sendFeedback);
+    on("[data-open-board]", "click", () => { ACC.boardTab = "today"; openModal("leaderboard"); });
     on("#btn-recap", "click", saveRecap);
     on("#btn-rematch", "click", startRematch);
     on("#btn-join-rematch", "click", joinRematch);
@@ -4105,6 +4513,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (data && data.S && data.S.screen === "title") { S = data.S; render(); return; }
     if (data && data.S && data.S.game && data.S.marketHist && data.S.game.companies[0].mission) { S = data.S; render(); return; }
     S = { screen: "title", opts: DEFAULT_OPTS, modal: null };
+    const back = readLoginFromUrl();
+    if (back) S.modal = back;
+    try { const fc = new URLSearchParams(location.search).get("friend"); if (fc && /^[A-Za-z0-9]{6}$/.test(fc)) { S.friendCode = fc.toUpperCase(); S.modal = "friends"; } } catch (e) {}
+    accStart();
     let join = null;
     try { join = new URLSearchParams(location.search).get("join"); } catch (e) {}
     if (join && /^[A-Za-z0-9]{6}$/.test(join)) { S.modal = "online"; S.joinCode = join.toUpperCase(); }

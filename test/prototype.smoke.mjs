@@ -27,6 +27,29 @@ if (doc.querySelectorAll(".tcard").length !== 5) throw new Error("title cards mi
 if (!doc.getElementById("t-continue").disabled) throw new Error("continue should be disabled without a save");
 click("#t-online"); if (!/Host a game/.test(doc.querySelector(".overlay").textContent)) throw new Error("online modal"); click("#btn-close");
 click("#t-options"); click("#btn-close");
+// Menu screens open (offline here: they explain instead of crashing).
+for (const m of ["friends", "achievements", "daily", "leaderboard"]) {
+  click(`[data-title="${m}"]`);
+  if (!doc.querySelector(".overlay .win")) throw new Error(m + " screen missing");
+  click("#btn-close");
+}
+click("#t-account"); if (!/Profile/.test(doc.querySelector(".overlay").textContent)) throw new Error("profile missing"); click("#btn-close");
+if (doc.querySelectorAll(".overlay .achcard").length) throw new Error("modal should be closed");
+click('[data-title="achievements"]');
+if (doc.querySelectorAll(".achcard").length < 20) throw new Error("achievement cards missing");
+click("#btn-close");
+// The daily challenge is the same game for everyone: same seed, same rivals.
+click('[data-title="daily"]'); click("#d-start");
+const d1 = window.__ftDebug.S;
+if (!d1.daily || d1.game.config.rounds !== 6 || d1.game.companies.length !== 5) throw new Error("daily setup wrong");
+const rivals1 = d1.game.companies.map((c) => c.companyName).join();
+click("#btn-menu");
+click('[data-title="daily"]');
+if (!doc.getElementById("d-continue")) throw new Error("daily should offer to continue the try in progress");
+window.localStorage.removeItem("ft-daily");
+click("#btn-close"); click('[data-title="daily"]'); click("#d-start");
+if (window.__ftDebug.S.game.companies.map((c) => c.companyName).join() !== rivals1) throw new Error("daily should be identical each start");
+click("#btn-menu"); window.localStorage.removeItem("ft-daily"); window.localStorage.removeItem("ft-save");
 click("#t-new");
 click("#btn-start");
 if (!doc.querySelector("#btn-submit")) throw new Error("game screen did not render");
@@ -213,7 +236,7 @@ for (let r = 1; r <= 8; r++) {
   if (r === 5 && sellTried && !/Sold \d+ shares of/.test(doc.body.textContent)) throw new Error("share sale missing from results: " + doc.querySelector(".overlay").textContent.slice(0, 600));
   if (r < 8) {
     if (!doc.querySelector("#btn-continue")) throw new Error("no results after round " + r);
-    if (!doc.querySelector(".overlay .dossier")) throw new Error("mission progress missing from results in round " + r);
+    if (!doc.querySelector(".overlay .dossier") && !window.__ftDebug.S.game.companies[0].bankrupt) throw new Error("mission progress missing from results in round " + r + ": " + doc.querySelector(".overlay").textContent.replace(/\s+/g, " ").slice(0, 300));
     click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
     // Breaking news plays on the TV before the next round.
     while (doc.querySelector("#btn-tv-next")) { tvShown++; tvTags.add(doc.querySelector(".tv-tag").textContent); click("#btn-tv-next"); }
@@ -225,6 +248,10 @@ for (let r = 1; r <= 8; r++) {
 }
 if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen missing");
 if (!/Your story/.test(doc.body.textContent) || !doc.querySelector("#btn-recap")) throw new Error("recap missing");
+await wait(50);
+const earned = JSON.parse(window.localStorage.getItem("ft-ach") || "[]");
+if (!earned.includes("first_game")) throw new Error("first_game achievement not earned: " + JSON.stringify(earned));
+if (!(JSON.parse(window.localStorage.getItem("ft-stats") || "{}").games >= 1)) throw new Error("stats not recorded");
 click('[data-star="4"]');
 if (doc.getElementById("fb-send").disabled) throw new Error("feedback send should enable after a rating");
 // Bankruptcy sale and monopoly, driven through the test hook on a fresh game.

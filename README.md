@@ -25,6 +25,12 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **First game:** a short guided first round walks you through a real forecast with the calculator. The final screen has a "Your story" recap you can save as a picture, and a quick rating for playtest feedback.
 
+**Accounts and friends:** everyone gets a guest profile automatically (name + 6-character friend code). Profile → "Save with email" turns it into a real account that works on every device (log in with an emailed link). Friends: add by code or share your invite link (`…/?friend=CODE`); in a lobby, tap Invite next to a friend and they get the invite on their main menu (codes and links still work too).
+
+**Achievements:** 21 badges (wins, takeovers, handshake deals, investor calls, missions, betrayals, dailies, friends…), earned at the end of a game and saved to your account (and on the device when offline).
+
+**Daily challenge:** the same market, rivals (4 hard bots) and starting news for everyone each day (chocolate or AI, 6 rounds). One scored try per day; practice runs after that don't count. **Leaderboards:** today's daily (everyone or friends) and all-time (wins, achievements, best daily).
+
 **Rounds close on their own:** a scheduled job checks every minute and closes any round whose time is up, even if nobody has the game open.
 
 ## Quick start
@@ -131,6 +137,8 @@ Server function `game` (`supabase/functions/game`, deployed):
 
 Accepted deals (`deals` table, offered by insert, answered with `respond_deal`, withdrawn with `cancel_deal`) are passed to the engine when the round resolves and marked done or failed with the reason. Chat is in `messages` (to everyone when `to_player_id` is null; `kind` = chat or reaction). Seasons: `games.league_id`, `league_table`, `league_lobby`. Playtest ratings go to `feedback` (insert-only).
 
+Accounts: `profiles` (name, friend code, stats), `friendships`, `game_invites`, `achievements`, `daily_scores`, all behind functions (`ensure_profile`, `add_friend`, `respond_friend`, `remove_friend`, `my_friends`, `invite_friend`, `my_invites`, `answer_invite`, `lobby_invites`, `record_result`, `grant_achievements`, `submit_daily`, `daily_board`, `alltime_board`). Email login uses Supabase Auth: a guest account is upgraded with `PUT /auth/v1/user {email}`, other devices log in with `POST /auth/v1/otp`. For the email links to come back to the game, set Authentication → URL Configuration → Site URL to the GitHub Pages address and add it under Redirect URLs.
+
 The edge function loads `engine.js` from jsDelivr pinned to a commit (see the import in `index.ts`); after rebuilding `engine.js`, commit it, update that commit hash and redeploy.
 
 The web page talks to Supabase with plain `fetch` (anonymous sign-in, REST, the `game` function) and polls every 2.5 seconds; no client library needed.
@@ -145,7 +153,8 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 ## Not built yet
 
-- Real accounts (online play uses anonymous sign-in, tied to the browser), payments, and a desktop build for Steam.
+- Payments and a desktop build for Steam.
+- Server-side checking of daily scores (the game runs in the browser, so a determined cheater could fake one).
 - Tycoon extras beyond staff (multiple products, logistics).
 
 ## Structure
