@@ -359,6 +359,47 @@ button[data-tip] { cursor: pointer; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .optwin { width: min(620px, 100%) !important; }
 .lobby { max-width: 1000px; width: 100%; margin: 0 auto; }
+.coach { position: fixed; left: 16px; bottom: 16px; z-index: 19; width: min(340px, calc(100vw - 32px)); padding: 12px 14px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-weight: 800; font-size: 14px; line-height: 1.4; display: grid; gap: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px #8a6420; }
+.coach[hidden] { display: none; }
+.coach .coach-k { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
+.coach .linkbtn { color: #7a5716; justify-self: start; font-size: 12.5px; }
+.coach-hl { outline: 3px solid var(--gold) !important; outline-offset: 2px; animation: coachpulse 1.1s ease-in-out infinite; position: relative; z-index: 2; }
+@keyframes coachpulse { 50% { outline-color: rgba(255, 207, 74, 0.25); } }
+@media (max-width: 640px) { .coach { bottom: auto; top: 8px; left: 8px; } }
+.talkwin { position: fixed; right: 16px; top: 16px; bottom: 16px; width: 380px; z-index: 31; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
+.talkwin[hidden] { display: none; }
+.talkwin .win-title { gap: 8px; }
+.talkbody { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 0; flex: 1; }
+.tchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tchip { position: relative; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 6px; padding: 5px 9px; background: var(--panel-3); color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 900; cursor: pointer; }
+.tchip.on { background: var(--gold); color: #2b1d00; }
+.tchip .badge, .chatbtn .badge { position: static; margin-left: 4px; }
+.tlog { flex: 1; min-height: 120px; overflow-y: auto; display: grid; align-content: start; gap: 6px; padding-right: 2px; }
+.tmsg { display: grid; gap: 1px; padding: 6px 9px; border-radius: 8px; background: var(--panel-3); max-width: 88%; font-size: 13.5px; font-weight: 700; }
+.tmsg b { font-size: 12px; }
+.tmsg.me { justify-self: end; background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); }
+.tmsg.me b { color: inherit !important; }
+.dealcard { border-radius: 9px; padding: 9px 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-size: 13.5px; font-weight: 700; display: grid; gap: 4px; box-shadow: 0 0 0 2px #8a6420; }
+.dealcard .dc-k { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #7a5716; }
+.dealcard .dc-foot { display: flex; gap: 6px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.dstat { font-size: 12px; font-weight: 900; }
+.dstat.accepted, .dstat.done { color: #1d6b3c; } .dstat.declined, .dstat.failed { color: #b3261e; } .dstat.cancelled { color: #7a5716; }
+.dealform { display: grid; gap: 8px; padding: 10px; border-radius: 9px; background: var(--panel-3); }
+.dealform .form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tsend { display: flex; gap: 6px; }
+.tsend input { flex: 1; padding: 8px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 700; }
+.emojibar { display: flex; gap: 4px; }
+.emojibar button { border: 0; background: var(--panel-3); border-radius: 7px; font-size: 18px; padding: 4px 7px; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
+.emojibar button:active { transform: translateY(2px); }
+.floatemoji { position: fixed; bottom: 80px; z-index: 60; display: grid; justify-items: center; pointer-events: none; animation: floatup 2.3s ease-out forwards; }
+.floatemoji span { font-size: 40px; }
+.floatemoji small { font-weight: 900; font-size: 12px; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 6px; border-radius: 5px; }
+@keyframes floatup { from { transform: translateY(0) scale(0.6); opacity: 0; } 15% { transform: translateY(-30px) scale(1.15); opacity: 1; } to { transform: translateY(-320px) scale(1); opacity: 0; } }
+.stars { display: flex; gap: 4px; }
+.stars button { border: 0; background: none; font-size: 30px; color: var(--panel-3); cursor: pointer; text-shadow: 0 2px 0 rgba(0,0,0,0.3); padding: 0 2px; }
+.stars button.on { color: var(--gold); }
+.btn.chatbtn[aria-pressed="true"] { background: linear-gradient(#5fd08a, #2e9a5c); color: #062614; }
+@media (max-width: 640px) { .talkwin { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 78vh; } }
 .calcwin { position: fixed; right: 16px; bottom: 16px; width: 292px; z-index: 30; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .calcwin[hidden] { display: none; }
 .calcwin .win-title { cursor: move; gap: 8px; user-select: none; touch-action: none; }
@@ -800,7 +841,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { localStorage.setItem("ft-save", JSON.stringify({ ...S, anim: null, modal: null, screen: "game", tvQueue: [], afterVote: null })); } catch (e) {}
   }
   function goTitle() {
-    CALC.open = false;
+    CALC.open = false; TALK.open = false; if (talkEl) talkEl.hidden = true;
     saveGame();
     if (S && S.mp) mpStop();
     cancelAnimationFrame(rafId); cancelAnimationFrame(tvRaf);
@@ -1091,10 +1132,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async call(action, body) { return http("/functions/v1/game", { method: "POST", body: JSON.stringify({ action, ...body }) }); },
     // Turn-based, so a light poll (in mpEnter) is enough; no websocket needed.
     async subscribe() { return () => {}; },
+    async messagesSince(gameId, afterId) { return (await http(`/rest/v1/messages?game_id=eq.${q(gameId)}&id=gt.${Number(afterId) || 0}&select=id,from_player_id,to_player_id,body,kind,round,created_at&order=id&limit=200`)) || []; },
+    async sendMessage(gameId, round, from, to, body, kind) { await http("/rest/v1/messages", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, body, kind }) }); },
+    async deals(gameId) { return (await http(`/rest/v1/deals?game_id=eq.${q(gameId)}&select=*&order=id`)) || []; },
+    async offerDeal(gameId, round, from, to, kind, terms) { await http("/rest/v1/deals", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, kind, terms }) }); },
+    async feedback(row) { await http("/rest/v1/feedback", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(row) }, !!loadAuth()); },
   };
   const api = () => window.__ftApi || realApi;
 
-  const MP = { gameId: null, playerId: null, game: null, players: [], applied: -1, submitted: 0, unsub: null, poll: 0, tick: 0, busy: false, resolving: false, sig: "", error: "", working: false };
+  const MP = { talk: [], deals: [], lastMsg: 0, league: null, leagueLobby: null, gameId: null, playerId: null, game: null, players: [], applied: -1, submitted: 0, unsub: null, poll: 0, tick: 0, busy: false, resolving: false, sig: "", error: "", working: false };
   function mpLocal() { try { return JSON.parse(localStorage.getItem("ft-mp") || "null"); } catch (e) { return null; } }
   function mpSaveLocal() { try { localStorage.setItem("ft-mp", JSON.stringify({ gameId: MP.gameId, playerId: MP.playerId, code: MP.game && MP.game.code })); } catch (e) {} }
   function mpForget() { try { localStorage.removeItem("ft-mp"); } catch (e) {} }
@@ -1105,7 +1151,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   async function mpEnter(gameId, playerId) {
     mpStop();
-    Object.assign(MP, { gameId, playerId, applied: -1, submitted: 0, sig: "", error: "" });
+    Object.assign(MP, { gameId, playerId, applied: -1, submitted: 0, sig: "", error: "", talk: [], deals: [], lastMsg: 0, league: null, leagueLobby: null });
     try { MP.unsub = await api().subscribe(gameId, () => mpRefresh()); } catch (e) {}
     MP.poll = setInterval(() => mpRefresh(), 2500);
     MP.tick = setInterval(mpTick, 1000);
@@ -1126,6 +1172,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         if (sig !== MP.sig) { MP.sig = sig; render(); }
         return;
       }
+      await mpSocial(g);
       // Only download my report when a new round is out (it's the big one).
       const expect = g.status === "finished" ? g.current_round : g.current_round - 1;
       const rep = expect > MP.applied || !S || S.screen !== "game" ? await api().latestReport(MP.gameId, MP.playerId) : null;
@@ -1133,6 +1180,30 @@ details.howto[open] summary::after { content: "▾ hide"; }
       else if (sig !== MP.sig && S && S.screen === "game") { MP.sig = sig; if (S.modal === "wait") { renderModal(); bindModal(); } const sb2 = $("#btn-submit"); if (sb2) sb2.outerHTML = submitButton(); bindSubmit(); }
       MP.sig = sig;
     } catch (e) { MP.error = e.message; } finally { MP.busy = false; if (MP.again) { MP.again = false; setTimeout(mpRefresh, 0); } }
+  }
+  // Chat, reactions and deals online: new messages since the last one, and the deals I'm part of.
+  async function mpSocial(g) {
+    try {
+      const msgs = await api().messagesSince(MP.gameId, MP.lastMsg);
+      let changed = false;
+      for (const m of msgs) {
+        MP.lastMsg = Math.max(MP.lastMsg, m.id);
+        const from = cid(m.from_player_id), t = new Date(m.created_at).getTime() + (m.id % 1000) / 1e4;
+        if (m.kind === "reaction") { if (from !== "you" && Date.now() - t < 30000 && S && S.screen === "game") floatEmoji(m.body, byId(from) ? byId(from).playerName : ""); continue; }
+        MP.talk.push({ id: "m" + m.id, t, round: m.round, from, to: m.to_player_id ? cid(m.to_player_id) : null, text: m.body, kind: "chat" });
+        changed = true;
+      }
+      const rows = await api().deals(MP.gameId);
+      const next = rows.map((d) => ({ id: String(d.id), t: new Date(d.created_at).getTime(), round: d.round, from: cid(d.from_player_id), to: cid(d.to_player_id), kind: d.kind, terms: JSON.parse(JSON.stringify(d.terms).split(MP.playerId).join("you")), status: d.status, note: d.note }));
+      if (JSON.stringify(next) !== JSON.stringify(MP.deals)) { MP.deals = next; changed = true; }
+      if (g.status === "finished") {
+        const L = g.league_id || g.id;
+        const [table, lobby] = await Promise.all([api().rpc("league_table", { p_league_id: L }), api().rpc("league_lobby", { p_league_id: L })]);
+        const sig = JSON.stringify([table, lobby]);
+        if (sig !== MP.leagueSig) { MP.leagueSig = sig; MP.league = table; MP.leagueLobby = lobby; if (S && S.modal === "final") { renderModal(); bindModal(); } }
+      }
+      if (changed && S && S.screen === "game") { renderTalk(); const ag = document.querySelector(".agenda"); if (ag && !S.modal) { ag.outerHTML = agenda(); bindAgenda(); } }
+    } catch (e) {}
   }
   function mpTick() {
     const el = $("#mp-timer");
@@ -1170,6 +1241,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         S.modal = !seen ? "help" : S.tvQueue.length ? "tv" : null; S.pendingTv = !seen && S.tvQueue.length > 0; S.tvIndex = 0;
         try { S.missionSeen = localStorage.getItem("ft-mission-" + MP.gameId) === "1"; } catch (e) {}
         if (!S.modal && missionPending()) S.modal = "mission";
+        coachStart();
       }
       render();
       return;
@@ -1237,6 +1309,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
             <div class="hint">Friends open the game, choose Multiplayer → Join, and type this code. Or send them the link:</div>
             <div style="display:flex;gap:8px"><input type="text" id="invite-link" readonly value="${esc(link)}" style="flex:1"><button class="btn small" type="button" id="btn-copy">Copy</button></div></div>
           <div class="card"><h3>Players (${total} of 8)</h3>${players}</div>
+          ${g.league_id ? `<div class="card"><h3>Season rematch</h3><div class="hint">This game counts for your group's season. The season table is on the final screen.</div></div>` : ""}
         </div>
         <div class="card"><h3>Settings ${host ? "" : '<span class="muted" style="font-size:12px">(the host decides)</span>'}</h3>
           <div class="orow"><div class="otext"><b>Industry</b></div><div class="octl">${sel("industry", [["chocolate", "Chocolate"], ["ai", "AI"], ["weed", "Weed 18+"]], g.industry)}</div></div>
@@ -1403,7 +1476,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       calcEl.addEventListener("input", (e) => { if (e.target.id === "notes-ta") notesSet(e.target.value); });
       calcEl.addEventListener("pointerdown", calcDragStart);
     }
-    calcEl.hidden = !CALC.open || !S || S.screen !== "game";
+    calcEl.hidden = !CALC.open || !S || S.screen !== "game" || !S.game;
     if (calcEl.hidden) return;
     calcEl.innerHTML = calcHtml();
     if (CALC.pos && window.innerWidth > 640) { calcEl.style.left = Math.min(CALC.pos.x, window.innerWidth - 120) + "px"; calcEl.style.top = Math.min(Math.max(0, CALC.pos.y), window.innerHeight - 60) + "px"; calcEl.style.right = "auto"; calcEl.style.bottom = "auto"; }
@@ -1460,6 +1533,406 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return (m[1] || m[2]) ? -n : n;
   }
 
+
+  // ======================================================================
+  // Talk & deals: chat with everyone or one rival, and make private deals
+  // (share sales, loans, non-attack pacts). Bots answer in single-player.
+  // ======================================================================
+  const TALK = { open: false, thread: "all", form: null, err: "", busy: false };
+  let talkSeq = 1;
+  const nowT = () => Date.now() + (talkSeq++) / 1000;
+  const talkList = () => (S.mp ? MP.talk : (S.talk = S.talk || []));
+  const dealList = () => (S.mp ? MP.deals : (S.deals = S.deals || []));
+  function say(round, who, text, to) {
+    if (!S.mp) S.chat.push({ round, kind: "chat", who, text });
+    talkList().push({ id: "l" + talkSeq, t: nowT(), round, from: who, to: to || null, text, kind: "chat" });
+  }
+  const BOT_DM = ["Talk is cheap. Send me an offer.", "Interesting. What's in it for me?", "I'm listening. Make it worth my while.", "My lawyers read every word of this, you know.", "Ha. Put a number on it.", "Is this a threat or a business proposal?"];
+  const BOT_ALL = ["Bold words from someone with that margin.", "Noted. Ignored, but noted.", "We'll see who's laughing after the results.", "Somebody check this person's cash flow.", "Big talk. Small market share."];
+  const threadOf = (m) => (m.to === null || m.to === undefined ? "all" : m.from === "you" ? m.to : m.from);
+  const readMark = () => (S.readMark = S.readMark || {});
+  function unread(thread) {
+    const since = readMark()[thread] || 0;
+    const msgs = talkList().filter((m) => m.kind === "chat" && m.from !== "you" && threadOf(m) === thread && m.t > since).length;
+    const deals = thread === "all" ? 0 : dealList().filter((d) => d.to === "you" && d.from === thread && d.status === "offered" && d.t > since).length;
+    return msgs + deals;
+  }
+  const unreadTotal = () => ["all", ...partners()].reduce((a, k) => a + unread(k), 0);
+  // Who you can talk to privately: online only people (bots can't read DMs there).
+  function partners() {
+    return S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt && (!S.mp || !/^bot-/.test(c.id))).map((c) => c.id);
+  }
+  function dealText(d, mine) {
+    const t = d.terms, other = byId(d.from === "you" ? d.to : d.from), oName = esc(other ? other.companyName : "?");
+    const youFirst = d.from === "you";
+    if (d.kind === "shares") {
+      const co = byId(t.company), coName = esc(co ? co.companyName : "?");
+      const proposerSells = t.direction === "sell", youSell = youFirst ? proposerSells : !proposerSells;
+      return youSell ? `You sell <b>${t.qty}</b> shares of <b>${coName}</b> to ${oName} for <b>${eurX(t.price)}</b>` : `You buy <b>${t.qty}</b> shares of <b>${coName}</b> from ${oName} for <b>${eurX(t.price)}</b>`;
+    }
+    if (d.kind === "loan") {
+      const proposerLends = t.direction === "lend", youLend = youFirst ? proposerLends : !proposerLends;
+      return youLend ? `You lend ${oName} <b>${eurX(t.amount)}</b>; they repay <b>${eurX(t.repay)}</b> in ${t.rounds} round${t.rounds > 1 ? "s" : ""}` : `${oName} lends you <b>${eurX(t.amount)}</b>; you repay <b>${eurX(t.repay)}</b> in ${t.rounds} round${t.rounds > 1 ? "s" : ""}`;
+    }
+    return `Non-attack pact with ${oName} for <b>${t.rounds}</b> round${t.rounds > 1 ? "s" : ""}: no share buying or targeted wildcards. Breaking it costs <b>${eurX(t.penalty)}</b>`;
+  }
+  const DEAL_STATUS = { offered: "Waiting", accepted: "Agreed: happens when the round resolves", declined: "Declined", cancelled: "Withdrawn", done: "Done", failed: "Fell through" };
+  function dealCard(d) {
+    const open = d.status === "offered" && d.round === S.game.round && !S.game.finished;
+    const actions = open ? (d.to === "you" ? `<button class="btn small go" type="button" data-deal-accept="${d.id}">Accept</button><button class="btn small" type="button" data-deal-decline="${d.id}">Decline</button>` : `<button class="btn small" type="button" data-deal-cancel="${d.id}">Withdraw</button>`) : "";
+    return `<div class="dealcard ${d.status}"><div class="dc-k">${{ shares: "Share deal", loan: "Loan", pact: "Pact" }[d.kind]} · round ${d.round} · ${d.from === "you" ? "your offer" : "offer to you"}</div><div>${dealText(d)}</div>
+      <div class="dc-foot"><span class="dstat ${d.status}">${DEAL_STATUS[d.status] || d.status}${d.note ? ": " + esc(d.note) : ""}</span>${actions}</div></div>`;
+  }
+  function talkHtml() {
+    const th = TALK.thread, list = partners();
+    if (th !== "all" && !list.includes(th)) TALK.thread = "all";
+    const chip = (id, label, color) => { const u = unread(id); return `<button type="button" class="tchip ${TALK.thread === id ? "on" : ""}" data-thread="${id}">${color ? `<span class="dot" style="background:${color}"></span>` : ""}${esc(label)}${u ? `<span class="badge">${u}</span>` : ""}</button>`; };
+    const chips = chip("all", "Everyone") + list.map((id) => chip(id, short(byId(id).companyName), colVar(id))).join("");
+    const items = [
+      ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}</b><span>${esc(m.text)}</span></div>` })),
+      ...(TALK.thread === "all" ? [] : dealList().filter((d) => (d.from === TALK.thread && d.to === "you") || (d.to === TALK.thread && d.from === "you")).map((d) => ({ t: d.t, html: dealCard(d) }))),
+    ].sort((a, b) => a.t - b.t);
+    readMark()[TALK.thread] = Date.now() + 1e6;
+    const canDeal = TALK.thread !== "all" && !me().bankrupt && !S.game.finished;
+    const empty = TALK.thread === "all" ? "Say something to the whole table. Trash talk is allowed, threats are encouraged." : (S.mp ? "Private chat. Nobody else can read this." : "Bots read this too. Better: make them an offer they can't refuse.");
+    return `<div class="win-title"><span>Talk &amp; deals</span><button class="x calc-x" type="button" id="talk-close" aria-label="Close">×</button></div>
+      <div class="win-body talkbody">
+        <div class="tchips" role="tablist">${chips}</div>
+        <div class="tlog" id="tlog">${items.length ? items.map((x) => x.html).join("") : `<div class="hint">${empty}</div>`}</div>
+        ${TALK.err ? `<div class="note neg">${esc(TALK.err)}</div>` : ""}
+        ${TALK.form && canDeal ? dealForm() : ""}
+        <form class="tsend" id="tsend" autocomplete="off"><input type="text" id="t-input" maxlength="300" placeholder="${TALK.thread === "all" ? "Message everyone" : "Message " + esc(byId(TALK.thread).companyName)}" aria-label="Message"><button class="btn small go" type="submit">Send</button></form>
+        ${canDeal && !TALK.form ? `<button class="btn small" type="button" id="t-newdeal">Make a deal</button>` : ""}
+      </div>`;
+  }
+  // Which shares each side can sell: your own founder shares, or stakes held in other companies.
+  function sellable(id) {
+    return S.game.companies.filter((c) => !c.bankrupt).map((c) => ({ c, n: c.id === id ? c.shares.founder : c.shares.holders[id] || 0 })).filter((x) => x.n > 0);
+  }
+  function dealForm() {
+    const f = TALK.form, other = byId(TALK.thread), P = SP(S.game);
+    const tab = (k, n) => `<button type="button" role="radio" aria-checked="${f.kind === k}" data-dkind="${k}">${n}</button>`;
+    let body = "";
+    if (f.kind === "shares") {
+      const owner = f.direction === "sell" ? "you" : other.id, pool = sellable(owner);
+      if (!pool.some((x) => x.c.id === f.company)) f.company = pool[0] ? pool[0].c.id : "";
+      const held = (pool.find((x) => x.c.id === f.company) || { n: 0 }).n;
+      const fair = f.company ? P[f.company] * (Number(f.qty) || 0) : 0;
+      body = `<div class="seg" role="radiogroup">${["sell", "buy"].map((d) => `<button type="button" role="radio" aria-checked="${f.direction === d}" data-ddir="${d}">${d === "sell" ? "I sell" : "I buy"}</button>`).join("")}</div>
+        ${pool.length ? `<div class="ctl"><label for="d-company">Shares of</label><select id="d-company" class="sel">${pool.map((x) => `<option value="${x.c.id}" ${x.c.id === f.company ? "selected" : ""}>${esc(x.c.companyName)} (${f.direction === "sell" ? "you have" : "they have"} ${x.n})</option>`).join("")}</select></div>
+        <div class="form"><div class="ctl"><label for="d-qty">Shares</label><input type="text" inputmode="numeric" id="d-qty" value="${esc(f.qty)}"></div><div class="ctl"><label for="d-price">Total price (€)</label><input type="text" inputmode="decimal" id="d-price" value="${esc(f.price)}" placeholder="e.g. 400k"></div></div>
+        <div class="hint">Max ${held}. At today's share price that's ${eurX(fair)} (no takeover premium in a deal).${diff().takeoverUnlockRound > S.game.round ? ` <span class="neg">Share deals only go through from round ${diff().takeoverUnlockRound}.</span>` : ""}</div>`
+        : `<div class="hint">${f.direction === "sell" ? "You don't own any shares you could sell." : esc(other.companyName) + " has no shares to sell."}</div>`}`;
+    } else if (f.kind === "loan") {
+      body = `<div class="seg" role="radiogroup">${["lend", "borrow"].map((d) => `<button type="button" role="radio" aria-checked="${f.direction === d}" data-ddir="${d}">${d === "lend" ? "I lend" : "I borrow"}</button>`).join("")}</div>
+        <div class="form"><div class="ctl"><label for="d-amount">Amount now (€)</label><input type="text" inputmode="decimal" id="d-amount" value="${esc(f.amount)}" placeholder="e.g. 500k"></div><div class="ctl"><label for="d-repay">Paid back (€)</label><input type="text" inputmode="decimal" id="d-repay" value="${esc(f.repay)}" placeholder="e.g. 550k"></div></div>
+        <div class="ctl"><label for="d-rounds">Paid back after</label><select id="d-rounds" class="sel">${[1, 2, 3].map((n) => `<option value="${n}" ${Number(f.rounds) === n ? "selected" : ""}>${n} round${n > 1 ? "s" : ""}</option>`).join("")}</select></div>
+        <div class="hint">Repayment happens automatically at the start of that round. The bank charges ${Math.round(FT.BALANCE.baseInterest * 100)}% a round, for comparison.</div>`;
+    } else {
+      body = `<div class="form"><div class="ctl"><label for="d-prounds">Rounds</label><select id="d-prounds" class="sel">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(f.rounds) === n ? "selected" : ""}>${n} (through round ${S.game.round + n - 1})</option>`).join("")}</select></div><div class="ctl"><label for="d-penalty">Penalty for breaking it (€)</label><input type="text" inputmode="decimal" id="d-penalty" value="${esc(f.penalty)}" placeholder="e.g. 300k"></div></div>
+        <div class="hint">Neither of you may buy the other's shares or aim a wildcard at them. Whoever does pays the penalty to the other, and the whole table hears about it.</div>`;
+    }
+    return `<div class="dealform"><div class="seg" role="radiogroup" aria-label="Deal type">${tab("shares", "Shares")}${tab("loan", "Loan")}${tab("pact", "Pact")}</div>${body}
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn small" type="button" id="d-cancel">Cancel</button><button class="btn small go" type="button" id="d-send" ${TALK.busy ? "disabled" : ""}>Send offer</button></div></div>`;
+  }
+  function readDealForm() {
+    const f = TALK.form, v = (id) => ($("#" + id) || {}).value;
+    if (f.kind === "shares") { f.company = v("d-company") || f.company; f.qty = v("d-qty") ?? f.qty; f.price = v("d-price") ?? f.price; }
+    if (f.kind === "loan") { f.amount = v("d-amount") ?? f.amount; f.repay = v("d-repay") ?? f.repay; f.rounds = v("d-rounds") || f.rounds; }
+    if (f.kind === "pact") { f.rounds = v("d-prounds") || f.rounds; f.penalty = v("d-penalty") ?? f.penalty; }
+  }
+  function buildTerms() {
+    const f = TALK.form;
+    if (f.kind === "shares") {
+      const qty = Math.floor(Number(f.qty)), price = parseAmount(f.price);
+      if (!f.company) return "Pick whose shares.";
+      if (!(qty >= 1 && qty <= 100)) return "Shares must be a whole number from 1 to 100.";
+      if (!Number.isFinite(price) || price < 0) return "Type a total price, like 400k.";
+      return { company: f.company, qty, price: Math.round(price), direction: f.direction };
+    }
+    if (f.kind === "loan") {
+      const amount = parseAmount(f.amount), repay = parseAmount(f.repay);
+      if (!(amount > 0) || !Number.isFinite(repay) || repay < 0) return "Fill in the amount and what gets paid back.";
+      return { amount: Math.round(amount), repay: Math.round(repay), rounds: Number(f.rounds) || 1, direction: f.direction };
+    }
+    const penalty = parseAmount(f.penalty);
+    if (!Number.isFinite(penalty) || penalty < 0) return "Type a penalty, like 300k (0 is allowed).";
+    return { rounds: Number(f.rounds) || 2, penalty: Math.round(penalty) };
+  }
+  let talkEl = null;
+  function renderTalk() {
+    if (!talkEl) {
+      talkEl = document.createElement("section");
+      talkEl.className = "win talkwin"; talkEl.id = "talkwin"; talkEl.setAttribute("aria-label", "Talk and deals");
+      document.body.appendChild(talkEl);
+      talkEl.addEventListener("click", onTalkClick);
+      talkEl.addEventListener("submit", (e) => { e.preventDefault(); const i = $("#t-input"); if (i && i.value.trim()) { sendTalk(i.value.trim()); i.value = ""; } });
+      talkEl.addEventListener("change", (e) => { if (TALK.form && e.target.id === "d-company") { readDealForm(); renderTalk(); } });
+      talkEl.addEventListener("input", (e) => { if (TALK.form && /^d-(qty|price)$/.test(e.target.id)) { readDealForm(); const h = talkEl.querySelector(".dealform .hint"); if (h && TALK.form.company) { const fair = SP(S.game)[TALK.form.company] * (Number(TALK.form.qty) || 0); h.firstChild && (h.firstChild.textContent = h.firstChild.textContent.replace(/that's €[\d,.]+/, "that's " + eurX(fair))); } } });
+    }
+    talkEl.hidden = !TALK.open || !S || S.screen !== "game" || !S.game;
+    if (!S || S.screen !== "game" || !S.game) return;
+    if (!talkEl.hidden) {
+      const keep = $("#t-input") ? $("#t-input").value : "";
+      if (TALK.form) readDealForm();
+      talkEl.innerHTML = talkHtml();
+      if (keep && $("#t-input")) $("#t-input").value = keep;
+      const log = $("#tlog"); if (log) log.scrollTop = log.scrollHeight;
+    }
+    const b = $("#btn-chat");
+    if (b) { const u = TALK.open ? 0 : unreadTotal(); b.innerHTML = "Chat" + (u ? `<span class="badge">${u}</span>` : ""); b.setAttribute("aria-pressed", String(TALK.open)); }
+  }
+  function onTalkClick(e) {
+    const q = (sel) => e.target.closest(sel);
+    if (q("#talk-close")) { TALK.open = false; renderTalk(); return; }
+    if (q("[data-thread]")) { TALK.thread = q("[data-thread]").dataset.thread; TALK.form = null; TALK.err = ""; renderTalk(); return; }
+    if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); return; }
+    if (q("[data-dkind]")) { readDealForm(); TALK.form.kind = q("[data-dkind]").dataset.dkind; renderTalk(); return; }
+    if (q("[data-ddir]")) { readDealForm(); TALK.form.direction = q("[data-ddir]").dataset.ddir; TALK.form.company = ""; renderTalk(); return; }
+    if (q("#d-cancel")) { TALK.form = null; TALK.err = ""; renderTalk(); return; }
+    if (q("#d-send")) { readDealForm(); const terms = buildTerms(); if (typeof terms === "string") { TALK.err = terms; renderTalk(); return; } sendDeal(TALK.form.kind, terms); return; }
+    const a = q("[data-deal-accept]"), d = q("[data-deal-decline]"), c = q("[data-deal-cancel]");
+    if (a) answerDeal(a.dataset.dealAccept, true);
+    if (d) answerDeal(d.dataset.dealDecline, false);
+    if (c) withdrawDeal(c.dataset.dealCancel);
+  }
+  function toggleTalk(open) { TALK.open = open === undefined ? !TALK.open : open; if (TALK.open) CALC.open = false, renderCalc(); renderTalk(); }
+  async function sendTalk(text) {
+    const to = TALK.thread === "all" ? null : TALK.thread;
+    TALK.err = "";
+    if (S.mp) {
+      try { await api().sendMessage(MP.gameId, S.game.round, MP.playerId, to === null ? null : realId(to), text, "chat"); } catch (e) { TALK.err = e.message; }
+      mpRefresh(); return;
+    }
+    say(S.game.round, "you", text, to);
+    renderTalk();
+    // Bots answer, sometimes.
+    const rng = new FT.Rng((S.seed + talkSeq * 31) | 0);
+    const who = to || (rng.chance(0.5) ? rng.pick(partners()) : null);
+    if (who) setTimeout(() => { say(S.game.round, who, rng.pick(to ? BOT_DM : BOT_ALL), to ? "you" : null); renderTalk(); }, 700 + rng.int(900));
+  }
+  const realId = (id) => (id === "you" ? MP.playerId : id);
+  async function sendDeal(kind, terms) {
+    const to = TALK.thread;
+    TALK.busy = true; TALK.err = "";
+    if (S.mp) {
+      try { await api().offerDeal(MP.gameId, S.game.round, MP.playerId, realId(to), kind, JSON.parse(JSON.stringify(terms).split('"you"').join('"' + MP.playerId + '"'))); TALK.form = null; }
+      catch (e) { TALK.err = e.message; }
+      TALK.busy = false; mpRefresh(); renderTalk(); return;
+    }
+    const d = { id: "d" + talkSeq, t: nowT(), round: S.game.round, from: "you", to, kind, terms, status: "offered" };
+    dealList().push(d); TALK.form = null; TALK.busy = false; renderTalk(); sfx("click");
+    setTimeout(() => {
+      if (d.status !== "offered") return;
+      const r = FT.botRespondDeal(S.game, to, { id: d.id, from: "you", to, kind, terms }, S.strat[to] || "", S.seed);
+      d.status = r.accept ? "accepted" : "declined"; d.t = nowT();
+      say(S.game.round, to, r.line, "you");
+      sfx(r.accept ? "profit" : "click"); renderTalk(); saveGame();
+    }, 900);
+  }
+  async function answerDeal(id, accept) {
+    if (S.mp) { try { await api().rpc("respond_deal", { p_deal_id: Number(id), p_accept: accept }); } catch (e) { TALK.err = e.message; } mpRefresh(); return; }
+    const d = dealList().find((x) => x.id === id); if (!d || d.status !== "offered") return;
+    d.status = accept ? "accepted" : "declined"; sfx(accept ? "profit" : "click");
+    say(S.game.round, d.from, accept ? "Pleasure doing business." : "Your loss.", "you");
+    renderTalk(); saveGame(); render();
+  }
+  async function withdrawDeal(id) {
+    if (S.mp) { try { await api().rpc("cancel_deal", { p_deal_id: Number(id) }); } catch (e) { TALK.err = e.message; } mpRefresh(); return; }
+    const d = dealList().find((x) => x.id === id); if (d && d.status === "offered") d.status = "cancelled";
+    renderTalk(); saveGame();
+  }
+  // Single-player: accepted deals go into the round; bots may pitch you something new afterwards.
+  function dealsForRound(round) {
+    return dealList().filter((d) => d.round === round && d.status === "accepted").map((d) => ({ id: d.id, from: d.from, to: d.to, kind: d.kind, terms: d.terms }));
+  }
+  function settleDeals(round) {
+    const log = S.game.dealLog || [];
+    for (const d of dealList()) {
+      if (d.round !== round) continue;
+      const l = log.find((x) => x.id === d.id);
+      if (l) { d.status = l.ok ? "done" : "failed"; d.note = l.reason; }
+      else if (d.status === "offered") { d.status = "cancelled"; d.note = "The round ended before anyone answered"; }
+    }
+  }
+  function botPitch() {
+    if (S.mp || S.game.finished) return;
+    const p = FT.botProposeDeal(S.game, S.strat, "you", S.seed + S.game.round * 17);
+    if (!p) return;
+    dealList().push({ ...p.deal, t: nowT(), round: S.game.round, status: "offered" });
+    say(S.game.round, p.deal.from, p.line, "you");
+  }
+
+  // ----- Emoji reactions: float up over everything; online, everyone sees them.
+  const EMOJI = ["😂", "😱", "🔥", "💀", "👏", "🤡"];
+  const emojiBar = () => `<div class="emojibar" role="group" aria-label="React">${EMOJI.map((e) => `<button type="button" data-react="${e}" aria-label="React ${e}">${e}</button>`).join("")}</div>`;
+  function floatEmoji(e, who) {
+    if (reduceMotion() && !window.__ftFast) return;
+    const el = document.createElement("div");
+    el.className = "floatemoji";
+    el.style.left = 12 + Math.random() * 76 + "%";
+    el.innerHTML = `<span>${e}</span>${who ? `<small>${esc(who)}</small>` : ""}`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2400);
+  }
+  function react(e) {
+    floatEmoji(e, "You");
+    if (S.mp) { api().sendMessage(MP.gameId, S.game.round, MP.playerId, null, e, "reaction").catch(() => {}); return; }
+    const rng = new FT.Rng((S.seed + Date.now()) | 0), bots = S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt);
+    for (let k = 0; k < rng.int(3); k++) { const b = rng.pick(bots); if (b) setTimeout(() => floatEmoji(rng.pick(EMOJI), b.playerName), 300 + rng.int(900)); }
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest && e.target.closest("[data-react]"); if (b) { react(b.dataset.react); sfx("click"); } });
+
+  // ----- League: rematches with the same group add up to a season table.
+  function leagueCard() {
+    const rows = MP.league || [], lobby = MP.leagueLobby, games = rows.length ? Math.max(...rows.map((r) => r.games)) : 1;
+    const table = rows.length ? tbl(["", "Player", "Games", "Wins", "Points"], rows.map((r, k) => `<tr class="${r.me ? "me" : ""}"><td>${k + 1}</td><td>${esc(r.player_name)}</td>${td(String(r.games))}${td(String(r.wins))}${td("<b>" + r.points + "</b>", "Best score " + eurX(Number(r.best_score)))}</tr>`).join("")) : `<div class="hint">Loading the season table…</div>`;
+    const btn = lobby && lobby.game_id !== MP.gameId ? `<button class="btn go" type="button" id="btn-join-rematch">Join the rematch (${esc(lobby.code)})</button>` : `<button class="btn go" type="button" id="btn-rematch">Start a rematch</button>`;
+    return `<div class="card"><h3>Season standings${games > 1 ? ` · ${games} games` : ""}</h3>${table}<div class="hint">Points per game: 10 for a win, then 7, 5, 3, 2, 1. Rematches with this group keep adding to the table.</div><div style="display:flex;justify-content:flex-end">${btn}</div></div>`;
+  }
+  async function startRematch() {
+    const g = MP.game, m = mpMe();
+    if (!g || !m) return;
+    try {
+      const res = await api().rpc("create_game", { p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait, p_industry: g.industry, p_difficulty: g.difficulty, p_mode: g.mode, p_rounds: g.rounds, p_league_id: g.league_id || g.id, p_round_seconds: g.round_seconds, p_bot_count: g.bot_count || 0, p_bot_skill: g.bot_skill || "normal" });
+      S.modal = null; await mpEnter(res.game_id, res.player_id);
+    } catch (e) { MP.error = e.message; alertModal(e.message); }
+  }
+  async function joinRematch() {
+    const m = mpMe(), lobby = MP.leagueLobby;
+    if (!m || !lobby) return;
+    try { const res = await api().rpc("join_game", { p_code: lobby.code, p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait }); S.modal = null; await mpEnter(res.game_id, res.player_id); }
+    catch (e) { alertModal(e.message); }
+  }
+  function alertModal(msg) { const b = modal.querySelector(".win-body"); if (b) b.insertAdjacentHTML("afterbegin", `<div class="note neg">${esc(msg)}</div>`); }
+
+  // ----- End-of-game recap: your company's story as a picture to share.
+  function recapStats() {
+    const c = me(), H = c.history.filter((h) => h.round >= 1), t = FT.standings(S.game), place = t.findIndex((x) => x.companyId === "you") + 1;
+    const best = H.reduce((a, h) => (h.profit > (a ? a.profit : -Infinity) ? h : a), null);
+    return {
+      place, of: t.length, score: (t.find((x) => x.companyId === "you") || {}).score || 0,
+      best, sold: H.reduce((a, h) => a + h.sold, 0),
+      takeovers: S.game.companies.filter((o) => o.controlledBy === "you").length,
+      hits: H.filter((h) => h.guidance && h.guidance.result === "hit").length,
+      mission: (t.find((x) => x.companyId === "you") || {}).missionDone,
+      titles: gameTitles().filter((x) => x.id === "you").map((x) => x.label),
+    };
+  }
+  function recapCard() {
+    const r = recapStats(), u = ind().labels.unit;
+    const line = (k, v) => `<div class="sumline"><span class="muted">${k}</span><b>${v}</b></div>`;
+    return `<div class="card"><h3>Your story</h3>
+      ${line("Finished", "#" + r.place + " of " + r.of + " · " + eur(r.score))}
+      ${r.best ? line("Best round", "Round " + r.best.round + ": " + eur(r.best.profit) + " profit") : ""}
+      ${line("Sold in total", units(r.sold) + " " + esc(u))}
+      ${line("Companies taken over", String(r.takeovers))}
+      ${line("Spot-on investor calls", String(r.hits))}
+      ${line("Secret mission", r.mission ? "Completed" : "Missed")}
+      ${r.titles.length ? line("Titles", r.titles.map(esc).join(", ")) : ""}
+      <div style="display:flex;justify-content:flex-end"><button class="btn small" type="button" id="btn-recap">Save as picture</button></div></div>`;
+  }
+  function drawRecap() {
+    const cv = document.createElement("canvas"); cv.width = 720; cv.height = 900;
+    const g = cv.getContext("2d"), r = recapStats(), c = me(), u = ind().labels.unit;
+    if (!g || !g.fillRect) return null;
+    const col = colRaw("you"), dark = "#141a3a", panel = "#222b5c", gold = "#ffcf4a", ink = "#f4f1ff";
+    g.fillStyle = dark; g.fillRect(0, 0, 720, 900);
+    g.fillStyle = panel; g.fillRect(24, 24, 672, 852);
+    g.fillStyle = col; g.fillRect(24, 24, 672, 10);
+    const font = (px, w) => (g.font = `${w || 700} ${px}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-display") || "monospace"}`);
+    g.fillStyle = gold; font(26); g.fillText("FRIENDLY TAKEOVER", 56, 86);
+    g.fillStyle = ink; font(44); g.fillText(c.companyName.slice(0, 24), 56, 156);
+    font(22, 400); g.fillStyle = "#b9c1ea"; g.fillText(`${c.playerName} · ${ind().name} · ${S.game.config.rounds} rounds`, 56, 192);
+    g.fillStyle = r.place === 1 ? gold : ink; font(96); g.fillText("#" + r.place, 56, 310);
+    font(26, 400); g.fillStyle = "#b9c1ea"; g.fillText(`of ${r.of} · final score ${eur(r.score)}`, 220, 300);
+    // Value per round as pixel bars.
+    const H = S.hist.you, max = Math.max(...H, 1), bw = Math.min(56, Math.floor(600 / H.length) - 8);
+    H.forEach((v, i) => { const h = Math.max(4, (Math.max(0, v) / max) * 170); g.fillStyle = i === H.length - 1 ? gold : col; g.fillRect(56 + i * (bw + 8), 520 - h, bw, h); });
+    g.fillStyle = "#b9c1ea"; font(18, 400); g.fillText("Company value per round", 56, 548);
+    const lines = [
+      r.best ? `Best round: ${r.best.round} (${eur(r.best.profit)} profit)` : "",
+      `Sold: ${units(r.sold)} ${u}`,
+      `Takeovers: ${r.takeovers} · Spot-on investor calls: ${r.hits}`,
+      `Secret mission: ${r.mission ? "completed" : "missed"}`,
+      r.titles.length ? "Titles: " + r.titles.join(", ") : "",
+    ].filter(Boolean);
+    g.fillStyle = ink; font(24, 400); lines.forEach((t, i) => g.fillText(t.slice(0, 44), 56, 610 + i * 44));
+    g.fillStyle = gold; font(18, 400); g.fillText("jeroen-hui.github.io/Friendly-Takeover", 56, 846);
+    return cv;
+  }
+  async function saveRecap() {
+    const cv = drawRecap();
+    if (!cv || !cv.toDataURL) return;
+    const url = cv.toDataURL("image/png"), name = "friendly-takeover-" + me().companyName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
+    try {
+      if (navigator.canShare && cv.toBlob) {
+        const blob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
+        const file = new File([blob], name, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "My Friendly Takeover" }); return; }
+      }
+    } catch (e) {}
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // ----- Playtest feedback (final screen).
+  function feedbackCard() {
+    if (S.feedbackSent) return `<div class="card"><h3>Thanks for the feedback!</h3><div class="hint">It goes straight to the developer.</div></div>`;
+    const r = S.fbRating || 0;
+    return `<div class="card fbcard"><h3>How was this game?</h3>
+      <div class="stars" role="radiogroup" aria-label="Rating">${[1, 2, 3, 4, 5].map((n) => `<button type="button" role="radio" aria-checked="${r === n}" data-star="${n}" class="${n <= r ? "on" : ""}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</div>
+      <textarea id="fb-text" class="notes" style="min-height:70px" maxlength="1000" placeholder="What was fun? What was confusing or boring?">${esc(S.fbText || "")}</textarea>
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="hint">${S.fbErr ? `<span class="neg">${esc(S.fbErr)}</span>` : "Anonymous. Helps make the game better."}</span><button class="btn small go" type="button" id="fb-send" ${r ? "" : "disabled"}>Send</button></div></div>`;
+  }
+  async function sendFeedback() {
+    const t = FT.standings(S.game), place = t.findIndex((x) => x.companyId === "you") + 1;
+    S.fbText = ($("#fb-text") || {}).value || "";
+    try {
+      await api().feedback({ rating: S.fbRating, comment: S.fbText.slice(0, 1000) || null, mode: S.mp ? "online" : "single", industry: S.game.config.industry, difficulty: S.game.config.difficulty, rounds: S.game.config.rounds, place, players: S.game.companies.length, game_id: S.mp ? MP.gameId : null });
+      S.feedbackSent = true; S.fbErr = "";
+    } catch (e) { S.fbErr = "Couldn't send it: " + e.message; }
+    saveGame(); renderModal(); bindModal();
+  }
+
+
+  // ======================================================================
+  // Guided first round: a few steps that end with a real forecast, made with the calculator.
+  // ======================================================================
+  const COACH_STEPS = [
+    { text: () => "Your first forecast, TOPSIM style. Open <b>Market</b> in the left menu.", target: '.menu [data-tab="market"]', done: () => S.tab === "market" || !!S.coachMarket },
+    { text: () => "Open the <b>Calc</b> in the top bar.", target: "#btn-calc", done: () => CALC.open },
+    { text: () => `In <b>Competitors</b>, click the number in the <b>Sold</b> column of your own row (${esc(me().companyName)}). It pastes into the calculator.`, target: ".tbl tr.me td.num", done: () => !!CALC.flash },
+    { text: () => `The market grows about ${Math.round(ind().growth * 100)}% a round. Press <b>×</b>, type <b>1.0${Math.round(ind().growth * 100)}</b>, press <b>=</b>. That's a rough sales forecast.`, target: '#calcwin [data-k="×"]', done: () => CALC.tape.some((t) => t.includes("×")) },
+    { text: () => "Put it to work: <b>Finance</b> → Investor call. Switch it on and type that number as units. Last year's profit is in Reports, if you want a starting point.", target: '.menu [data-tab="finance"]', done: () => !!S.draft.guidance },
+    { text: () => "Now set your price and production in <b>Production</b>, look around, and press <b>Submit</b>. Good luck!", target: "#btn-submit", done: () => S.game.round > 1 },
+  ];
+  let coachEl = null, coachTimer = 0;
+  function coachStart() {
+    let done = false; try { done = !!localStorage.getItem("ft-coach-done"); } catch (e) {}
+    S.coach = done ? null : 0;
+    if (!coachTimer) coachTimer = setInterval(coachTick, 400);
+  }
+  function coachEnd() { S.coach = null; try { localStorage.setItem("ft-coach-done", "1"); } catch (e) {} coachTick(); }
+  function coachTick() {
+    document.querySelectorAll(".coach-hl").forEach((el) => el.classList.remove("coach-hl"));
+    const show = S && S.screen === "game" && S.coach != null && S.game && !S.game.finished && !S.modal;
+    if (S && S.coach != null && S.game) {
+      while (S.coach < COACH_STEPS.length && COACH_STEPS[S.coach].done()) S.coach++;
+      if (S.coach >= COACH_STEPS.length) { coachEnd(); return; }
+    }
+    if (!coachEl) {
+      coachEl = document.createElement("aside"); coachEl.className = "coach"; coachEl.setAttribute("aria-live", "polite");
+      document.body.appendChild(coachEl);
+      coachEl.addEventListener("click", (e) => { if (e.target.closest("#coach-skip")) coachEnd(); });
+    }
+    coachEl.hidden = !show;
+    if (!show) return;
+    const st = COACH_STEPS[S.coach], html = `<div class="coach-k">First round · step ${S.coach + 1} of ${COACH_STEPS.length}</div><div>${st.text()}</div><button type="button" class="linkbtn" id="coach-skip">Skip the tutorial</button>`;
+    if (coachEl.dataset.step !== String(S.coach)) { coachEl.innerHTML = html; coachEl.dataset.step = String(S.coach); }
+    const t = document.querySelector(st.target);
+    if (t) t.classList.add("coach-hl");
+  }
+
   // ---------------- game flow ----------------
   function newGame(o, showTv) {
     const rng = new FT.Rng(Date.now() & 0x7fffffff);
@@ -1490,6 +1963,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { seen = !!localStorage.getItem("ft-help-seen"); } catch (e) {}
     if (!seen) { S.pendingTv = S.modal === "tv"; S.modal = "help"; }
     if (!S.modal && missionPending()) S.modal = "mission";
+    coachStart();
     saveGame();
     render();
   }
@@ -1524,6 +1998,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
     if (g.round === g.config.rounds) items.push(["finance", "gold", "Final round: the game ends after this one"]);
     if (!me().bankrupt && !S.draft.guidance) items.push(["finance", "", "Investor call: give your forecast (optional)"]);
+    const offers = dealList().filter((d) => d.to === "you" && d.status === "offered" && d.round === g.round).length;
+    if (offers) items.push(["chat", "gold", offers === 1 ? "A deal offer is waiting in Chat" : offers + " deal offers are waiting in Chat"]);
     const steps = `<span class="muted" style="font-size:12.5px;font-weight:800">Read the news, market and reports, go through the decision tabs, then press Submit.</span>`;
     return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}${missionChip()}</section>`;
   }
@@ -1593,8 +2069,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
       decisions[c.id] = d;
     }
     const round = g.round;
-    S.game = FT.resolveRound(g, decisions);
+    S.game = FT.resolveRound(g, decisions, dealsForRound(round));
+    settleDeals(round);
     afterRound(g, round, rng);
+    botPitch();
+    renderTalk();
   }
 
   // Everything that happens on screen after a round is resolved (locally or by the server).
@@ -1650,14 +2129,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const said = new Set();
     for (const c of bots) {
       const ev = c.history.at(-1)?.events || [];
-      if (ev.some((e) => e.startsWith("Took control"))) { S.chat.push({ round, kind: "chat", who: c.id, text: rng.pick(CHAT.takeover) }); said.add(c.id); }
-      else if (ev.some((e) => e.startsWith("Taken over"))) { S.chat.push({ round, kind: "chat", who: c.id, text: rng.pick(CHAT.victim) }); said.add(c.id); }
+      if (ev.some((e) => e.startsWith("Took control"))) { say(round, c.id, rng.pick(CHAT.takeover)); said.add(c.id); }
+      else if (ev.some((e) => e.startsWith("Taken over"))) { say(round, c.id, rng.pick(CHAT.victim)); said.add(c.id); }
     }
     const pick = rng.shuffle(bots.filter((c) => !said.has(c.id))).slice(0, 1 + rng.int(2));
     for (const c of pick) {
       const change = (after[c.id] - before[c.id]) / Math.max(1, before[c.id]);
       const pool = change > 0.06 ? CHAT.up : change < -0.03 ? CHAT.down : CHAT.taunt;
-      S.chat.push({ round, kind: "chat", who: c.id, text: rng.pick(pool) });
+      say(round, c.id, rng.pick(pool));
     }
   }
 
@@ -1665,6 +2144,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function render() {
     if (!S) return;
     if (calcEl || CALC.open) renderCalc();
+    if (talkEl || TALK.open) renderTalk();
+    if (S && S.tab === "market" && S.screen === "game") S.coachMarket = true;
+    if (coachEl || (S && S.coach != null)) setTimeout(coachTick, 0);
     if (S.screen === "lobby") {
       app.innerHTML = lobbyScreen();
       document.querySelectorAll("canvas[data-tavatar]").forEach((cv) => drawAvatar(cv, cv.dataset.tavatar, css(COLORS[Number(cv.dataset.color) % COLORS.length])));
@@ -1701,7 +2183,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
-      <span class="tools"><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
+      <span class="tools"><button class="btn snd chatbtn" id="btn-chat" type="button" aria-pressed="${TALK.open}"${tipAttr("Chat and private deals")}>Chat</button><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
       ${S.mp && !g.finished ? `<span class="mpchip" title="Online game ${esc(MP.game ? MP.game.code : "")}">ONLINE ${esc(MP.game ? MP.game.code : "")} · <b id="mp-timer"></b></span>` : ""}
       ${submitButton()}
     </header>`;
@@ -2965,7 +3447,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${investorResultCard(r)}
         <div class="card"><h3>What happened</h3>${r.events.length || heads.length ? `<div class="feed" style="max-height:none">${r.events.map((e) => `<div class="msg"><span class="icon">YOU</span><div>${esc(e)}</div></div>`).join("")}${heads.map((t) => `<div class="msg"><span class="icon news">NEWS</span><div>${esc(t)}</div></div>`).join("")}</div>` : `<div class="hint">A quiet round. Suspiciously quiet.</div>`}</div>
       </div>
-      <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-continue" data-autofocus>Plan round ${S.game.round}</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">${emojiBar()}<button class="btn go" type="button" id="btn-continue" data-autofocus>Plan round ${S.game.round}</button></div>
     </div></div>`;
   }
 
@@ -3042,7 +3524,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }).join("");
     return `<div class="win showwin"><div class="win-title">Round ${sh.round}: the numbers are in<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       <div class="srows" id="srows">${rows}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="muted" style="font-size:12.5px">Profit this round · company value</span><button class="btn go" type="button" id="btn-show-done" data-autofocus>${S.game.finished ? "Final results" : "Your report"}</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">${emojiBar()}<button class="btn go" type="button" id="btn-show-done" data-autofocus>${S.game.finished ? "Final results" : "Your report"}</button></div>
     </div></div>`;
   }
   function runShow() {
@@ -3082,7 +3564,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="win boardwin"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       <div class="boardroom"><canvas id="board-cv" width="192" height="108" aria-hidden="true"></canvas></div>
       <div class="intro" style="margin:0">${caption}</div>${extra}
-      <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-board-next" ${extra ? "" : "data-autofocus"}>${last ? "Continue" : "Next"}</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">${emojiBar()}<button class="btn go" type="button" id="btn-board-next" ${extra ? "" : "data-autofocus"}>${last ? "Continue" : "Next"}</button></div>
     </div></div>`;
   }
   let boardRaf = 0;
@@ -3231,7 +3713,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <h2 style="margin:0;font-family:var(--font-display);font-weight:400;font-size:24px">${S.game.monopolyBy ? (w.id === "you" ? "MONOPOLY! You own the whole industry." : "MONOPOLY! " + esc(w.playerName) + " owns the whole industry.") : w.id === "you" ? "You win. Champagne for the board!" : esc(w.playerName) + " wins with " + esc(w.companyName) + "."}</h2>
       <div class="muted">You finished #${myRank} of ${t.length}.</div>
       <div class="podium pop">${rows}</div>
+      ${emojiBar()}
       <div class="card"><h3>Company value per round</h3>${valueChart(640, 210)}</div>
+      ${recapCard()}
+      ${S.mp ? leagueCard() : ""}
+      ${feedbackCard()}
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Look at the city</button><button class="btn" type="button" id="btn-menu-final">Main menu</button><button class="btn go" type="button" id="btn-again" data-autofocus>Play again</button></div>
     </div></div>`;
   }
@@ -3460,16 +3946,17 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.draft.guidance = S.guidanceOpen && Number.isFinite(u) && u >= 0 && Number.isFinite(p) ? { units: Math.round(u), profit: Math.round(p) } : null;
   }
   function bindAgenda() {
-    document.querySelectorAll(".agenda [data-tab]").forEach((el) => el.addEventListener("click", (e) => { S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }));
+    document.querySelectorAll(".agenda [data-tab]").forEach((el) => el.addEventListener("click", (e) => { if (e.currentTarget.dataset.tab === "chat") { toggleTalk(true); return; } S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }));
   }
   function bind() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
-    on("[data-tab]", "click", (e) => { S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; });
+    on("[data-tab]", "click", (e) => { if (e.currentTarget.dataset.tab === "chat") { toggleTalk(true); return; } S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; });
     on("#city", "pointermove", cityTip);
     on("#city", "pointerdown", cityTip);
     on("#city", "pointerleave", hideTip);
     on("#btn-menu", "click", goTitle);
-    on("#btn-calc", "click", () => { toggleCalc(); sfx("click"); });
+    on("#btn-calc", "click", () => { if (!CALC.open) TALK.open = false, renderTalk(); toggleCalc(); sfx("click"); });
+    on("#btn-chat", "click", () => { toggleTalk(); sfx("click"); });
     bindSubmit();
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
     on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
@@ -3564,6 +4051,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.modal = null; renderModal(); bindModal();
     });
     on("#btn-menu-final", "click", goTitle);
+    on("[data-star]", "click", (e) => { S.fbRating = Number(e.currentTarget.dataset.star); S.fbText = ($("#fb-text") || {}).value || S.fbText; renderModal(); bindModal(); });
+    on("#fb-send", "click", sendFeedback);
+    on("#btn-recap", "click", saveRecap);
+    on("#btn-rematch", "click", startRematch);
+    on("#btn-join-rematch", "click", joinRematch);
     on("#btn-mp-create", "click", () => onlineAction("create"));
     on("#btn-change", "click", () => { MP.submitted = 0; S.modal = null; renderModal(); const b = $("#btn-submit"); if (b) { b.outerHTML = submitButton(); bindSubmit(); } });
     on("#btn-mp-join", "click", () => onlineAction("join"));

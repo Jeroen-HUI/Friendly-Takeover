@@ -14,6 +14,19 @@ The whole game is one HTML file. Open `index.html` in a browser, or play the hos
 
 Online play needs the hosted page (GitHub Pages) or the local file with internet access; it does not work inside the Claude artifact preview.
 
+**Talk & deals (Chat button):** chat with the whole table or one player, and make private deals that the game enforces when the round resolves:
+- **Shares:** sell or buy shares (your own founder shares or stakes you hold) for an agreed total price. Can hand over control: a takeover by handshake.
+- **Loans:** lend or borrow; the repayment happens automatically 1–3 rounds later and counts in both company values meanwhile.
+- **Non-attack pacts:** 1–4 rounds of no share buying and no targeted wildcards between two companies. Whoever breaks it pays the agreed penalty to the other, and the news calls it a betrayal.
+
+In single-player the bots answer your offers (good offers get a yes) and now and then pitch you one. **Emoji reactions** float over the results and boardroom scenes (online, everyone sees them).
+
+**Seasons:** after an online game, "Start a rematch" opens a new lobby in the same league; the final screen shows the season table (10/7/5/3/2/1 points per game).
+
+**First game:** a short guided first round walks you through a real forecast with the calculator. The final screen has a "Your story" recap you can save as a picture, and a quick rating for playtest feedback.
+
+**Rounds close on their own:** a scheduled job checks every minute and closes any round whose time is up, even if nobody has the game open.
+
 ## Quick start
 
 ```bash
@@ -91,7 +104,7 @@ Three kinds of bots test the balance. **Pro** bots try out candidate plans with 
 
 Quick per-industry balance check: `npm run balance` (all-pro field). Try rule changes without editing code: `npx tsx src/sim/experiment.ts 24 ai '{"COSTS":{"overtimePremium":0}}'`.
 
-All-pro win rates after the hidden mechanics (60 matches per industry): chocolate 22–27% for every positioning; AI premium 45%, others 17–22%; weed premium 40%, others 15–23%. Before, budget won only 2–5% and premium 38–50%.
+All-pro win rates (60 matches per industry): chocolate 22–27%, AI 17–32%, weed 17–30% for every positioning; average scores within 9% (chocolate), 8% (AI) and 4% (weed). AI and weed use a slightly smaller premium group and bigger hype group, because their faster growth and their news favoured premium. Before the hidden mechanics, budget won only 2–5% and premium 38–50%.
 
 ## Database (Supabase)
 
@@ -114,6 +127,9 @@ Server function `game` (`supabase/functions/game`, deployed):
 - `{ "action": "start", "game_id" }`: host only, in the lobby. Builds the engine state, opens round 1 with a deadline, and writes round-0 results and each player's starting report.
 - `{ "action": "resolve", "game_id" }`: resolves the open round when everyone has submitted and the host skips the timer, or when the deadline has passed (any player may call it then). A claim on `games.current_round` makes sure two calls can never both resolve the same round. Players who did not submit repeat last round's decisions.
 - `{ "action": "rename", "game_id", "target_id", "name" }`: whoever controls a company renames it.
+- `{ "action": "tick" }` with header `x-tick-secret`: closes every overdue round. Called every minute by the `ft-close-overdue-rounds` pg_cron job; the secret lives in Vault (`ft_tick_secret`) and is checked with `tick_secret_ok`.
+
+Accepted deals (`deals` table, offered by insert, answered with `respond_deal`, withdrawn with `cancel_deal`) are passed to the engine when the round resolves and marked done or failed with the reason. Chat is in `messages` (to everyone when `to_player_id` is null; `kind` = chat or reaction). Seasons: `games.league_id`, `league_table`, `league_lobby`. Playtest ratings go to `feedback` (insert-only).
 
 The edge function loads `engine.js` from jsDelivr pinned to a commit (see the import in `index.ts`); after rebuilding `engine.js`, commit it, update that commit hash and redeploy.
 
@@ -129,8 +145,7 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 ## Not built yet
 
-- In-game chat and private deal messages between players (the `messages` table is ready).
-- Automatic deadline resolution for daily mode (a scheduled job calling the `game` function; `pg_net` is already enabled).
+- Real accounts (online play uses anonymous sign-in, tied to the browser), payments, and a desktop build for Steam.
 - Tycoon extras beyond staff (multiple products, logistics).
 
 ## Structure

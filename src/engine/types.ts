@@ -67,6 +67,13 @@ export interface Decisions {
 
 export type GuidanceResult = "hit" | "close" | "miss";
 
+/** Private deals between players, agreed outside the decisions and carried out when the round resolves. */
+export type DealKind = "shares" | "loan" | "pact";
+export interface ShareDealTerms { company: string; qty: number; price: number; direction: "sell" | "buy" }
+export interface LoanDealTerms { amount: number; repay: number; rounds: number; direction: "lend" | "borrow" }
+export interface PactDealTerms { rounds: number; penalty: number }
+export interface DealOrder { id: string; from: string; to: string; kind: DealKind; terms: ShareDealTerms | LoanDealTerms | PactDealTerms }
+
 /** What a bought research report reveals, delivered with the round report. */
 export interface ResearchResult {
   /** Each rival's spending and plan for the round just played. */
@@ -186,6 +193,8 @@ export interface RoundReport {
   workers: number;
   auctionPaid: number;
   showdownPaid: number;
+  /** Net cash from deals with other players: share deals, loans and repayments, pact penalties. */
+  dealCash?: number;
   /** Retail channel. `sold` and `revenue` include retail; these split it out. */
   wholesaleSold: number;
   retailPrice: number;
@@ -297,6 +306,12 @@ export interface GameState {
   publicSharePrices?: Record<string, number>;
   /** Market size and total sales per segment for every round played (year 0 included). */
   marketLog?: { round: number; potential: Record<SegmentId, number>; sold: Record<SegmentId, number>; materialIndex?: number; avgPrice?: number }[];
+  /** Non-attack pacts: no share purchases or targeted wildcards between a and b up to and including round `until`. */
+  pacts?: { a: string; b: string; until: number; penalty: number }[];
+  /** Loans between players, repaid automatically at the start of round `due`. */
+  playerLoans?: { lender: string; borrower: string; repay: number; due: number }[];
+  /** What happened to each deal in the round just played. */
+  dealLog?: { id: string; round: number; ok: boolean; reason: string; from: string; to: string }[];
   /** Hidden market drivers (server only online): raw material price index for the coming round, slow trends per buyer group, and this game's price sensitivity per group. */
   market?: { materialIndex: number; trend?: Record<SegmentId, number>; sensitivity?: Record<SegmentId, number> };
   /** Special rounds announced a round ahead (Black Friday, Investor Day). */

@@ -1,10 +1,13 @@
 // Balance experiments: tweak COSTS / GUIDANCE at runtime and run an all-pro field.
 // Usage: npx tsx src/sim/experiment.ts <matches> <industry> '<json overrides {"COSTS":{...},"GUIDANCE":{...}}>'
-import { COSTS, GUIDANCE, type IndustryId } from "../engine";
+import { COSTS, GUIDANCE, INDUSTRIES, type IndustryId } from "../engine";
 import { runMatch } from "./simulate";
 const N = Number(process.argv[2] ?? 30), ind = (process.argv[3] ?? "chocolate") as IndustryId;
 const o = JSON.parse(process.argv[4] ?? "{}");
 Object.assign(COSTS, o.COSTS ?? {}); Object.assign(GUIDANCE, o.GUIDANCE ?? {});
+// INDUSTRY: top-level fields (growth, news: [] ...) and per-segment tweaks {"segments":{"premium":{"weight":0.12}}}.
+const I = INDUSTRIES[ind] as any, io = o.INDUSTRY ?? {};
+for (const [k, v] of Object.entries(io)) if (k === "segments") for (const [sg, t] of Object.entries(v as object)) Object.assign(I.segments[sg], t); else I[k] = v;
 const lineup = ["pro-budget", "pro-mainstream", "pro-premium", "pro-hype"] as const;
 const st: Record<string, { w: number; s: number }> = {};
 for (let m = 0; m < N; m++) {

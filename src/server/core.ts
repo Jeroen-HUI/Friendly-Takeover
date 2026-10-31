@@ -3,7 +3,7 @@
 
 import {
   createGame, resolveRound, standings, publicInfo, companyValues, sharePrices, renameCompany,
-  type CeoTrait, type Company, type Decisions, type DifficultyId, type GameState, type IndustryId, type RoundReport,
+  type CeoTrait, type Company, type DealOrder, type Decisions, type DifficultyId, type GameState, type IndustryId, type RoundReport,
 } from "../engine";
 import { Rng } from "../engine/rng";
 import { botDecisions, type BotStrategy } from "../sim/bots";
@@ -45,7 +45,7 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
 }
 
 /** Resolves a round: human decisions as submitted (missing = repeat last round), bots decide for themselves. */
-export function resolveOnlineRound(state: GameState, human: Record<string, Partial<Decisions>>): GameState {
+export function resolveOnlineRound(state: GameState, human: Record<string, Partial<Decisions>>, deals: DealOrder[] = []): GameState {
   const decisions: Record<string, Partial<Decisions>> = { ...human };
   const rng = new Rng((state.rngState ^ (state.round * 7919)) | 0);
   const values = companyValues(state);
@@ -63,7 +63,7 @@ export function resolveOnlineRound(state: GameState, human: Record<string, Parti
     decisions[id] = d;
   }
   const before = Object.fromEntries(state.companies.map((c) => [c.id, c.controlledBy]));
-  let next = resolveRound(state, decisions);
+  let next = resolveRound(state, decisions, deals);
   // Bots rename the companies they take over.
   for (const c of next.companies) {
     const by = c.controlledBy;
@@ -80,12 +80,13 @@ const HIDDEN_REPORT: Partial<RoundReport> = {
   marketingCost: 0, rndCost: 0, brandCost: 0, researchCost: 0, capacityInvest: 0, interest: 0, storeOpenCost: 0, storeUpkeep: 0,
   wildcardCost: 0, legalCost: 0, staffCost: 0, workers: 0, auctionPaid: 0, sharePurchases: 0, buybackCost: 0, shareSales: 0,
   loanChange: 0, emergencyLoan: 0, emergencyFee: 0, retailDemand: 0, cashStart: 0, dividendsPaid: 0, dividendsReceived: 0,
-  experienceFactor: 0, unitCostBase: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
+  dealCash: 0, experienceFactor: 0, unitCostBase: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
 };
 
 /** What one player may see: everything public, their own company in full, rivals without their secrets. */
 export function viewFor(state: GameState, playerId: string): GameState {
   const values = companyValues(state), prices = sharePrices(state);
+  // (Pacts are announced in the news, so everyone sees them.)
   const view: GameState = JSON.parse(JSON.stringify(state));
   view.publicValues = values;
   view.publicSharePrices = prices;
@@ -94,6 +95,9 @@ export function viewFor(state: GameState, playerId: string): GameState {
   delete view.upcomingNews;
   view.specialEvents = (view.specialEvents ?? []).filter((e) => e.round <= state.round + 1);
   delete view.bots;
+  // Loans between players are private to the two of them.
+  view.playerLoans = (view.playerLoans ?? []).filter((l) => l.lender === playerId || l.borrower === playerId);
+  view.dealLog = (view.dealLog ?? []).filter((d) => d.from === playerId || d.to === playerId);
   // Hidden market drivers: only the raw material index is public (it's in the market report).
   if (view.market) view.market = { materialIndex: view.market.materialIndex };
   view.companies = view.companies.map((c: Company) => {

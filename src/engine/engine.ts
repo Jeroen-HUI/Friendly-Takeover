@@ -3,7 +3,7 @@
 // result for the same input, so the server can re-run or audit any round.
 
 import {
-  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, CAMPAIGNS, COSTS, ECONOMY, GUIDANCE, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
+  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, CAMPAIGNS, COSTS, DEALS, ECONOMY, GUIDANCE, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
   WILDCARD_EFFECTS, WILDCARDS, type IndustryConfig,
 } from "./config";
 import { Rng } from "./rng";
@@ -27,6 +27,10 @@ import {
   type SegmentSales,
   type Standing,
   type GuidanceResult,
+  type DealOrder,
+  type ShareDealTerms,
+  type LoanDealTerms,
+  type PactDealTerms,
 } from "./types";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -204,6 +208,11 @@ export function companyValues(state: GameState): Record<string, number> {
   const industry = INDUSTRIES[state.config.industry];
   const base: Record<string, number> = {};
   for (const c of state.companies) base[c.id] = baseValue(c, industry);
+  // Loans between players: money owed to you counts, money you owe doesn't belong to you.
+  for (const l of state.playerLoans ?? []) {
+    if (base[l.lender] !== undefined) base[l.lender] += l.repay;
+    if (base[l.borrower] !== undefined) base[l.borrower] -= l.repay;
+  }
   const out: Record<string, number> = {};
   for (const c of state.companies) {
     if (c.bankrupt) {
@@ -413,7 +422,7 @@ const FLOP_LINES = [
 // Round resolution
 // ---------------------------------------------------------------------------
 
-export function resolveRound(input: GameState, decisionsByCompany: Record<string, Partial<Decisions>>): GameState {
+export function resolveRound(input: GameState, decisionsByCompany: Record<string, Partial<Decisions>>, deals: DealOrder[] = []): GameState {
   if (input.finished) throw new Error("Game is finished");
   const state = deepClone(input);
   const industry = INDUSTRIES[state.config.industry];
@@ -469,6 +478,103 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const byIdAll = new Map(state.companies.map((c) => [c.id, c]));
   const special: Record<string, { wildcard: number; legal: number; staff: number; auction: number; events: string[] }> = {};
   for (const c of alive) special[c.id] = { wildcard: 0, legal: 0, staff: 0, auction: 0, events: [] };
+
+  // Deals between players: loan repayments that fall due, then this round's agreed deals. ----------
+  const dealCash: Record<string, number> = {};
+  const addDealCash = (id: string, x: number) => { dealCash[id] = (dealCash[id] ?? 0) + x; };
+  const note = (id: string, text: string) => { if (special[id]) special[id].events.push(text); };
+  const eur0 = (x: number) => "€" + Math.round(x).toLocaleString("en");
+  state.dealLog = [];
+  const dueLoans = (state.playerLoans ?? []).filter((l) => l.due <= round);
+  state.playerLoans = (state.playerLoans ?? []).filter((l) => l.due > round);
+  for (const l of dueLoans) {
+    const borrower = byIdAll.get(l.borrower), lender = byIdAll.get(l.lender);
+    if (!borrower || !lender || borrower.bankrupt) { if (lender) note(lender.id, `A loan to ${borrower?.companyName ?? "a bankrupt company"} won't be repaid: they went bust`); continue; }
+    borrower.cash -= l.repay; addDealCash(borrower.id, -l.repay);
+    if (!lender.bankrupt) { lender.cash += l.repay; addDealCash(lender.id, l.repay); }
+    note(borrower.id, `Repaid ${eur0(l.repay)} to ${lender.companyName}`);
+    note(lender.id, `${borrower.companyName} repaid ${eur0(l.repay)}`);
+  }
+  const finite = (x: unknown) => typeof x === "number" && Number.isFinite(x);
+  for (const deal of deals) {
+    const from = byIdAll.get(deal.from), to = byIdAll.get(deal.to);
+    const done = (ok: boolean, reason: string) => {
+      state.dealLog!.push({ id: deal.id, round, ok, reason, from: deal.from, to: deal.to });
+      if (!ok && from && to) { note(from.id, `Deal with ${to.companyName} fell through: ${reason}`); note(to.id, `Deal with ${from.companyName} fell through: ${reason}`); }
+    };
+    if (!from || !to || from.id === to.id || from.bankrupt || to.bankrupt) { done(false, "one of the companies is out of the game"); continue; }
+    if (deal.kind === "shares") {
+      const t = deal.terms as ShareDealTerms;
+      const target = byIdAll.get(t.company);
+      const qty = Math.floor(Number(t.qty)), price = Number(t.price);
+      if (!target || target.bankrupt) { done(false, "that company is gone"); continue; }
+      if (!finite(price) || price < 0 || price > DEALS.maxPrice || !(qty >= 1 && qty <= 100)) { done(false, "the terms don't add up"); continue; }
+      if (round < difficulty.takeoverUnlockRound) { done(false, `share trading opens in round ${difficulty.takeoverUnlockRound}`); continue; }
+      const seller = t.direction === "buy" ? to : from, buyer = t.direction === "buy" ? from : to;
+      const held = target.id === seller.id ? target.shares.founder : target.shares.holders[seller.id] ?? 0;
+      if (held < qty) { done(false, `${seller.companyName} only had ${held} shares of ${target.companyName}`); continue; }
+      if (target.controlledBy && target.controlledBy !== seller.id && target.controlledBy !== buyer.id) { done(false, `${target.companyName} is controlled by someone else`); continue; }
+      if (buyer.cash < price) { done(false, `${buyer.companyName} couldn't pay ${eur0(price)}`); continue; }
+      if (target.id === seller.id) target.shares.founder -= qty; else { const left = held - qty; if (left > 0) target.shares.holders[seller.id] = left; else delete target.shares.holders[seller.id]; }
+      if (target.id === buyer.id) target.shares.founder += qty; else target.shares.holders[buyer.id] = (target.shares.holders[buyer.id] ?? 0) + qty;
+      buyer.cash -= price; seller.cash += price; addDealCash(buyer.id, -price); addDealCash(seller.id, price);
+      const nowHeld = target.id === buyer.id ? 0 : target.shares.holders[buyer.id];
+      note(buyer.id, `Deal: bought ${qty} shares of ${target.companyName} from ${seller.companyName} for ${eur0(price)}`);
+      note(seller.id, `Deal: sold ${qty} shares of ${target.companyName} to ${buyer.companyName} for ${eur0(price)}`);
+      state.feed.push({ round, headline: `Backroom deal: ${buyer.companyName} buys ${qty}% of ${target.companyName} from ${seller.companyName}` });
+      if (target.controlledBy === seller.id && (target.shares.holders[seller.id] ?? 0) <= BALANCE.controlThreshold) target.controlledBy = null;
+      if (nowHeld > BALANCE.controlThreshold && target.controlledBy !== buyer.id) {
+        target.controlledBy = buyer.id;
+        buyer.takeoverCooldown = difficulty.takeoverCooldown;
+        state.feed.push({ round, headline: `${buyer.playerName} now controls ${target.companyName}, sealed with a handshake. A truly friendly takeover.` });
+        note(buyer.id, `Took control of ${target.companyName}`);
+        if (target.id !== seller.id) note(target.id, `Taken over by ${buyer.companyName} in a backroom deal`);
+      }
+      done(true, `${qty} shares of ${target.companyName} for ${eur0(price)}`);
+    } else if (deal.kind === "loan") {
+      const t = deal.terms as LoanDealTerms;
+      const amount = Number(t.amount), repay = Number(t.repay), rounds = Math.floor(Number(t.rounds));
+      if (!finite(amount) || !finite(repay) || amount <= 0 || repay < 0 || amount > DEALS.maxLoan || repay > DEALS.maxLoan * 3 || !(rounds >= 1 && rounds <= DEALS.maxLoanRounds)) { done(false, "the terms don't add up"); continue; }
+      const lender = t.direction === "borrow" ? to : from, borrower = t.direction === "borrow" ? from : to;
+      if (lender.cash < amount) { done(false, `${lender.companyName} didn't have ${eur0(amount)} to lend`); continue; }
+      lender.cash -= amount; borrower.cash += amount; addDealCash(lender.id, -amount); addDealCash(borrower.id, amount);
+      const due = Math.min(state.config.rounds, round + rounds);
+      state.playerLoans.push({ lender: lender.id, borrower: borrower.id, repay, due });
+      note(lender.id, `Deal: lent ${eur0(amount)} to ${borrower.companyName}, ${eur0(repay)} comes back at the start of round ${due}`);
+      note(borrower.id, `Deal: borrowed ${eur0(amount)} from ${lender.companyName}, repay ${eur0(repay)} at the start of round ${due}`);
+      done(true, `${eur0(amount)} now, ${eur0(repay)} back in round ${due}`);
+    } else if (deal.kind === "pact") {
+      const t = deal.terms as PactDealTerms;
+      const rounds = Math.floor(Number(t.rounds)), penalty = Number(t.penalty);
+      if (!finite(penalty) || penalty < 0 || penalty > DEALS.maxPenalty || !(rounds >= 1 && rounds <= DEALS.maxPactRounds)) { done(false, "the terms don't add up"); continue; }
+      state.pacts = (state.pacts ?? []).filter((p) => !((p.a === from.id && p.b === to.id) || (p.a === to.id && p.b === from.id)));
+      state.pacts.push({ a: from.id, b: to.id, until: round + rounds - 1, penalty });
+      note(from.id, `Pact with ${to.companyName}: no attacks through round ${round + rounds - 1} (breaking it costs ${eur0(penalty)})`);
+      note(to.id, `Pact with ${from.companyName}: no attacks through round ${round + rounds - 1} (breaking it costs ${eur0(penalty)})`);
+      state.feed.push({ round, headline: `${from.companyName} and ${to.companyName} sign a non-attack pact. Nobody believes it will last` });
+      done(true, `no attacks through round ${round + rounds - 1}`);
+    } else done(false, "unknown deal");
+  }
+  // A pact is broken by buying the other's shares or aiming a wildcard at them: the attacker pays the penalty.
+  const reportsRef: { r?: Record<string, RoundReport> } = {};
+  const breakPact = (attacker: Company, victim: Company, how: string) => {
+    const p = (state.pacts ?? []).find((x) => x.until >= round && ((x.a === attacker.id && x.b === victim.id) || (x.a === victim.id && x.b === attacker.id)));
+    if (!p) return;
+    state.pacts = (state.pacts ?? []).filter((x) => x !== p);
+    attacker.cash -= p.penalty; victim.cash += p.penalty;
+    if (reportsRef.r) {
+      const ra = reportsRef.r[attacker.id], rv = reportsRef.r[victim.id];
+      if (ra) ra.dealCash = (ra.dealCash ?? 0) - p.penalty;
+      if (rv) rv.dealCash = (rv.dealCash ?? 0) + p.penalty;
+      ra?.events.push(`You broke your pact with ${victim.companyName} (${how}) and paid ${eur0(p.penalty)}`);
+      rv?.events.push(`${attacker.companyName} broke your pact (${how}) and paid you ${eur0(p.penalty)}`);
+    } else {
+      addDealCash(attacker.id, -p.penalty); addDealCash(victim.id, p.penalty);
+      note(attacker.id, `You broke your pact with ${victim.companyName} (${how}) and paid ${eur0(p.penalty)}`);
+      note(victim.id, `${attacker.companyName} broke your pact (${how}) and paid you ${eur0(p.penalty)}`);
+    }
+    state.feed.push({ round, headline: `Betrayal! ${attacker.companyName} breaks its pact with ${victim.companyName} and pays ${eur0(p.penalty)}` });
+  };
   const shielded = new Set<string>();
   const crazyBoost: Record<string, number> = {};
   const spyReports: Record<string, NonNullable<ResearchResult["spy"]>> = {};
@@ -491,6 +597,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const used = c.wildcardsUsed[wc.card] ?? 0;
     const target = wc.target ? byIdAll.get(wc.target) : undefined;
     if (used >= card.maxUses || (card.needsTarget && (!target || target.bankrupt || target.id === c.id))) continue;
+    if (card.needsTarget && target) breakPact(c, target, "a " + card.name.toLowerCase());
     c.wildcardsUsed[wc.card] = used + 1;
     c.cash -= card.cost;
     special[c.id].wildcard += card.cost;
@@ -830,6 +937,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       workers: c.workers,
       auctionPaid: sp.auction,
       showdownPaid: 0,
+      dealCash: dealCash[c.id] ?? 0,
       wholesaleSold: w.sold,
       retailPrice: d.retailPrice,
       retailDemand: Math.round(w.retailDemand),
@@ -875,6 +983,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       credibility: c.credibility ?? 0,
     };
   }
+
+  reportsRef.r = reports;
 
   // 4. Brand, hype, R&D, capacity -------------------------------------------------
   for (const w of work) {
@@ -962,6 +1072,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         const target = byId.get(targetId);
         if (!target || target.bankrupt || target.id === buyer.id) continue;
         if (target.controlledBy && target.controlledBy !== buyer.id) { w.events.push(`Couldn't buy shares of ${target.companyName}: it's controlled by someone else`); continue; }
+        breakPact(buyer, target, "bought its shares");
         const held = target.shares.holders[buyer.id] ?? 0;
         const ruthless = buyer.trait === "ruthless" ? TRAIT_EFFECTS.ruthlessPremiumFactor : 1;
         const investorDay = (state.specialEvents ?? []).some((e) => e.round === round && e.id === "investorDay") ? EVENTS.investorDay.premiumFactor : 1;
@@ -1092,6 +1203,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     state.monopolyBy = boss.id;
     state.feed.push({ round, headline: `MONOPOLY! ${boss.playerName} controls every company in the industry. Game over.` });
   }
+  state.pacts = (state.pacts ?? []).filter((p) => p.until > round);
   state.round = round + 1;
   state.auction = null;
   state.summit = null;

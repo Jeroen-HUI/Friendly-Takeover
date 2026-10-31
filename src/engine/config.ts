@@ -259,6 +259,9 @@ export const COSTS = {
   sensitivityRange: [0.85, 1.15] as [number, number],
 };
 
+/** Deals between players: limits that keep them sane. */
+export const DEALS = { maxPrice: 50_000_000, maxLoan: 5_000_000, maxLoanRounds: 3, maxPactRounds: 4, maxPenalty: 5_000_000 };
+
 /** Investor call: give guidance, hit it, and investors trust you more. */
 export const GUIDANCE = {
   /** Hit: both errors within these (units, profit). */
@@ -340,15 +343,16 @@ const CHOCOLATE: IndustryConfig = {
  */
 function deriveIndustry(
   base: IndustryConfig,
-  o: Pick<IndustryConfig, "id" | "name" | "labels" | "growth" | "crazyProducts" | "news"> & { baseUnitCost: number },
+  o: Pick<IndustryConfig, "id" | "name" | "labels" | "growth" | "crazyProducts" | "news"> & { baseUnitCost: number; segmentTweaks?: Partial<Record<SegmentId, Partial<SegmentConfig>>> },
 ): IndustryConfig {
   const f = o.baseUnitCost / base.baseUnitCost;
+  const { segmentTweaks, ...rest } = o;
   const segments = Object.fromEntries(
-    Object.entries(base.segments).map(([k, v]) => [k, { ...v, refPrice: Math.round(v.refPrice * f * 100) / 100 }]),
+    Object.entries(base.segments).map(([k, v]) => [k, { ...v, ...(segmentTweaks?.[k as SegmentId] ?? {}), refPrice: Math.round(v.refPrice * f * 100) / 100 }]),
   ) as Record<SegmentId, SegmentConfig>;
   return {
     ...base,
-    ...o,
+    ...rest,
     segments,
     potentialPerCompany: Math.round(base.potentialPerCompany / f),
     start: { ...base.start, capacity: Math.round(base.start.capacity / f), price: Math.round(base.start.price * f * 100) / 100 },
@@ -357,6 +361,8 @@ function deriveIndustry(
 }
 
 const AI = deriveIndustry(CHOCOLATE, {
+  // Faster growth and this industry's news favour premium a little; a slightly smaller premium group (and bigger hype group) evens it out.
+  segmentTweaks: { premium: { weight: 0.125 }, hype: { weight: 0.195 } },
   id: "ai",
   name: "AI",
   labels: { product: "subscription", products: "subscriptions", capacity: "servers", quality: "model quality", unit: "subscriptions" },
@@ -378,6 +384,8 @@ const AI = deriveIndustry(CHOCOLATE, {
 });
 
 const WEED = deriveIndustry(CHOCOLATE, {
+  // Faster growth and this industry's news favour premium a little; a slightly smaller premium group (and bigger hype group) evens it out.
+  segmentTweaks: { premium: { weight: 0.125 }, hype: { weight: 0.195 } },
   id: "weed",
   name: "Weed (18+)",
   labels: { product: "gram", products: "grams", capacity: "grow rooms", quality: "strain quality", unit: "grams" },

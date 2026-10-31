@@ -40,6 +40,8 @@ if (!/Your secret mission/.test(doc.querySelector(".overlay")?.textContent || ""
 click("#btn-mission-ok");
 if (doc.querySelector("#btn-mission-ok")) throw new Error("briefing should close");
 if (!doc.querySelector(".agenda .mchip")) throw new Error("mission chip missing from the round strip");
+await wait(450);
+if (!doc.querySelector(".coach:not([hidden])") || !/step 1 of/.test(doc.querySelector(".coach").textContent)) throw new Error("first-round tutorial missing");
 click(".agenda .mchip");
 if (!doc.querySelector(".dossier.big .mbar, .dossier.big .ds-line")) throw new Error("mission dossier missing in the boardroom");
 // Menu goes back to the title, Continue resumes.
@@ -54,6 +56,8 @@ for (const tab of ["production", "rnd", "marketing", "finance", "takeovers", "bo
   click(`[data-tab="${tab}"]`);
   if (!doc.querySelector(".win-body")) throw new Error("tab " + tab + " empty");
 }
+await wait(450);
+if (!/step 2 of/.test(doc.querySelector(".coach").textContent)) throw new Error("tutorial should advance after opening Market: " + doc.querySelector(".coach").textContent);
 click('[data-tab="production"]');
 // Hovering a chart bar shows its exact number.
 const bar = doc.querySelector(".chart rect[data-tip]");
@@ -78,6 +82,24 @@ click('[data-theme-pick="light"]'); if (doc.documentElement.dataset.theme !== "l
 click('[data-theme-pick="dark"]');
 click("#btn-close");
 click('[data-tab="market"]');
+// Talk & deals: message a bot and offer it a pact.
+{
+  const S0 = window.__ftDebug.S, bot = S0.game.companies.find((c) => c.id !== "you" && !String(S0.strat[c.id]).includes("raider"));
+  click("#btn-chat");
+  if (!doc.querySelector("#talkwin:not([hidden])")) throw new Error("chat did not open");
+  click(`[data-thread="${bot.id}"]`);
+  const inp = doc.getElementById("t-input"); inp.value = "Want to be friends?"; doc.getElementById("tsend").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  if (!/Want to be friends/.test(doc.getElementById("tlog").textContent)) throw new Error("chat message not shown");
+  click("#t-newdeal"); click('[data-dkind="pact"]');
+  doc.getElementById("d-penalty").value = "300k";
+  click("#d-send");
+  await wait(1000);
+  const deal = S0.deals.find((d) => d.kind === "pact");
+  if (!deal || deal.status !== "accepted") throw new Error("bot should accept a 300k pact: " + JSON.stringify(deal));
+  if (!/Agreed/.test(doc.getElementById("tlog").textContent)) throw new Error("deal card missing");
+  click("#talk-close");
+  window.__pactBot = bot.id;
+}
 click('input[name="research"][value="competitors"]');
 click('input[name="research"][value="forecast"]');
 click('input[name="research"][value="marketStudy"]');
@@ -179,6 +201,15 @@ for (let r = 1; r <= 8; r++) {
   if (r === 1 && !/Spy report/.test(doc.body.textContent)) throw new Error("spy report missing");
   if (r === 1 && !/Investor call/.test(doc.querySelector(".overlay").textContent)) throw new Error("investor call result missing");
   if (r === 1 && window.__ftDebug.S.notes !== "Premium is shrinking?") throw new Error("notes not kept");
+  if (r === 1) {
+    const S1 = window.__ftDebug.S;
+    if (!(S1.game.pacts || []).some((p) => [p.a, p.b].includes(window.__pactBot)) && !S1.game.feed.some((f) => f.headline.startsWith("Betrayal"))) throw new Error("pact not in the game state: " + JSON.stringify([S1.game.pacts, S1.game.feed.filter((f) => f.round === 1).map((f) => f.headline)]));
+    if (S1.deals.find((d) => d.kind === "pact").status !== "done") throw new Error("pact deal should be done");
+    const rb = doc.querySelector(".overlay [data-react]");
+    if (!rb) throw new Error("emoji reactions missing on results");
+    rb.click();
+    if (!doc.querySelector(".floatemoji")) throw new Error("reaction did not float");
+  }
   if (r === 5 && sellTried && !/Sold \d+ shares of/.test(doc.body.textContent)) throw new Error("share sale missing from results: " + doc.querySelector(".overlay").textContent.slice(0, 600));
   if (r < 8) {
     if (!doc.querySelector("#btn-continue")) throw new Error("no results after round " + r);
@@ -193,6 +224,9 @@ for (let r = 1; r <= 8; r++) {
   }
 }
 if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen missing");
+if (!/Your story/.test(doc.body.textContent) || !doc.querySelector("#btn-recap")) throw new Error("recap missing");
+click('[data-star="4"]');
+if (doc.getElementById("fb-send").disabled) throw new Error("feedback send should enable after a rating");
 // Bankruptcy sale and monopoly, driven through the test hook on a fresh game.
 {
   click("#btn-again"); click("#btn-start");

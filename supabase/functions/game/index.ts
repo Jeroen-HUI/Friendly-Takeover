@@ -3,7 +3,9 @@
 // POST { action: "resolve", game_id }                   resolves the open round when everyone has submitted (host skips
 //                                                       the timer) or when the deadline has passed (any player).
 // POST { action: "rename", game_id, target_id, name }   the controller of a company renames it.
+// POST { action: "tick" } + header x-tick-secret        the scheduler (pg_cron, every minute) closes every overdue round.
 // The full engine state never leaves the server: each player gets their own view (rivals' secrets removed).
+// Accepted deals between players are carried out when the round resolves.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -33,22 +35,79 @@ async function publish(admin: Admin, gameId: string, round: number, state: State
   await admin.from("round_results").upsert({ game_id: gameId, round, public_data: publicData(state, round), resolved_at: new Date().toISOString() });
 }
 
+/** Resolves the open round of a game. `who` is the caller (null = the scheduler, which only acts after the deadline). */
+async function resolveGame(admin: Admin, game: State, who: { userId: string } | null): Promise<{ status: number; body: unknown }> {
+  if (game.status !== "playing") return { status: 409, body: { error: "The game is not running" } };
+  const gameId = game.id;
+  const { data: players } = await admin.from("players").select("*").eq("game_id", gameId).order("joined_at");
+  const humanIds: string[] = (players ?? []).map((p: State) => p.id);
+  const round = game.current_round as number;
+  const { data: stateRow } = await admin.from("game_states").select("state").eq("game_id", gameId).single();
+  const state = stateRow!.state as State;
+  if (state.round !== round) return { status: 409, body: { error: "Round mismatch, try again" } };
+
+  const { data: rows } = await admin.from("decisions").select("player_id, decisions").eq("game_id", gameId).eq("round", round);
+  const decisions: Record<string, unknown> = {};
+  for (const r of rows ?? []) decisions[r.player_id] = r.decisions;
+  const aliveHumans = state.companies.filter((c: State) => !c.bankrupt && humanIds.includes(c.id));
+  const allReady = aliveHumans.every((c: State) => decisions[c.id]);
+  const deadlinePassed = !game.round_deadline || Date.now() >= new Date(game.round_deadline).getTime();
+  const isHost = !!who && game.host_user_id === who.userId;
+  if (!deadlinePassed && !(allReady && isHost)) {
+    return { status: 409, body: { error: allReady ? "Only the host can skip the timer" : "Waiting for everyone to submit", allReady } };
+  }
+
+  const { data: dealRows } = await admin.from("deals").select("*").eq("game_id", gameId).eq("round", round).eq("status", "accepted").order("id");
+  const deals = (dealRows ?? []).map((d: State) => ({ id: String(d.id), from: d.from_player_id, to: d.to_player_id, kind: d.kind, terms: d.terms }));
+  const next = resolveOnlineRound(state, decisions, deals);
+  const nextDeadline = next.finished ? null : new Date(Date.now() + game.round_seconds * 1000).toISOString();
+  // Claim the round first so two simultaneous calls can never both write results.
+  const { data: claimed } = await admin
+    .from("games")
+    .update({ current_round: next.finished ? round : round + 1, status: next.finished ? "finished" : "playing", round_deadline: nextDeadline })
+    .eq("id", gameId).eq("current_round", round).eq("status", "playing")
+    .select("id");
+  if (!claimed?.length) return { status: 409, body: { error: "This round was already resolved" } };
+  await publish(admin, gameId, round, next, humanIds);
+  // Deal outcomes, and offers nobody answered in time.
+  const now = new Date().toISOString();
+  for (const d of next.dealLog ?? []) {
+    await admin.from("deals").update({ status: d.ok ? "done" : "failed", note: d.reason, updated_at: now }).eq("id", Number(d.id)).eq("status", "accepted");
+  }
+  await admin.from("deals").update({ status: "cancelled", note: "The round ended before anyone answered", updated_at: now }).eq("game_id", gameId).eq("round", round).eq("status", "offered");
+  return { status: 200, body: { ok: true, resolved: round, finished: next.finished, deadline: nextDeadline } };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  const { data: auth, error: authError } = await admin.auth.getUser(token);
-  if (authError || !auth?.user) return json({ error: "Sign in first" }, 401);
-  const userId = auth.user.id;
-
   let body: { action?: string; game_id?: string; target_id?: string; name?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "Send a JSON body" }, 400);
   }
+
+  // ------------------------------------------------------------------- tick
+  if (body.action === "tick") {
+    const secret = req.headers.get("x-tick-secret") ?? "";
+    const { data: ok } = await admin.rpc("tick_secret_ok", { p_secret: secret });
+    if (!secret || ok !== true) return json({ error: "Not allowed" }, 403);
+    const { data: overdue } = await admin.from("games").select("*").eq("status", "playing").lt("round_deadline", new Date().toISOString()).order("round_deadline").limit(20);
+    const results = [];
+    for (const g of overdue ?? []) {
+      try { results.push({ game: g.code, ...(await resolveGame(admin, g, null)) }); } catch (e) { results.push({ game: g.code, status: 500, body: String(e) }); }
+    }
+    return json({ ok: true, closed: results.filter((r) => r.status === 200).length, results });
+  }
+
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const { data: auth, error: authError } = await admin.auth.getUser(token);
+  if (authError || !auth?.user) return json({ error: "Sign in first" }, 401);
+  const userId = auth.user.id;
+
   const gameId = body.game_id;
   if (!gameId || !/^[0-9a-f-]{36}$/i.test(gameId)) return json({ error: "Missing game_id" }, 400);
 
@@ -79,34 +138,8 @@ Deno.serve(async (req) => {
 
   // ---------------------------------------------------------------- resolve
   if (body.action === "resolve") {
-    if (game.status !== "playing") return json({ error: "The game is not running" }, 409);
-    const round = game.current_round as number;
-    const { data: stateRow } = await admin.from("game_states").select("state").eq("game_id", gameId).single();
-    const state = stateRow!.state as State;
-    if (state.round !== round) return json({ error: "Round mismatch, try again" }, 409);
-
-    const { data: rows } = await admin.from("decisions").select("player_id, decisions").eq("game_id", gameId).eq("round", round);
-    const decisions: Record<string, unknown> = {};
-    for (const r of rows ?? []) decisions[r.player_id] = r.decisions;
-    const aliveHumans = state.companies.filter((c: State) => !c.bankrupt && humanIds.includes(c.id));
-    const allReady = aliveHumans.every((c: State) => decisions[c.id]);
-    const deadlinePassed = !game.round_deadline || Date.now() >= new Date(game.round_deadline).getTime();
-    const isHost = game.host_user_id === userId;
-    if (!deadlinePassed && !(allReady && isHost)) {
-      return json({ error: allReady ? "Only the host can skip the timer" : "Waiting for everyone to submit", allReady }, 409);
-    }
-
-    const next = resolveOnlineRound(state, decisions);
-    const nextDeadline = next.finished ? null : new Date(Date.now() + game.round_seconds * 1000).toISOString();
-    // Claim the round first so two simultaneous calls can never both write results.
-    const { data: claimed } = await admin
-      .from("games")
-      .update({ current_round: next.finished ? round : round + 1, status: next.finished ? "finished" : "playing", round_deadline: nextDeadline })
-      .eq("id", gameId).eq("current_round", round).eq("status", "playing")
-      .select("id");
-    if (!claimed?.length) return json({ error: "This round was already resolved" }, 409);
-    await publish(admin, gameId, round, next, humanIds);
-    return json({ ok: true, resolved: round, finished: next.finished, deadline: nextDeadline });
+    const r = await resolveGame(admin, game, { userId });
+    return json(r.body, r.status);
   }
 
   // ----------------------------------------------------------------- rename

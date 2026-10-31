@@ -167,7 +167,7 @@ test("every euro is accounted for: the cash flow adds up each round", () => {
       for (const h of c.history) {
         const flow = h.cashStart + h.loanChange + h.revenue - h.productionCost - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost
           - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
-          + h.emergencyLoan - h.emergencyFee - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales;
+          + h.emergencyLoan - h.emergencyFee + (h.dealCash ?? 0) - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales;
         assert.ok(Math.abs(flow - h.cashEnd) < 0.01, `${industry} ${c.id} round ${h.round}: ${flow} vs ${h.cashEnd}`);
       }
     }
@@ -480,4 +480,44 @@ test("market study and buyer panel research deliver their data", () => {
   assert.ok(r.research!.marketStudy!.next!.round === 2 && r.research!.marketStudy!.potential.budget > 0);
   assert.deepEqual(r.research!.buyerPanel, g.market!.sensitivity);
   assert.equal(g.companies[1].history.at(-1)!.research, undefined);
+});
+
+test("deals: share sales, loans with repayment, pacts and their penalty", () => {
+  let g = newGame(12, "cutthroat");
+  g = resolveRound(g, {});
+  g = resolveRound(g, {});
+  const r = g.round;
+  // b sells 20 of its own founder shares to a; a lends c 300k (330k back next round); a and d sign a pact.
+  g = resolveRound(g, {}, [
+    { id: "1", from: "b", to: "a", kind: "shares", terms: { company: "b", qty: 20, price: 500_000, direction: "sell" } },
+    { id: "2", from: "a", to: "c", kind: "loan", terms: { amount: 300_000, repay: 330_000, rounds: 1, direction: "lend" } },
+    { id: "3", from: "a", to: "d", kind: "pact", terms: { rounds: 2, penalty: 250_000 } },
+    { id: "4", from: "c", to: "a", kind: "shares", terms: { company: "d", qty: 10, price: 1, direction: "sell" } },
+  ]);
+  const by = (id: string) => g.companies.find((c) => c.id === id)!;
+  assert.deepEqual(g.dealLog!.map((x) => x.ok), [true, true, true, false], JSON.stringify(g.dealLog));
+  assert.equal(by("b").shares.holders.a, 20);
+  assert.equal(by("b").shares.founder, 10);
+  assert.equal(by("a").history.at(-1)!.dealCash, -500_000 - 300_000);
+  assert.equal(by("b").history.at(-1)!.dealCash, 500_000);
+  assert.equal(g.playerLoans!.length, 1);
+  assert.ok(g.pacts!.some((p) => p.until === r + 1));
+  // Next round: the loan is repaid, and d breaks the pact by buying a's shares.
+  const aCash = by("a").cash;
+  g = resolveRound(g, { d: { buyShares: { a: 5 } } });
+  assert.equal(g.playerLoans!.length, 0);
+  assert.equal(by("c").history.at(-1)!.dealCash, -330_000);
+  assert.ok(by("a").history.at(-1)!.dealCash! >= 330_000 + 250_000 - 1, "repayment + pact penalty");
+  assert.ok(g.feed.some((f) => f.headline.startsWith("Betrayal!")));
+  assert.equal(g.pacts!.length, 0);
+  assert.ok(aCash > 0);
+});
+
+test("loans between players count in company value", () => {
+  let g = newGame(13);
+  g = resolveRound(g, {});
+  const before = companyValues(g);
+  g.playerLoans = [{ lender: "a", borrower: "b", repay: 400_000, due: 5 }];
+  const after = companyValues(g);
+  assert.ok(after.a - before.a > 380_000 && before.b - after.b > 380_000);
 });
