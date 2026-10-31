@@ -183,7 +183,7 @@ if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen m
   {
     const S0 = D.S, t = S0.game.companies.find((c) => c.id !== "you" && !c.bankrupt && !c.controlledBy);
     S0.game.companies[0].takeoverCooldown = 0; if (S0.game.round < 3) S0.game.config.difficulty = "cutthroat";
-    t.shares.holders.you = 45; t.shares.float = Math.max(10, t.shares.float - 45); S0.game.companies[0].cash = 50_000_000;
+    t.shares.holders = { you: 45 }; t.shares.treasury = 0; t.shares.float = 25; t.cash = 300_000; S0.game.companies[0].cash = 50_000_000;
     S0.draft.buyShares = { [t.id]: 10 }; S0.draft.takeoverStake = 2_000_000;
     D.endRound();
     if (!/the numbers are in/.test(doc.querySelector(".overlay").textContent)) throw new Error("results show missing");
