@@ -116,6 +116,27 @@ button, input { font: inherit; color: inherit; }
 .topbar .sep { width: 2px; align-self: stretch; background: rgba(255,255,255,0.1); }
 .round { font-family: var(--font-display); font-weight: 700; font-size: 21px; letter-spacing: 0.02em; }
 .cashchip { display: grid; text-align: center; line-height: 1.15; }
+.wallet { display: flex; align-items: stretch; gap: 0; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: pointer; font: inherit; color: var(--ink); background: var(--bg-deep); box-shadow: 0 0 0 3px var(--frame-dark), inset 0 2px 0 rgba(0,0,0,0.35); }
+.wallet:hover, .wallet:focus-visible { box-shadow: 0 0 0 3px var(--gold), inset 0 2px 0 rgba(0,0,0,0.35); outline: none; }
+.wallet > span { display: grid; align-content: center; gap: 1px; padding: 6px 14px; text-align: left; line-height: 1.1; }
+.wallet small { font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.wallet small em { font-style: normal; color: var(--gold); letter-spacing: 0; }
+.w-cash { background: linear-gradient(180deg, rgba(76, 217, 100, 0.16), rgba(76, 217, 100, 0.04)); }
+.w-cash b { font-family: var(--font-display); font-size: 28px; color: var(--good); text-shadow: 0 2px 0 rgba(0,0,0,0.35); }
+.w-cash b.neg { color: var(--bad); }
+.w-cash b.bump { animation: wbump 600ms ease-out; }
+@keyframes wbump { 0% { transform: scale(1.12); filter: brightness(1.6); } 100% { transform: none; filter: none; } }
+.w-debt { border-left: 2px solid rgba(255,255,255,0.08); min-width: 128px; }
+.w-debt b { font-family: var(--font-display); font-size: 20px; color: var(--muted); }
+.w-debt.has b { color: var(--bad); }
+.w-bar { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.w-bar > i { display: block; height: 100%; background: var(--gold); } .w-bar.hi > i { background: var(--bad); }
+.w-left { font-size: 9px !important; letter-spacing: 0.04em !important; text-transform: none !important; margin-top: 2px; }
+:root[data-theme="light"] .wallet { background: #fffaf0; }
+:root[data-theme="light"] .w-cash b { text-shadow: none; }
+@media (max-width: 1500px) { .topbar .logo h1 { font-size: 24px; } .topbar .sub { font-size: 12px; } .topbar .round { font-size: 17px; } .w-cash b { font-size: 24px; } .w-debt b { font-size: 17px; } .wallet > span { padding: 5px 11px; } .topbar .tools .btn { padding-left: 8px; padding-right: 8px; } }
+@media (max-width: 1180px) { .topbar .sub { display: none; } }
+@media (max-width: 760px) { .wallet { order: 5; width: 100%; } .wallet > span { flex: 1; } .w-cash b { font-size: 24px; } }
 .cashchip span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 .cashchip b { font-size: 24px; font-weight: 900; }
 @media (max-width: 760px) { .topbar .sep { display: none; } .logo h1 { font-size: 22px; } }
@@ -439,6 +460,27 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .livepill { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--bad); color: #fff; font-size: 10px; vertical-align: middle; letter-spacing: .08em; }
 .exbtns { white-space: nowrap; } .exbtns .btn { padding: 4px 7px; margin-left: 3px; font-size: 11px; }
 .livelot { border: 2px solid var(--gold); }
+.exchange { margin-bottom: 12px; }
+.exchange h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ex-cash { margin-left: auto; font-family: var(--font-body, inherit); font-size: 13px; font-weight: 800; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.ex-cash b { font-size: 18px; color: var(--ink); margin-left: 4px; }
+.stocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.stock { display: grid; gap: 6px; padding: 10px 12px 12px; border-radius: 10px; background: var(--panel-2, rgba(0,0,0,0.18)); box-shadow: inset 4px 0 0 var(--pc); min-width: 0; }
+.stock-head { display: flex; align-items: center; gap: 6px; font-weight: 900; } .stock-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stock-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.stock-price > b { font-family: var(--font-display); font-size: 24px; }
+.stock-price span { font-weight: 900; font-size: 13px; } .stock-price small { font-weight: 800; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.stockchart { display: block; width: 100%; height: auto; border-radius: 6px; background: rgba(0,0,0,0.22); }
+:root[data-theme="light"] .stockchart { background: rgba(255,255,255,0.6); }
+.stockchart .sc-live { fill: var(--gold); opacity: 0.08; }
+.stockchart .sc-livetag { font-family: var(--font-display); font-size: 8px; fill: var(--gold); opacity: 0.8; }
+.stockchart .sc-base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.5; }
+.stockchart .sc-x text { font-size: 8px; font-weight: 800; fill: var(--muted); }
+.stockchart .sc-dot { animation: scpulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes scpulse { 50% { transform: scale(1.6); opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .stockchart .sc-dot { animation: none; } }
+.stock-foot { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; font-weight: 800; color: var(--muted); } .stock-foot b { color: var(--ink); }
+.stock .exbtns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; white-space: normal; } .stock .exbtns .btn { margin: 0; padding: 6px 4px; }
 .livelot.mine { box-shadow: 0 0 0 3px var(--good); }
 .bidrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .bidrow input { flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; }
@@ -2463,20 +2505,81 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${open && !mine ? `<div class="bidrow"><button class="btn go" type="button" data-bid="${lot.key}" data-amount="${min}"${me().cash < min ? ` disabled title="You have ${eur(me().cash)} cash"` : ""}>Bid ${eur(min)}</button><input type="text" inputmode="decimal" data-bid-custom="${lot.key}" placeholder="or type: ${Math.round((min * 1.5) / 1000)}k"><button class="btn small" type="button" data-bid-go="${lot.key}">Bid</button></div>` : mine && open ? `<div class="note pos" style="color:var(--ink)">You're the highest bidder. Hold on…</div>` : ""}
       <div class="hint neg" data-lot-msg="${lot.key}">${S.mp && S.game.companies.some((c) => /^bot-/.test(c.id)) ? "Bots bid secretly; their bid counts at the end of the round." : ""}</div></div>`;
   }
+  // Price path of one company: its share price at the end of every round, then every live trade this round.
+  function pricePath(id) {
+    const rounds = (S.hist[id] || []).map((v) => Math.max(0, v) / 100);
+    const p0 = startPriceOf(id), L = liveOf(), k = FT.EXCHANGE.impactPerShare;
+    const live = [{ p: p0, t: null, q: 0 }];
+    let p = p0;
+    for (const t of (L && L.trades) || []) if (t.target === id) { p = Math.max(0.01, p * Math.pow(1 + (t.qty > 0 ? k : -k), Math.abs(t.qty))); live.push({ p, t, q: t.qty }); }
+    if (L && L.prices && L.prices[id] !== undefined) live[live.length - 1].p = L.prices[id];
+    return { rounds, live };
+  }
+  function stockChart(o) {
+    const { rounds, live } = pricePath(o.id);
+    const W = 300, H = 104, padL = 4, padR = 4, padT = 10, padB = 16, nR = rounds.length;
+    const liveW = live.length > 1 ? 0.3 : 0.16; // share of the width for this round's trading
+    const all = [...rounds, ...live.map((x) => x.p)].filter((v) => v > 0);
+    let lo = Math.min(...all), hi = Math.max(...all); if (!isFinite(lo)) { lo = 0; hi = 1; }
+    const span = Math.max(hi - lo, hi * 0.04 || 1); lo -= span * 0.12; hi += span * 0.12;
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    const xR0 = padL, xR1 = padL + (W - padL - padR) * (1 - liveW), xL1 = W - padR;
+    const xr = (i) => (nR <= 1 ? xR1 : xR0 + (i / (nR - 1)) * (xR1 - xR0));
+    const xl = (j) => (live.length <= 1 ? xR1 + (xL1 - xR1) * 0.5 : xR1 + (j / (live.length - 1)) * (xL1 - xR1));
+    const pts = [...rounds.map((v, i) => [xr(i), y(v)]), ...live.map((x, j) => [j === 0 ? xR1 : xl(j), y(x.p)])];
+    if (live.length === 1) pts.push([xL1, y(live[0].p)]);
+    const line = pts.map(([a, b]) => a.toFixed(1) + "," + b.toFixed(1)).join(" ");
+    const area = `${pts[0][0].toFixed(1)},${H - padB} ${line} ${pts.at(-1)[0].toFixed(1)},${H - padB}`;
+    const last = live.at(-1).p, first = rounds.find((v) => v > 0) || last, up = last >= first;
+    const col = colRaw(o.id), gid = "sg-" + o.id.replace(/[^a-z0-9]/gi, "");
+    let marks = "";
+    rounds.forEach((v, i) => { marks += `<circle cx="${xr(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="6" fill="transparent"${tipAttr(o.companyName + " · " + (i === 0 ? "start" : "end of round " + i) + ": " + eurX(v) + " a share")}/>`; });
+    live.slice(1).forEach((x, j) => { const cx = xl(j + 1), cy = y(x.p); marks += `<rect x="${(cx - 2.5).toFixed(1)}" y="${(cy - 2.5).toFixed(1)}" width="5" height="5" fill="${x.q > 0 ? "var(--good)" : "var(--bad)"}"${tipAttr((x.q > 0 ? "Bought " : "Sold ") + Math.abs(x.q) + " by " + short2(x.t.trader) + " → " + eurX(x.p))}/>`; });
+    const labels = rounds.map((_, i) => (nR <= 8 || i % 2 === 0 || i === nR - 1 ? `<text x="${xr(i).toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : "middle"}">${i === 0 ? "start" : "R" + i}</text>` : "")).join("");
+    return `<svg class="stockchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.companyName)} share price per round">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity="0.45"/><stop offset="1" stop-color="${col}" stop-opacity="0.02"/></linearGradient></defs>
+      <rect x="${xR1.toFixed(1)}" y="${padT - 6}" width="${(xL1 - xR1).toFixed(1)}" height="${H - padB - padT + 6}" class="sc-live"/>
+      <text x="${(xR1 + 3).toFixed(1)}" y="${padT + 2}" class="sc-livetag">LIVE</text>
+      <line x1="${padL}" x2="${W - padR}" y1="${y(startPriceOf(o.id)).toFixed(1)}" y2="${y(startPriceOf(o.id)).toFixed(1)}" class="sc-base"/>
+      <polygon points="${area}" fill="url(#${gid})"/>
+      <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${pts.at(-1)[0].toFixed(1)}" cy="${pts.at(-1)[1].toFixed(1)}" r="3.5" fill="${col}" class="sc-dot"/>
+      ${marks}<g class="sc-x">${labels}</g></svg>`;
+  }
+  // Cash and debt, big in the top bar (click: Finance). Debt shows how much of your credit line is used.
+  function walletHtml() {
+    const c = me(), lim = Math.max(1, creditLimitUI(c)), used = Math.min(1, c.debt / lim), plan = S.draft && !S.game.finished ? S.draft.loanChange || 0 : 0;
+    const tip = "Cash: " + eurX(c.cash) + "\nDebt: " + eurX(c.debt) + "\nCredit line: " + eurX(lim) + " (" + Math.round(used * 100) + "% used)" + (plan ? "\nPlanned this round: " + (plan > 0 ? "borrow " : "repay ") + eurX(Math.abs(plan)) : "") + "\nClick to open Finance";
+    return `<button type="button" class="wallet" data-tab="finance"${tipAttr(tip)}>
+      <span class="w-cash"><small>Cash</small><b id="top-cash" class="num ${c.cash < 0 ? "neg" : ""}">${eur(c.cash)}</b></span>
+      <span class="w-debt ${c.debt > 0 ? "has" : ""}"><small>Debt${plan ? ` <em>${plan > 0 ? "+" : "−"}${eur(Math.abs(plan))}</em>` : ""}</small><b class="num">${eur(c.debt)}</b><i class="w-bar ${used > 0.8 ? "hi" : ""}"><i style="width:${(used * 100).toFixed(0)}%"></i></i><small class="w-left">${eur(Math.max(0, lim - c.debt))} credit left</small></span>
+    </button>`;
+  }
   function exchangeCard() {
-    const c = me(), L = liveOf();
+    const c = me();
     if (!exchangeOpen()) return `<div class="card"><h3>Stock exchange</h3><div class="locked">The live stock exchange opens in round ${diff().takeoverUnlockRound}.</div></div>`;
-    const rows = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
+    const cards = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
       const p = FT.livePrice(S.game, o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
+      const h = (S.hist[o.id] || []).filter((v) => v > 0), pStart = h.length ? h[0] / 100 : p, chAll = pStart ? p / pStart - 1 : 0;
       const blocked = o.controlledBy && o.controlledBy !== "you", room = Math.min(diff().maxSharesPerRound - FT.liveBought(S.game, "you", o.id), o.shares.float, FT.EXCHANGE.maxHolding - held), canBuy = !blocked && c.takeoverCooldown <= 0 && room > 0;
-      return `<tr><td><span class="dot" style="background:${colVar(o.id)}"></span>${esc(o.companyName)}</td>${td(eur(p), "Live price " + eurX(p) + (p0 ? "\\nAt the start of the round " + eurX(p0) : ""))}<td class="r num ${ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted"}">${Math.abs(ch) < 0.0005 ? "—" : (ch > 0 ? "▲" : "▼") + Math.abs(ch * 100).toFixed(1) + "%"}</td>${td(held + "%")}${td(o.shares.float + "%")}
-        <td class="r exbtns"><button class="btn small go" type="button" data-trade="${o.id}" data-qty="1" ${canBuy ? "" : "disabled"} title="${canBuy ? room + " more this round" : "No more this round"}">+1</button><button class="btn small go" type="button" data-trade="${o.id}" data-qty="5" ${canBuy && room >= 5 ? "" : "disabled"} title="${canBuy ? room + " more this round" : "No more this round"}">+5</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-1" ${held ? "" : "disabled"}>−1</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-5" ${held >= 5 ? "" : "disabled"}>−5</button></td></tr>`;
+      const pct = (x) => (Math.abs(x) < 0.0005 ? "±0.0%" : (x > 0 ? "▲" : "▼") + Math.abs(x * 100).toFixed(1) + "%");
+      const tip = (x) => (canBuy ? room + " more this round" : blocked ? "Controlled by someone else" : c.takeoverCooldown > 0 ? "Your board is resting after a takeover" : "No more this round");
+      return `<div class="stock" style="--pc:${colVar(o.id)}">
+        <div class="stock-head"><span class="dot" style="background:${colVar(o.id)}"></span><b>${esc(o.companyName)}</b></div>
+        <div class="stock-price"><b class="num"${tipAttr("Live price " + eurX(p) + " a share (1% of the company)" + (p0 ? "\\nAt the start of this round " + eurX(p0) : ""))}>${eur(p)}</b>
+          <span class="num ${ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted"}"${tipAttr("This round")}>${pct(ch)} <small>today</small></span>
+          <span class="num ${chAll > 0.0005 ? "pos" : chAll < -0.0005 ? "neg" : "muted"}"${tipAttr("Since the start of the game")}>${pct(chAll)} <small>game</small></span></div>
+        ${stockChart(o)}
+        <div class="stock-foot"><span>You own <b>${held}%</b></span><span>For sale <b>${o.shares.float}%</b></span>${o.controlledBy ? `<span class="neg">Controlled by ${esc(byId(o.controlledBy).companyName)}</span>` : ""}</div>
+        <div class="exbtns"><button class="btn small go" type="button" data-trade="${o.id}" data-qty="1" ${canBuy ? "" : "disabled"} title="${tip()}">Buy 1</button><button class="btn small go" type="button" data-trade="${o.id}" data-qty="5" ${canBuy && room >= 5 ? "" : "disabled"} title="${tip()}">Buy 5</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-1" ${held ? "" : "disabled"}>Sell 1</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-5" ${held >= 5 ? "" : "disabled"}>Sell 5</button></div>
+      </div>`;
     }).join("");
     const X = FT.EXCHANGE;
-    return `<div class="card exchange" id="live-exchange"><h3>Stock exchange <span class="livepill">LIVE</span></h3>
-      ${tbl(["Company", "Price", "Today", "Yours", "For sale", "Trade (shares)"], rows).replace('class="tbl"', 'class="tbl compact"')}
-      <div class="hint" id="ex-msg">Trades happen right now and everyone sees them on the ticker. Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here. You can buy at most <b>${diff().maxSharesPerRound} shares of each company per round</b>, exchange and takeover bids together; taking control needs a takeover bid below. Your cash: <b>${eur(c.cash)}</b>.</div></div>`;
+    return `<div class="card exchange" id="live-exchange"><h3>Stock exchange <span class="livepill">LIVE</span><span class="ex-cash">Your cash <b class="num ${c.cash < 0 ? "neg" : ""}">${eur(c.cash)}</b></span></h3>
+      <div class="stocks">${cards}</div>
+      <div class="hint" id="ex-msg">One share is 1% of a company. The line shows the share price at the end of every round; the <b>LIVE</b> part is this round, with every trade as a dot (green bought, red sold). Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here, and at most <b>${diff().maxSharesPerRound} shares of each company per round</b> (exchange and takeover bids together). Control needs a takeover bid.</div></div>`;
   }
+
   // Refresh just the live parts of the screen (ticker, exchange, lots), not the whole page.
   function updateLiveUI() {
     if (!S || S.screen !== "game") return;
@@ -2484,7 +2587,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (t) { if (th) t.outerHTML = th; else t.remove(); } else if (th) { const ag = document.querySelector(".agenda"); if (ag) ag.insertAdjacentHTML("afterend", th); }
     const ex = $("#live-exchange"); if (ex) { ex.outerHTML = exchangeCard(); bindLiveButtons(); }
     for (const lot of liveLots()) { const el = document.querySelector(`.livelot[data-lot="${lot.key}"]`); if (el) { el.outerHTML = lotPanel(lot); bindLiveButtons(); } }
-    const cash = $("#top-cash"); if (cash) cash.textContent = eur(me().cash);
+    const cash = $("#top-cash"); if (cash && cash.textContent !== eur(me().cash)) { cash.textContent = eur(me().cash); cash.classList.toggle("neg", me().cash < 0); cash.classList.remove("bump"); void cash.offsetWidth; cash.classList.add("bump"); }
   }
   function bindLiveButtons() {
     document.querySelectorAll("[data-trade]").forEach((b) => { if (b.dataset.bound) return; b.dataset.bound = "1"; b.addEventListener("click", (e) => doTrade(e.currentTarget.dataset.trade, Number(e.currentTarget.dataset.qty))); });
@@ -2904,7 +3007,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<header class="win topbar">
       <div class="logo"><canvas data-icon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly Takeover</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
-      <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b id="top-cash" class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
+      ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
       <span class="tools"><button class="btn snd chatbtn" id="btn-chat" type="button" aria-pressed="${TALK.open}"${tipAttr("Chat and private deals")}>Chat</button><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
@@ -3207,8 +3310,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }).join("");
     const holders = Object.entries(c.shares.holders).filter(([, v]) => v);
     const biggest = holders.length ? Math.max(...holders.map(([, v]) => v)) : 0;
-    return `<div class="grid2">
-      <div style="display:grid;gap:10px;min-width:0">${exchangeCard()}${how}${status}<div class="card"><h3>Takeover bids (end of round)</h3>${legend}<div class="hint">For the push past 50%: these shares are bought when the round resolves, at the share price plus the takeover premium, and can trigger a boardroom showdown. Steps of 5.${canBuy ? "" : " Buying is locked right now."}</div>
+    return `${exchangeCard()}<div class="grid2">
+      <div style="display:grid;gap:10px;min-width:0">${how}${status}<div class="card"><h3>Takeover bids (end of round)</h3>${legend}<div class="hint">For the push past 50%: these shares are bought when the round resolves, at the share price plus the takeover premium, and can trigger a boardroom showdown. Steps of 5.${canBuy ? "" : " Buying is locked right now."}</div>
         <div class="note" style="color:var(--ink)">Shares are paid from the cash you have left <b>after</b> all your other costs this round (production, marketing, investments, stores). If that runs out, you get fewer shares; your round report says why. Plan it in Finance: borrow if you need to.</div>
         <div class="sumline"${tipAttr("Exact: " + eurX(planShareCost()))}><span class="muted">Your planned share purchases cost about</span><b class="num" id="share-cost">${eur(planShareCost())}</b></div></div>${list}</div>
       <div style="display:grid;gap:12px;min-width:0">
@@ -4670,6 +4773,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     refreshDerived();
   }
   function refreshDerived() {
+    const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); }); }
 
     const cn = $("#cap-note"); if (cn) cn.textContent = capNote();
     const mn = $("#morder-note"); if (mn) mn.textContent = morderNote();
