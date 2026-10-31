@@ -245,12 +245,21 @@ export const COSTS = {
   idleBelow: 0.6,
   /** Cost per idle unit of capacity below that line, as a fraction of the base unit cost. */
   idleCostRate: 0.15,
-  /** Share of the unit cost that is raw material (follows the material price index). */
+  /** Share of the unit cost that is raw material (bought a round ahead, at the material price index). */
   materialShare: 0.45,
-  /** Material index: random walk with a pull back to 1. */
-  materialVol: 0.04,
-  materialPull: 0.35,
-  materialRange: [0.8, 1.3] as [number, number],
+  /** Material index: pulled back to 1, plus a move that the outlook hints at, plus noise. */
+  materialPull: 0.3,
+  materialMove: 0.09,
+  materialVol: 0.03,
+  materialRange: [0.7, 1.45] as [number, number],
+  /** How often the published outlook is right. */
+  outlookAccuracy: 0.75,
+  /** Materials you didn't order in time are bought on the spot market at this premium. */
+  spotPremium: 0.15,
+  /** Holding cost on materials in stock, per round. */
+  materialHolding: 0.02,
+  /** Materials count in company value at this share of what you paid. */
+  materialBookValue: 0.9,
   /** Slow trends per buyer group, per round: one group grows, one shrinks, the others drift. */
   trendGrow: [0.015, 0.03] as [number, number],
   trendShrink: [-0.03, -0.015] as [number, number],
@@ -258,6 +267,15 @@ export const COSTS = {
   /** This game's price sensitivity per buyer group, as a multiple of usual. */
   sensitivityRange: [0.85, 1.15] as [number, number],
 };
+
+/** Bulk buyer: takes leftover stock after the market at a low price (a share of last round's average price). */
+export const BULK = { priceShare: [0.4, 0.55] as [number, number], maxShareOfCapacity: 0.5 };
+
+/** Live stock exchange during a round: price impact per share traded, fee, and the cap (control needs a takeover bid). */
+export const EXCHANGE = { impactPerShare: 0.005, fee: 0.02, maxHolding: 50, maxPerRound: 30 };
+
+/** Live auctions: minimum raise and the "going once, going twice" timer after each bid. */
+export const LIVE_AUCTION = { minRaise: 10_000, raiseShare: 0.05, goingMs: 45_000 };
 
 /** Deals between players: limits that keep them sane. */
 export const DEALS = { maxPrice: 50_000_000, maxLoan: 5_000_000, maxLoanRounds: 3, maxPactRounds: 4, maxPenalty: 5_000_000 };
@@ -362,7 +380,7 @@ function deriveIndustry(
 
 const AI = deriveIndustry(CHOCOLATE, {
   // Faster growth and this industry's news favour premium a little; a slightly smaller premium group (and bigger hype group) evens it out.
-  segmentTweaks: { premium: { weight: 0.125 }, hype: { weight: 0.195 } },
+  segmentTweaks: { premium: { weight: 0.14 }, hype: { weight: 0.17 }, mainstream: { weight: 0.33 } },
   id: "ai",
   name: "AI",
   labels: { product: "subscription", products: "subscriptions", capacity: "servers", quality: "model quality", unit: "subscriptions" },
@@ -385,7 +403,7 @@ const AI = deriveIndustry(CHOCOLATE, {
 
 const WEED = deriveIndustry(CHOCOLATE, {
   // Faster growth and this industry's news favour premium a little; a slightly smaller premium group (and bigger hype group) evens it out.
-  segmentTweaks: { premium: { weight: 0.125 }, hype: { weight: 0.195 } },
+  segmentTweaks: { premium: { weight: 0.145 }, hype: { weight: 0.16 }, mainstream: { weight: 0.335 } },
   id: "weed",
   name: "Weed (18+)",
   labels: { product: "gram", products: "grams", capacity: "grow rooms", quality: "strain quality", unit: "grams" },

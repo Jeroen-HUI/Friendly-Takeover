@@ -390,6 +390,58 @@ button[data-tip] { cursor: pointer; }
 .toast small { display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
 .toast b { font-family: var(--font-display); font-size: 16px; }
 input[type="email"] { padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
+html.tvmode body { overflow: hidden; }
+.tv { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; gap: 14px; padding: 18px 22px; background: radial-gradient(ellipse at 50% 0%, #22306b, #0a0f24 70%); color: var(--ink); overflow: hidden; }
+:root[data-theme="light"] .tv { background: radial-gradient(ellipse at 50% 0%, #fff2d8, #e8dcc2 70%); }
+.tvp-head { display: flex; align-items: center; gap: 18px; }
+.tv-brand { display: flex; align-items: center; gap: 12px; margin-right: auto; } .tv-brand canvas { width: 44px; height: 44px; image-rendering: pixelated; }
+.tv-brand b { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 38px); } .tv-brand span { font-weight: 900; color: var(--muted); }
+.tv-code, .tv-round { display: grid; justify-items: center; padding: 8px 18px; border-radius: 10px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); }
+.tv-code span, .tv-round span { font-size: 13px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.tv-code b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); color: var(--gold); letter-spacing: .15em; }
+.tv-round b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); } .tv-round b.low { color: var(--bad); }
+.tv-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 26vw); gap: 16px; min-height: 0; }
+.tv-city { display: flex; align-items: flex-end; justify-content: space-around; gap: 2vw; padding: 20px 2vw 10px; border-radius: 14px; background: linear-gradient(#0d1430 0%, #1a2350 75%, #2a2a2a 75.5%, #1d1d1d 100%); box-shadow: 0 0 0 3px var(--frame-dark); min-height: 0; }
+.tv-bld { flex: 1; max-width: 220px; height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; align-items: end; text-align: center; gap: 4px; }
+.tv-tower { width: 72%; height: 100%; display: flex; align-items: flex-end; } .tv-tower i { display: block; width: 100%; height: var(--h); background: repeating-linear-gradient(0deg, var(--pc) 0 18px, rgba(255, 209, 102, 0.85) 18px 24px, var(--pc) 24px 30px); border: 3px solid rgba(0,0,0,0.35); border-bottom: 0; transition: height 1.2s cubic-bezier(.2, 1.2, .4, 1); }
+.tv-bld.dead .tv-tower i { background: #555; }
+.tv-bld b { font-family: var(--font-display); font-size: clamp(14px, 1.4vw, 22px); color: #fff; } .tv-bld span { font-weight: 800; color: #c8d0f0; font-size: clamp(12px, 1.1vw, 17px); }
+.tv-rank { font-family: var(--font-display); font-size: clamp(18px, 2vw, 30px); color: var(--gold) !important; }
+.tv-side { display: grid; gap: 12px; align-content: start; overflow: hidden; }
+.tv-box { padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); display: grid; gap: 6px; }
+.tv-box h3 { margin: 0; font-family: var(--font-display); font-size: 16px; color: var(--gold); }
+.tv-readys { display: flex; flex-wrap: wrap; gap: 6px; } .tv-ready { padding: 4px 10px; border-radius: 6px; background: var(--panel-3); font-weight: 900; } .tv-ready.ok { background: var(--good); color: #062614; }
+.tv-tk { font-weight: 800; font-size: 14px; } .tv-tk.up { color: var(--good); } .tv-tk.down { color: #ff8b7b; } .tv-tk b { color: var(--ink); }
+.tv-lot { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-weight: 800; } .tv-lot i { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-family: var(--font-display); color: var(--gold); }
+.tv-news, .tv-heads { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-weight: 800; }
+.tv-msg { font-weight: 700; } .tv-muted { color: var(--muted); font-weight: 700; }
+.tv-lobby { display: grid; justify-items: center; align-content: center; gap: 14px; text-align: center; }
+.tv-lobby h2 { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 4vw, 56px); }
+.tv-join { font-family: var(--font-display); font-size: clamp(18px, 2.2vw, 32px); color: var(--gold); padding: 10px 18px; border-radius: 10px; background: rgba(0,0,0,0.35); }
+.tv-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 10px; }
+.tv-player { display: grid; justify-items: center; gap: 4px; padding: 14px 18px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--pc); animation: pop 400ms cubic-bezier(.2, 1.5, .4, 1) both; }
+.tv-player canvas { width: 84px; height: 84px; image-rendering: pixelated; border-radius: 8px; } .tv-player b { font-family: var(--font-display); font-size: 20px; } .tv-player i { font-style: normal; font-size: 12px; color: var(--gold); font-weight: 900; }
+.tv-wait { color: var(--muted); font-weight: 800; }
+.tv-center { display: grid; place-items: center; text-align: center; } .tv-logo { font-family: var(--font-display); font-size: 56px; }
+.tv-show { position: absolute; inset: 10% 14%; z-index: 5; display: grid; align-content: start; gap: 12px; padding: 26px 32px; border-radius: 16px; background: rgba(10, 15, 36, 0.96); box-shadow: 0 0 0 4px var(--frame), 0 30px 80px rgba(0,0,0,0.6); animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
+.tv-show h2 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 54px); color: var(--gold); text-align: center; }
+.tv-winner { text-align: center; font-family: var(--font-display); font-size: clamp(24px, 3vw, 44px); }
+.tv-rows { display: grid; gap: 8px; }
+.tv-row { display: grid; grid-template-columns: 50px 1fr auto auto; gap: 16px; align-items: center; padding: 10px 16px; border-radius: 10px; background: rgba(255,255,255,0.06); border-left: 8px solid var(--pc); font-size: clamp(18px, 1.8vw, 28px); font-weight: 900; animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
+.tv-row .n { font-family: var(--font-display); color: var(--gold); } .tv-row .v { font-family: var(--font-display); }
+@keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 800px) { .tv-main { grid-template-columns: 1fr; } .tv-show { inset: 4%; } }
+.ticker { display: flex; align-items: center; gap: 10px; overflow: hidden; padding: 6px 10px; border-radius: 8px; background: #0a0f24; box-shadow: 0 0 0 3px var(--frame-dark); font-size: 13px; font-weight: 800; white-space: nowrap; }
+:root[data-theme="light"] .ticker { background: #fff7e6; }
+.tk-live { flex: none; padding: 2px 7px; border-radius: 4px; background: var(--bad); color: #fff; font-family: var(--font-display); font-size: 11px; animation: pulse 1.6s ease-in-out infinite; }
+.tk-roll { display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; }
+.tk { flex: none; color: var(--muted); } .tk b { color: var(--ink); } .tk.up { color: var(--good); } .tk.down { color: var(--bad); } .tk.gold { color: var(--gold); }
+.livepill { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--bad); color: #fff; font-size: 10px; vertical-align: middle; letter-spacing: .08em; }
+.exbtns { white-space: nowrap; } .exbtns .btn { padding: 4px 7px; margin-left: 3px; font-size: 11px; }
+.livelot { border: 2px solid var(--gold); }
+.livelot.mine { box-shadow: 0 0 0 3px var(--good); }
+.bidrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.bidrow input { flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; }
 .talkwin { position: fixed; right: 16px; top: 16px; bottom: 16px; width: 380px; z-index: 31; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .talkwin[hidden] { display: none; }
 .talkwin .win-title { gap: 8px; }
@@ -1168,6 +1220,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async subscribe() { return () => {}; },
     async messagesSince(gameId, afterId) { return (await http(`/rest/v1/messages?game_id=eq.${q(gameId)}&id=gt.${Number(afterId) || 0}&select=id,from_player_id,to_player_id,body,kind,round,created_at&order=id&limit=200`)) || []; },
     async sendMessage(gameId, round, from, to, body, kind) { await http("/rest/v1/messages", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, body, kind }) }); },
+    async tvSnapshot(id, code) { return http("/rest/v1/rpc/tv_snapshot", { method: "POST", body: JSON.stringify({ p_game_id: id, p_tv: code }) }, false); },
+    async marketLive(gameId) { return ((await http(`/rest/v1/market_live?game_id=eq.${q(gameId)}&select=round,data`)) || [])[0] || null; },
     async deals(gameId) { return (await http(`/rest/v1/deals?game_id=eq.${q(gameId)}&select=*&order=id`)) || []; },
     async offerDeal(gameId, round, from, to, kind, terms) { await http("/rest/v1/deals", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, kind, terms }) }); },
     async myAchievements() { return (await http("/rest/v1/achievements?select=id,earned_at")) || []; },
@@ -1231,6 +1285,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
         MP.talk.push({ id: "m" + m.id, t, round: m.round, from, to: m.to_player_id ? cid(m.to_player_id) : null, text: m.body, kind: "chat" });
         changed = true;
       }
+      if (api().marketLive && S && S.screen === "game" && S.game && !S.game.finished) {
+        const ml = await api().marketLive(MP.gameId);
+        if (ml && ml.round === S.game.round) { const sig = JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join(); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
+      }
       const rows = await api().deals(MP.gameId);
       const next = rows.map((d) => ({ id: String(d.id), t: new Date(d.created_at).getTime(), round: d.round, from: cid(d.from_player_id), to: cid(d.to_player_id), kind: d.kind, terms: JSON.parse(JSON.stringify(d.terms).split(MP.playerId).join("you")), status: d.status, note: d.note }));
       if (JSON.stringify(next) !== JSON.stringify(MP.deals)) { MP.deals = next; changed = true; }
@@ -1271,6 +1329,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       rebuildHist();
       for (const f of v.feed) S.chat.push({ round: f.round, kind: "news", text: f.headline });
       MP.applied = round;
+      S.cash0 = me().cash;
       resetDraft();
       if (v.finished) S.modal = "final";
       else if (round === 0) {
@@ -1287,6 +1346,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (round <= MP.applied) return;
     const prev = S.game;
     S.game = v; MP.applied = round; MP.submitted = 0;
+    S.cash0 = me().cash;
     afterRound(prev, round, new FT.Rng(round * 7919));
   }
   async function mpSubmit() {
@@ -1348,6 +1408,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
             <div style="display:flex;gap:8px"><input type="text" id="invite-link" readonly value="${esc(link)}" style="flex:1"><button class="btn small" type="button" id="btn-copy">Copy</button></div></div>
           <div class="card"><h3>Players (${total} of 8)</h3>${players}</div>
           ${lobbyFriends()}
+          ${g.tv_code ? `<div class="card"><h3>📺 Party mode</h3><div class="hint">Playing in one room? Open this link on a TV or laptop: it shows the skyline, the timer, who's ready, the live market and the results show for everyone, while you all play on your phones.</div>
+            <div style="display:flex;gap:8px"><input type="text" id="tv-link" readonly value="${esc(tvLink(g))}" style="flex:1"><button class="btn small" type="button" id="btn-copy-tv">Copy</button><a class="btn small go" href="${esc(tvLink(g))}" target="_blank" rel="noopener" style="text-decoration:none">Open</a></div></div>` : ""}
           ${g.league_id ? `<div class="card"><h3>Season rematch</h3><div class="hint">This game counts for your group's season. The season table is on the final screen.</div></div>` : ""}
         </div>
         <div class="card"><h3>Settings ${host ? "" : '<span class="muted" style="font-size:12px">(the host decides)</span>'}</h3>
@@ -1375,6 +1437,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       } catch (er) { MP.error = er.message; }
       sfx("click"); MP.sig = ""; mpRefresh();
     });
+    on("#btn-copy-tv", "click", () => { const i = $("#tv-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); } $("#btn-copy-tv").textContent = "Copied!"; });
     on("#btn-copy", "click", () => { const i = $("#invite-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); document.execCommand && document.execCommand("copy"); } $("#btn-copy").textContent = "Copied!"; });
     on("#btn-leave", "click", async () => { try { await api().rpc("leave_game", { p_game_id: MP.gameId }); } catch (e) {} mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render(); });
     on("#btn-mp-start", "click", async () => {
@@ -2327,6 +2390,259 @@ details.howto[open] summary::after { content: "▾ hide"; }
     modal.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", (e) => openModal(e.currentTarget.dataset.open)));
   }
 
+
+  // ======================================================================
+  // Live round: stock exchange (prices move with every trade), live auctions, the ticker.
+  // Single-player runs it locally (bots trade and bid too); online the server keeps the books.
+  // ======================================================================
+  const liveOf = () => (S.game && S.game.live && S.game.live.round === S.game.round ? S.game.live : null);
+  const liveNow = () => Date.now() + (S.serverSkew || 0);
+  const exchangeOpen = () => !!(S.game && !S.game.finished && S.game.round >= diff().takeoverUnlockRound && !me().bankrupt);
+  function startPriceOf(id) { return SP(S.game)[id] || 0; }
+  function liveMsg(text, bad) { const el = $("#ex-msg"); if (el) { el.textContent = text; el.className = "hint " + (bad ? "neg" : "pos"); } }
+  async function doTrade(target, qty) {
+    if (S.mp) {
+      try { const r = await api().call("trade", { game_id: MP.gameId, target_id: realId(target), qty }); applyLive(r.live); sfx(qty > 0 ? "profit" : "click"); liveMsg(tradeLine({ trader: "you", target, qty, price: r.trade.price })); }
+      catch (e) { liveMsg(e.message, true); }
+      return;
+    }
+    try { const r = FT.exchangeTrade(S.game, "you", target, qty); S.game = r.state; sfx(qty > 0 ? "profit" : "click"); updateLiveUI(); liveMsg(tradeLine(r.trade)); saveGame(); }
+    catch (e) { liveMsg(e.message, true); }
+  }
+  async function doBid(lot, amount) {
+    if (S.mp) {
+      try { const r = await api().call("bid", { game_id: MP.gameId, lot: lot === "auction" ? "auction" : realId(lot), amount }); applyLive(r.live); sfx("profit"); }
+      catch (e) { const el = document.querySelector(`[data-lot-msg="${lot}"]`); if (el) el.textContent = e.message; }
+      return;
+    }
+    try { S.game = FT.liveBid(S.game, "you", lot, amount, Date.now()); sfx("profit"); updateLiveUI(); saveGame(); }
+    catch (e) { const el = document.querySelector(`[data-lot-msg="${lot}"]`); if (el) el.textContent = e.message; }
+  }
+  // Online: overlay the server's live market onto my view (ids mapped to "you").
+  function applyLive(data) {
+    if (!data || !S.game || data.round !== S.game.round) return;
+    const d = JSON.parse(JSON.stringify(data).split(MP.playerId).join("you"));
+    S.serverSkew = d.serverNow ? d.serverNow - Date.now() : 0;
+    S.game.live = { round: d.round, prices: d.prices, trades: d.trades, lots: d.lots };
+    for (const c of S.game.companies) if (d.shares[c.id]) c.shares = d.shares[c.id];
+    const mine = d.trades.filter((t) => t.trader === "you").reduce((a, t) => a + t.cash, 0);
+    if (S.cash0 !== undefined) me().cash = S.cash0 + mine;
+    updateLiveUI();
+  }
+  const short2 = (id) => { const c = byId(id); return c ? (id === "you" ? "You" : c.companyName) : "?"; };
+  function tradeLine(t) {
+    return `${short2(t.trader)} ${t.qty > 0 ? "bought" : "sold"} ${Math.abs(t.qty)}% of ${short2(t.target)} at ${eur(t.price)}`;
+  }
+  function tickerHtml() {
+    const L = liveOf();
+    if (!exchangeOpen() && !liveLots().length) return "";
+    const items = [];
+    for (const t of (L ? L.trades : []).slice(-8).reverse()) items.push(`<span class="tk ${t.qty > 0 ? "up" : "down"}">${t.qty > 0 ? "▲" : "▼"} ${esc(tradeLine(t))}</span>`);
+    for (const lot of liveLots()) { const l = L && L.lots[lot.key]; if (l && l.high) items.push(`<span class="tk gold">🔨 ${esc(lot.short)}: ${eur(l.high.amount)} by ${esc(short2(l.high.bidder))}</span>`); }
+    const prices = S.game.companies.filter((c) => !c.bankrupt).map((c) => { const p = FT.livePrice(S.game, c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0; return `<span class="tk ${ch > 0.0005 ? "up" : ch < -0.0005 ? "down" : ""}"><b>${esc(c.companyName)}</b> ${eur(p)}${Math.abs(ch) > 0.0005 ? ` ${ch > 0 ? "▲" : "▼"}${Math.abs(ch * 100).toFixed(1)}%` : ""}</span>`; });
+    return `<section class="ticker" id="ticker" aria-label="Live market"><span class="tk-live">LIVE</span><div class="tk-roll">${[...items, ...prices].join("")}</div></section>`;
+  }
+  // The lots open this round: the auction and any bankruptcy sales.
+  function liveLots() {
+    const g = S.game, out = [];
+    if (!g || g.finished || me().bankrupt) return out;
+    if (g.auction && g.auction.round === g.round) out.push({ key: "auction", name: FT.AUCTION.items[g.auction.item].name, short: FT.AUCTION.items[g.auction.item].name, desc: FT.AUCTION.items[g.auction.item].description, min: FT.AUCTION.minBid });
+    for (const l of salesOpen()) { const dead = byId(l.companyId); out.push({ key: dead.id, name: "Bankruptcy sale: " + dead.companyName, short: dead.companyName + "'s assets", desc: `+${units(Math.round(dead.capacity * FT.BANKRUPTCY_SALE.capacityShare))} capacity, ${dead.stores} stores, a share of their brand`, min: FT.BANKRUPTCY_SALE.minBid }); }
+    return out;
+  }
+  function lotTimer(l) {
+    if (!l || !l.endsAt) return "Open until the round ends";
+    const left = Math.max(0, Math.ceil((l.endsAt - liveNow()) / 1000));
+    return left <= 0 ? "SOLD!" : left <= 10 ? `Going twice… ${left}s` : left <= 25 ? `Going once… ${left}s` : `${left}s to beat it`;
+  }
+  function lotPanel(lot) {
+    const L = liveOf(), l = L && L.lots[lot.key], open = FT.liveLotOpen(S.game, lot.key, liveNow()), min = FT.liveMinBid(S.game, lot.key), mine = l && l.high && l.high.bidder === "you";
+    return `<div class="card livelot ${mine ? "mine" : ""}" data-lot="${lot.key}"><h3>🔨 Live auction: ${esc(lot.name)}</h3><div class="hint">${esc(lot.desc)}. Highest bid when the hammer falls wins and pays at the end of the round.</div>
+      <div class="kv"><div><span>Highest bid</span><b>${l && l.high ? eur(l.high.amount) : "none yet"}</b></div><div><span>By</span><b>${l && l.high ? esc(short2(l.high.bidder)) : "—"}</b></div><div><span>Bids</span><b>${l ? l.bids : 0}</b></div><div><span>Hammer</span><b data-lot-timer="${lot.key}">${open ? lotTimer(l) : "SOLD!"}</b></div></div>
+      ${open && !mine ? `<div class="bidrow"><button class="btn go" type="button" data-bid="${lot.key}" data-amount="${min}"${me().cash < min ? ` disabled title="You have ${eur(me().cash)} cash"` : ""}>Bid ${eur(min)}</button><input type="text" inputmode="decimal" data-bid-custom="${lot.key}" placeholder="or type: ${Math.round((min * 1.5) / 1000)}k"><button class="btn small" type="button" data-bid-go="${lot.key}">Bid</button></div>` : mine && open ? `<div class="note pos" style="color:var(--ink)">You're the highest bidder. Hold on…</div>` : ""}
+      <div class="hint neg" data-lot-msg="${lot.key}">${S.mp && S.game.companies.some((c) => /^bot-/.test(c.id)) ? "Bots bid secretly; their bid counts at the end of the round." : ""}</div></div>`;
+  }
+  function exchangeCard() {
+    const c = me(), L = liveOf();
+    if (!exchangeOpen()) return `<div class="card"><h3>Stock exchange</h3><div class="locked">The live stock exchange opens in round ${diff().takeoverUnlockRound}.</div></div>`;
+    const rows = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
+      const p = FT.livePrice(S.game, o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
+      const blocked = o.controlledBy && o.controlledBy !== "you", canBuy = !blocked && c.takeoverCooldown <= 0 && o.shares.float > 0 && held < FT.EXCHANGE.maxHolding;
+      return `<tr><td><span class="dot" style="background:${colVar(o.id)}"></span>${esc(o.companyName)}</td>${td(eur(p), "Live price " + eurX(p) + (p0 ? "\\nAt the start of the round " + eurX(p0) : ""))}<td class="r num ${ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted"}">${Math.abs(ch) < 0.0005 ? "—" : (ch > 0 ? "▲" : "▼") + Math.abs(ch * 100).toFixed(1) + "%"}</td>${td(held + "%")}${td(o.shares.float + "%")}
+        <td class="r exbtns"><button class="btn small go" type="button" data-trade="${o.id}" data-qty="1" ${canBuy ? "" : "disabled"}>+1</button><button class="btn small go" type="button" data-trade="${o.id}" data-qty="5" ${canBuy ? "" : "disabled"}>+5</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-1" ${held ? "" : "disabled"}>−1</button><button class="btn small" type="button" data-trade="${o.id}" data-qty="-5" ${held >= 5 ? "" : "disabled"}>−5</button></td></tr>`;
+    }).join("");
+    const X = FT.EXCHANGE;
+    return `<div class="card exchange" id="live-exchange"><h3>Stock exchange <span class="livepill">LIVE</span></h3>
+      ${tbl(["Company", "Price", "Today", "Yours", "For sale", "Trade (shares)"], rows).replace('class="tbl"', 'class="tbl compact"')}
+      <div class="hint" id="ex-msg">Trades happen right now and everyone sees them on the ticker. Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here (${X.maxPerRound} a round); taking control needs a takeover bid below. Your cash: <b>${eur(c.cash)}</b>.</div></div>`;
+  }
+  // Refresh just the live parts of the screen (ticker, exchange, lots), not the whole page.
+  function updateLiveUI() {
+    if (!S || S.screen !== "game") return;
+    const t = $("#ticker"), th = tickerHtml();
+    if (t) { if (th) t.outerHTML = th; else t.remove(); } else if (th) { const ag = document.querySelector(".agenda"); if (ag) ag.insertAdjacentHTML("afterend", th); }
+    const ex = $("#live-exchange"); if (ex) { ex.outerHTML = exchangeCard(); bindLiveButtons(); }
+    for (const lot of liveLots()) { const el = document.querySelector(`.livelot[data-lot="${lot.key}"]`); if (el) { el.outerHTML = lotPanel(lot); bindLiveButtons(); } }
+    const cash = $("#top-cash"); if (cash) cash.textContent = eur(me().cash);
+  }
+  function bindLiveButtons() {
+    document.querySelectorAll("[data-trade]").forEach((b) => { if (b.dataset.bound) return; b.dataset.bound = "1"; b.addEventListener("click", (e) => doTrade(e.currentTarget.dataset.trade, Number(e.currentTarget.dataset.qty))); });
+    document.querySelectorAll("[data-bid]").forEach((b) => { if (b.dataset.bound) return; b.dataset.bound = "1"; b.addEventListener("click", (e) => doBid(e.currentTarget.dataset.bid, Number(e.currentTarget.dataset.amount))); });
+    document.querySelectorAll("[data-bid-go]").forEach((b) => { if (b.dataset.bound) return; b.dataset.bound = "1"; b.addEventListener("click", (e) => { const lot = e.currentTarget.dataset.bidGo, v = parseAmount((document.querySelector(`[data-bid-custom="${lot}"]`) || {}).value); if (Number.isFinite(v)) doBid(lot, Math.round(v)); }); });
+  }
+  // Single-player bots: they trade on the exchange and bid in live auctions now and then.
+  let liveTimer = 0, liveTicks = 0;
+  function startLiveBots() { if (!liveTimer) liveTimer = setInterval(liveBotTick, window.__ftLiveBotMs || (window.__ftFast ? 50 : 3000)); }
+  function botMax(bot, lot) {
+    S.botMax = S.botMax && S.botMax.round === S.game.round ? S.botMax : { round: S.game.round };
+    const key = bot.id + ":" + lot.key;
+    if (S.botMax[key] !== undefined) return S.botMax[key];
+    const B = FT.BALANCE, i = ind(), rng = new FT.Rng((S.seed + S.game.round * 31 + key.length * 977 + bot.id.charCodeAt(bot.id.length - 1)) | 0);
+    let worth;
+    if (lot.key === "auction") {
+      const item = S.game.auction.item, st = S.strat[bot.id] || "";
+      worth = item === "endorsement" ? 15 * B.brandValuePerPoint * (st.includes("budget") ? 0.8 : 1.3) : item === "patent" ? (st.includes("premium") ? 700000 : 150000) : item === "factory" ? i.start.capacity * 0.25 * B.capacityBookValue * i.baseUnitCost : 2 * (FT.RETAIL.bookValue + FT.RETAIL.openCost * 0.6);
+    } else { const dead = byId(lot.key); worth = dead.capacity * FT.BANKRUPTCY_SALE.capacityShare * B.capacityBookValue * i.baseUnitCost * 0.8 + dead.stores * FT.RETAIL.bookValue; }
+    return (S.botMax[key] = Math.round(Math.min(worth * (0.45 + rng.next() * 0.35), Math.max(0, bot.cash - 800000)) / 1000) * 1000);
+  }
+  function liveBotTick() {
+    if (!S || S.mp || S.screen !== "game" || !S.game || S.game.finished || S.modal) return;
+    liveTicks++;
+    const rng = new FT.Rng((S.seed + liveTicks * 7919 + S.game.round) | 0);
+    const bots = S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt);
+    let changed = false;
+    // Auctions: a bot that values the lot more than the next bid raises (not every tick).
+    for (const lot of liveLots()) {
+      if (!FT.liveLotOpen(S.game, lot.key, Date.now()) || !rng.chance(0.45)) continue;
+      const L = liveOf(), high = L && L.lots[lot.key] && L.lots[lot.key].high, min = FT.liveMinBid(S.game, lot.key);
+      const keen = bots.filter((b) => (!high || high.bidder !== b.id) && botMax(b, lot) >= min);
+      if (!keen.length) continue;
+      const b = rng.pick(keen);
+      try { S.game = FT.liveBid(S.game, b.id, lot.key, min, Date.now()); changed = true; } catch (e) {}
+    }
+    // Exchange: every third tick, maybe one trade.
+    if (exchangeOpen() && liveTicks % 3 === 0 && rng.chance(0.4) && bots.length) {
+      const b = rng.pick(bots), st = S.strat[b.id] || "", v = CV(S.game);
+      const targets = S.game.companies.filter((o) => o.id !== b.id && !o.bankrupt && (!o.controlledBy || o.controlledBy === b.id));
+      const held = targets.filter((o) => (o.shares.holders[b.id] || 0) > 0);
+      try {
+        if (held.length && rng.chance(st.includes("raider") ? 0.15 : 0.35)) { const o = rng.pick(held); S.game = FT.exchangeTrade(S.game, b.id, o.id, -Math.min(o.shares.holders[b.id], 1 + rng.int(3))).state; changed = true; }
+        else if (b.cash > 1500000 && b.takeoverCooldown <= 0 && targets.length) {
+          const pool = st.includes("raider") ? targets.sort((x, y) => (y.shares.holders[b.id] || 0) - (x.shares.holders[b.id] || 0)) : targets.sort((x, y) => v[y.id] - v[x.id]);
+          const o = pool[0];
+          if ((o.shares.holders[b.id] || 0) < 40 && o.shares.float > 5) { S.game = FT.exchangeTrade(S.game, b.id, o.id, st.includes("raider") ? 3 + rng.int(3) : 1 + rng.int(2)).state; changed = true; }
+        }
+      } catch (e) {}
+    }
+    if (changed) { updateLiveUI(); saveGame(); }
+  }
+  // Hammer timers count down every second.
+  setInterval(() => { document.querySelectorAll("[data-lot-timer]").forEach((el) => { const L = liveOf(); const l = L && L.lots[el.dataset.lotTimer]; const txt = FT.liveLotOpen(S.game, el.dataset.lotTimer, liveNow()) ? lotTimer(l) : "SOLD!"; if (el.textContent !== txt) { el.textContent = txt; if (txt === "SOLD!") updateLiveUI(); } }); }, 1000);
+
+  // ----- Raw materials and the bulk buyer (Production tab).
+  const OUTLOOK = { up: ["▲", "Prices expected to RISE next round", "neg"], down: ["▼", "Prices expected to FALL next round", "pos"], flat: ["=", "Prices expected to stay about the same", "muted"] };
+  function materialsCard() {
+    const c = me(), d = S.draft, i = ind(), M = S.game.market || {}, idx = M.materialIndex || 1, o = OUTLOOK[M.materialOutlook || "flat"];
+    const ml = FT.materialList(i, d.quality, c.trait), stockUnits = ml ? Math.floor((c.materials || 0) / ml) : 0, mat = FT.ECONOMY.material[S.game.config.industry];
+    const step = Math.max(1, Math.round(c.capacity / 100));
+    return `<div class="card"><h3>Raw materials: ${esc(mat)}</h3>
+      <div class="kv"><div${tipAttr("Materials in stock: enough for " + unitsX(stockUnits) + " " + i.labels.unit + " at quality " + d.quality + "\\nAverage index paid " + (c.materialPaid || 1).toFixed(3))}><span>In stock</span><b>${units(stockUnits)}</b></div><div${tipAttr("Material price index now: " + idx.toFixed(3))}><span>Price now</span><b>${idx.toFixed(2)}</b></div><div${tipAttr("Analysts are right about 3 times out of 4")}><span>Outlook</span><b class="${o[2]}">${o[0]} ${M.materialOutlook || "flat"}</b></div></div>
+      <div class="hint">This round's production uses the materials in stock first. Anything missing is bought on the spot market at today's price <b>+${Math.round(FT.COSTS.spotPremium * 100)}%</b>. ${o[1]}.</div>
+      ${stepper("f-morder", "Buy materials now for next round (" + i.labels.unit + ")", d.materialOrder, 0, Math.round(c.capacity * 3), step, units, `<div class="hint muted" style="font-size:12.5px" id="morder-note">${morderNote()}</div>`)}
+    </div>
+    <div class="card"><h3>Bulk buyer</h3><div class="hint">A discount chain takes stock you have left <b>after</b> the market, at <b>${eurX(M.bulkPrice || 0)}</b> per ${esc(i.labels.product)} (max ${units(Math.round(c.capacity * FT.BULK.maxShareOfCapacity))}). Cheap, but your warehouse is empty and you skip the holding cost.</div>
+      ${stepper("f-bulk", "Sell leftovers to the bulk buyer (up to)", d.bulkSell, 0, Math.round(c.capacity * FT.BULK.maxShareOfCapacity), step, units)}</div>`;
+  }
+  function morderNote() {
+    const c = me(), d = S.draft, i = ind(), idx = (S.game.market && S.game.market.materialIndex) || 1;
+    const cost = d.materialOrder * FT.materialList(i, d.quality, c.trait) * idx;
+    return `Costs ${eurX(cost)} now (index ${idx.toFixed(2)}); it arrives for next round. Leftover materials keep, with a ${Math.round(FT.COSTS.materialHolding * 100)}% holding cost a round.`;
+  }
+
+
+  // ======================================================================
+  // Party mode: a TV screen for the room (skyline of values, timer, who's ready, live market,
+  // headlines and a results show), while everyone plays on their phone. Opened with a secret link.
+  // ======================================================================
+  const TV = { id: null, code: null, data: null, err: "", lastRound: null, show: null, showUntil: 0, timer: 0, seenMsg: 0 };
+  function tvLink(g) { return backUrl() + "?tv=" + g.id + "." + g.tv_code; }
+  function tvStart(id, code) {
+    TV.id = id; TV.code = code;
+    S = { screen: "tv", opts: DEFAULT_OPTS, modal: null };
+    document.documentElement.classList.add("tvmode");
+    tvPoll();
+    TV.timer = setInterval(tvPoll, 2500);
+    setInterval(tvClock, 1000);
+  }
+  async function tvPoll() {
+    try {
+      const d = await (api().tvSnapshot ? api().tvSnapshot(TV.id, TV.code) : null);
+      if (!d) { TV.err = "This TV link doesn't work (or the game was closed)."; render(); return; }
+      const r = d.results ? d.results.round : null;
+      if (TV.lastRound !== null && r !== null && r > TV.lastRound && d.results.data) { TV.show = d.results; TV.showUntil = Date.now() + (window.__ftFast ? 50 : 14000); sfx(d.results.data.finished ? "win" : "news"); }
+      if (TV.lastRound === null) TV.lastRound = r ?? -1; else if (r !== null) TV.lastRound = Math.max(TV.lastRound, r);
+      // Reactions from the room float up on the TV too.
+      for (const m of d.chat || []) { const id = Number(m.id); if (id > TV.seenMsg) { if (TV.seenMsg && m.kind === "reaction") floatEmoji(m.body, tvName(d, m.from)); TV.seenMsg = Math.max(TV.seenMsg, id); } }
+      TV.data = d; TV.err = ""; TV.skew = new Date(d.now).getTime() - Date.now();
+      render();
+    } catch (e) { console.error("tv", e); TV.err = "Can't reach the game server. Check the internet connection."; try { render(); } catch (er) { console.error("tv render", er); } }
+  }
+  const tvName = (d, pid) => { const p = (d.players || []).find((x) => x.id === pid); return p ? p.name : ""; };
+  function tvClock() {
+    const el = $("#tv-timer"), d = TV.data;
+    if (!el || !d || !d.game.round_deadline) return;
+    const left = Math.max(0, Math.floor((new Date(d.game.round_deadline).getTime() - Date.now() - (TV.skew || 0)) / 1000));
+    el.textContent = left >= 3600 ? Math.floor(left / 3600) + "h " + String(Math.floor((left % 3600) / 60)).padStart(2, "0") + "m" : Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+    el.classList.toggle("low", left <= 30);
+    document.querySelectorAll("[data-tv-lot]").forEach((x) => { const end = Number(x.dataset.end); const l = Math.max(0, Math.ceil((end - Date.now() - (TV.skew || 0)) / 1000)); x.textContent = !end ? "open" : l <= 0 ? "SOLD!" : l <= 10 ? "Going twice… " + l + "s" : l <= 25 ? "Going once… " + l + "s" : l + "s"; });
+    if (TV.show && Date.now() > TV.showUntil) { TV.show = null; render(); }
+  }
+  function tvScreen() {
+    const d = TV.data;
+    if (!d) return `<section class="tv"><div class="tv-center"><h1 class="tv-logo">Friendly Takeover</h1><p>${esc(TV.err || "Connecting to the game…")}</p></div></section>`;
+    const g = d.game, R = d.results && d.results.data, comps = R ? R.companies : [];
+    const colorOf = (id) => { const i = comps.findIndex((c) => c.companyId === id); return css(COLORS[Math.max(0, i) % COLORS.length]); };
+    const nameOf = (id) => { const c = comps.find((x) => x.companyId === id); return c ? c.companyName : tvName(d, id) || "?"; };
+    const join = backUrl() + "?join=" + g.code;
+    const head = `<header class="tvp-head"><div class="tv-brand"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><b>Friendly Takeover</b><span>Party mode · ${esc((FT.INDUSTRIES[g.industry] || {}).name || "")}</span></div>
+      <div class="tv-code"><span>Game code</span><b>${esc(g.code)}</b></div>
+      ${g.status === "playing" ? `<div class="tv-round"><span>Round ${g.current_round} / ${g.rounds}</span><b id="tv-timer">…</b></div>` : g.status === "finished" ? `<div class="tv-round"><span>Game over</span><b>🏆</b></div>` : `<div class="tv-round"><span>Lobby</span><b>${d.players.length} in</b></div>`}</header>`;
+    if (g.status === "lobby") {
+      const cards = d.players.map((p, i) => `<div class="tv-player" style="--pc:${css(COLORS[i % COLORS.length])}"><canvas data-tavatar="${esc(p.id)}" data-color="${i}" width="12" height="12" aria-hidden="true"></canvas><b>${esc(p.name)}</b><span>${esc(p.company)}</span>${p.is_host ? '<i>host</i>' : ""}</div>`).join("");
+      return `<section class="tv">${head}<div class="tv-lobby"><h2>Grab your phone and join</h2><div class="tv-join">${esc(join.replace(/^https?:\/\//, ""))}</div><p>or open the game, choose Multiplayer → Join, and type <b>${esc(g.code)}</b></p><div class="tv-players">${cards}</div><p class="tv-wait">Waiting for the host to start${g.bot_count ? ` · ${g.bot_count} bot${g.bot_count > 1 ? "s" : ""} will join` : ""}…</p></div></section>`;
+    }
+    if (!R) return `<section class="tv">${head}<div class="tv-center"><p>Setting up the market…</p></div></section>`;
+    // Skyline: one building per company, height = company value.
+    const vals = R.values || {}, max = Math.max(1, ...Object.values(vals));
+    const ranked = [...comps].sort((a, b) => (vals[b.companyId] || 0) - (vals[a.companyId] || 0));
+    const buildings = comps.map((c) => { const v = vals[c.companyId] || 0, h = c.bankrupt ? 4 : Math.max(8, (v / max) * 100); const rank = ranked.findIndex((x) => x.companyId === c.companyId) + 1;
+      return `<div class="tv-bld ${c.bankrupt ? "dead" : ""}" style="--pc:${colorOf(c.companyId)};--h:${h}%"><span class="tv-rank">#${rank}</span><div class="tv-tower"><i></i></div><b>${esc(c.companyName)}</b><span>${esc(c.playerName)} · ${c.bankrupt ? "bankrupt" : eur(v)}</span></div>`; }).join("");
+    const live = d.live || { trades: [], lots: {}, prices: {} };
+    const ticker = [...(live.trades || [])].slice(-10).reverse().map((t) => `<div class="tv-tk ${t.qty > 0 ? "up" : "down"}">${t.qty > 0 ? "▲" : "▼"} <b>${esc(nameOf(t.trader))}</b> ${t.qty > 0 ? "bought" : "sold"} ${Math.abs(t.qty)}% of <b>${esc(nameOf(t.target))}</b> at ${eur(t.price)}</div>`).join("");
+    const lots = Object.entries(live.lots || {}).map(([k, l]) => `<div class="tv-lot"><b>🔨 ${esc(k === "auction" && R.auction ? FT.AUCTION.items[R.auction.item].name : nameOf(k) + "'s assets")}</b><span>${l.high ? eur(l.high.amount) + " · " + esc(nameOf(l.high.bidder)) : "no bids yet"}</span><i data-tv-lot data-end="${l.endsAt || 0}">…</i></div>`).join("");
+    const ready = g.status === "playing" ? d.players.map((p) => `<span class="tv-ready ${p.submitted_round >= g.current_round ? "ok" : ""}">${p.submitted_round >= g.current_round ? "✓" : "…"} ${esc(p.name)}</span>`).join("") : "";
+    const news = [...(R.upcoming || []), ...(R.nextNews || []).map((n) => n.headline)].slice(0, 5).map((h) => `<li>${esc(h)}</li>`).join("");
+    const chat = (d.chat || []).filter((m) => m.kind === "chat").slice(-5).map((m) => `<div class="tv-msg"><b>${esc(tvName(d, m.from))}:</b> ${esc(m.body)}</div>`).join("");
+    let overlay = "";
+    if (TV.show || g.status === "finished") {
+      const sR = (TV.show && TV.show.data) || R, rr = (TV.show && TV.show.round) || (d.results && d.results.round), H = sR.valueHistory || {};
+      const st = [...(sR.standings || [])].sort((a, b) => b.score - a.score);
+      const rows = st.map((x, k) => { const h = H[x.companyId] || [], dv = h.length > 1 ? h.at(-1) - h.at(-2) : 0; return `<div class="tv-row" style="--pc:${colorOf(x.companyId)};animation-delay:${k * 180}ms"><span class="n">${k + 1}</span><b>${esc(nameOf(x.companyId))}</b><span class="v">${eur(x.score)}</span><span class="${dv >= 0 ? "pos" : "neg"}">${dv >= 0 ? "▲" : "▼"} ${eur(Math.abs(dv))}</span></div>`; }).join("");
+      overlay = `<div class="tv-show"><h2>${sR.finished ? "Final results" : "Round " + rr + " results"}</h2>${sR.finished && st[0] ? `<div class="tv-winner">🏆 ${esc(nameOf(st[0].companyId))} wins!</div>` : ""}<div class="tv-rows">${rows}</div><ul class="tv-heads">${(sR.headlines || []).slice(0, 4).map((h) => `<li>${esc(h)}</li>`).join("")}</ul></div>`;
+    }
+    return `<section class="tv">${head}
+      <div class="tv-main">
+        <div class="tv-city">${buildings}</div>
+        <aside class="tv-side">
+          ${ready ? `<div class="tv-box"><h3>Who's ready</h3><div class="tv-readys">${ready}</div></div>` : ""}
+          ${lots ? `<div class="tv-box"><h3>Live auction</h3>${lots}</div>` : ""}
+          <div class="tv-box"><h3>Stock exchange</h3>${ticker || `<div class="tv-muted">No trades yet this round.</div>`}</div>
+          ${news ? `<div class="tv-box"><h3>In the news</h3><ul class="tv-news">${news}</ul></div>` : ""}
+          ${chat ? `<div class="tv-box"><h3>Table talk</h3>${chat}</div>` : ""}
+        </aside>
+      </div>${overlay}</section>`;
+  }
+
   // ---------------- game flow ----------------
   function newGame(o, showTv) {
     const seed0 = o.seed || (Date.now() & 0x7fffffff);
@@ -2369,7 +2685,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function tabStatus(k) {
     const g = S.game;
     if (k === "boardroom" && needsVote()) return { text: "VOTE", cls: "req" };
-    if (k === "boardroom" && ((auctionOpen() && !S.draft.auctionBid) || salesOpen().some((l) => !(S.draft.bankruptBids || {})[l.companyId]))) return { text: "BID", cls: "gold" };
+    if (k === "boardroom" && liveLots().some((lot) => { const L = liveOf(), l = L && L.lots[lot.key]; return FT.liveLotOpen(S.game, lot.key, liveNow()) && !(l && l.high && l.high.bidder === "you"); })) return { text: "BID", cls: "gold" };
     if (k === "retail" && g.round === diff().retailUnlockRound && !(S.visited || {})[k]) return { text: "NEW", cls: "" };
     if (k === "takeovers" && g.round === diff().takeoverUnlockRound && !(S.visited || {})[k]) return { text: "NEW", cls: "" };
     if (DECIDE_TABS.some(([t]) => t === k) && (S.visited || {})[k]) return { text: "✓", cls: "done" };
@@ -2459,6 +2775,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         continue;
       }
       let d = FT.botDecisions(S.strat[c.id], g, c, rng);
+      d = { ...d, auctionBid: 0, bankruptBids: {} }; // they bid live in single-player
       const threat = Math.max(0, ...Object.values(c.shares.holders));
       if (threat >= 25 && c.cash > 1200000) d = { ...d, buyback: 10 };
       decisions[c.id] = d;
@@ -2539,6 +2856,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ---------------- render ----------------
   function render() {
     if (!S) return;
+    if (S.screen === "tv") {
+      app.innerHTML = tvScreen();
+      document.querySelectorAll("canvas[data-tavatar]").forEach((cv) => drawAvatar(cv, cv.dataset.tavatar, css(COLORS[Number(cv.dataset.color) % COLORS.length])));
+      document.querySelectorAll("canvas[data-ticon]").forEach((cv) => drawIcon(cv, "logo"));
+      tvClock();
+      return;
+    }
     if (calcEl || CALC.open) renderCalc();
     if (talkEl || TALK.open) renderTalk();
     if (S && S.tab === "market" && S.screen === "game") S.coachMarket = true;
@@ -2562,7 +2886,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }
     S.visited = S.visited || {};
     S.visited[S.tab] = true;
-    app.innerHTML = topbar() + players() + skyline() + agenda() + `<div class="main">${menu()}${windowFor(S.tab)}</div>`;
+    app.innerHTML = topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}${windowFor(S.tab)}</div>`;
+    if (!S.mp) startLiveBots();
     if (!S.modal) S.flash = null;
     paintCanvases();
     renderModal();
@@ -2578,7 +2903,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<header class="win topbar">
       <div class="logo"><canvas data-icon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly Takeover</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
-      <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
+      <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b id="top-cash" class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
       <span class="tools"><button class="btn snd chatbtn" id="btn-chat" type="button" aria-pressed="${TALK.open}"${tipAttr("Chat and private deals")}>Chat</button><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
@@ -2682,6 +3007,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ctl"><span class="lbl">${esc(i.labels.quality[0].toUpperCase() + i.labels.quality.slice(1))}</span><div class="qual" role="radiogroup" aria-label="Quality">${q}</div><div class="hint muted" style="font-size:12.5px">${qHint}</div></div>
         ${stepper("f-cap", "Build more " + i.labels.capacity, d.investCapacity, 0, 2000000, 20000, eur, `<div class="hint muted" style="font-size:12.5px" id="cap-note">${capNote()}</div>`)}
         ${S.game.config.difficulty === "tycoon" ? staffControl() : ""}
+        ${materialsCard()}
       </div></div>`;
   }
   function staffControl() {
@@ -2854,11 +3180,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
     let seenHow = false;
     try { seenHow = !!localStorage.getItem("ft-seen-how-takeovers"); localStorage.setItem("ft-seen-how-takeovers", "1"); } catch (e) {}
     const how = `<details class="card howto" ${seenHow ? "" : "open"}><summary><h3>How takeovers work</h3></summary><ol class="steps">
-      <li><span><b>Buy shares.</b> Every company has 100 shares. The founder keeps ${B.startShares.founder}; the rest are for sale to anyone. One share costs 1% of the company's value (its share price) plus a takeover premium of ${Math.round(B.takeoverPremium * 100)}%, which rises the more shares you already own.</span></li>
+      <li><span><b>Trade live.</b> The stock exchange (top) is open during the round: buy and sell right now, everyone sees it on the ticker, and every share moves the price. You can build up to 50% there.</span></li>
+      <li><span><b>Takeover bid.</b> Every company has 100 shares. The founder keeps ${B.startShares.founder}; the rest are for sale to anyone. One share costs 1% of the company's value (its share price) plus a takeover premium of ${Math.round(B.takeoverPremium * 100)}%, which rises the more shares you already own.</span></li>
       <li><span><b>Own more than 50 shares and you control the company.</b> Your shares add up over the rounds. You can buy at most ${D.maxSharesPerRound} per company per round, so it takes at least ${Math.ceil(51 / D.maxSharesPerRound)} rounds.</span></li>
       <li><span><b>Control everyone, win the game.</b> If you control every other company still in business, it's a monopoly: the game ends right away and you win.</span></li>
       <li><span><b>Control pays off.</b> Every round the company you control pays half its profit to its shareholders (you get your %). At the end you get a bonus of ${Math.round(B.controllerBonusRate * 100)}% of its value, and its owner only scores ${Math.round(B.controlledScoreMultiplier * 100)}%. Your shares also count in your own company value.</span></li>
-      <li><span><b>Sell or dump shares.</b> You can sell shares you own at any time, for the share price minus ${Math.round(FT.BALANCE.sellDiscount * 100)}%. Dumping scares investors: every share you sell knocks ${(FT.BALANCE.dumpImpactPerShare * 100).toFixed(1)}% off that company's value (at most ${Math.round(FT.BALANCE.dumpImpactCapPerRound * 100)}% a round), and your own sale goes through at the lower price. The panic halves every round. Use it to cash out a stake you can't use, or to hit a rival where it hurts.</span></li>
+      <li><span><b>Sell or dump shares.</b> Sell shares you own any time during the round on the live stock exchange (${Math.round(FT.EXCHANGE.fee * 100)}% fee). Every share sold pushes the price down ${(FT.EXCHANGE.impactPerShare * 100).toFixed(1)}%, and dumping scares investors: each share also knocks ${(FT.BALANCE.dumpImpactPerShare * 100).toFixed(1)}% off that company's value when the round closes (at most ${Math.round(FT.BALANCE.dumpImpactCapPerRound * 100)}% a round). The panic halves every round. Use it to cash out a stake you can't use, or to hit a rival where it hurts.</span></li>
       <li><span><b>Defend yourself.</b> Buy back your own shares so nobody can buy them, or keep a defense fund. When someone tries to pass 50%, a boardroom showdown decides: the higher sealed stake wins, a tie goes to the defender, and both pay what they staked.</span></li>
     </ol><div class="hint">After a takeover the buyer's board needs ${D.takeoverCooldown} round${D.takeoverCooldown === 1 ? "" : "s"} of rest before buying again.</div></details>`;
     const legend = `<div class="legend"><span><i style="background:linear-gradient(90deg,var(--c0),var(--c1),var(--c2))"></i>Company's own colour: its founder's shares</span><span><i style="background:#5b6690"></i>Bought back</span><span><i style="background:#2c3970"></i>For sale</span><span>Other colours: shares held by that company</span></div>`;
@@ -2875,12 +3202,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
           <div class="muted" style="font-size:12.5px"${tipAttr("Share price " + eurX(p[o.id]) + "\nPremium " + (premiumFor(o) * 100).toFixed(1) + "%\nYou pay " + eurX(pay) + " per share")}>Share price ${eur(p[o.id])} · you pay ${eur(pay)} per share</div>
           <div style="font-size:12.5px">${line}</div>${ownBarWide(o)}</div>
         <div class="trade"><span class="tl">Buy</span><div class="stepper"><button type="button" data-buy-step="${o.id}" data-dir="-1" aria-label="Buy fewer shares of ${esc(o.companyName)}" ${max ? "" : "disabled"}>−</button><output class="num" id="buy-${o.id}">${d.buyShares[o.id] || 0}</output><button type="button" data-buy-step="${o.id}" data-dir="1" data-max="${max}" aria-label="Buy more shares of ${esc(o.companyName)}" ${max ? "" : "disabled"}>+</button></div>
-          ${held ? `<span class="tl sell">Sell / dump</span><div class="stepper"><button type="button" data-sell-step="${o.id}" data-dir="-1" aria-label="Sell fewer shares of ${esc(o.companyName)}">−</button><output class="num" id="sell-${o.id}">${(d.sellShares || {})[o.id] || 0}</output><button type="button" data-sell-step="${o.id}" data-dir="1" aria-label="Sell more shares of ${esc(o.companyName)}">+</button></div>` : ""}</div></div>`;
+          ${held ? `<span class="tl sell">Sell on the exchange (above)</span>` : ""}</div></div>`;
     }).join("");
     const holders = Object.entries(c.shares.holders).filter(([, v]) => v);
     const biggest = holders.length ? Math.max(...holders.map(([, v]) => v)) : 0;
     return `<div class="grid2">
-      <div style="display:grid;gap:10px;min-width:0">${how}${status}<div class="card"><h3>Rivals' shares</h3>${legend}<div class="hint">Use + and − to buy shares in steps of 5.${canBuy ? "" : " Buying is locked right now."}</div>
+      <div style="display:grid;gap:10px;min-width:0">${exchangeCard()}${how}${status}<div class="card"><h3>Takeover bids (end of round)</h3>${legend}<div class="hint">For the push past 50%: these shares are bought when the round resolves, at the share price plus the takeover premium, and can trigger a boardroom showdown. Steps of 5.${canBuy ? "" : " Buying is locked right now."}</div>
         <div class="note" style="color:var(--ink)">Shares are paid from the cash you have left <b>after</b> all your other costs this round (production, marketing, investments, stores). If that runs out, you get fewer shares; your round report says why. Plan it in Finance: borrow if you need to.</div>
         <div class="sumline"${tipAttr("Exact: " + eurX(planShareCost()))}><span class="muted">Your planned share purchases cost about</span><b class="num" id="share-cost">${eur(planShareCost())}</b></div></div>${list}</div>
       <div style="display:grid;gap:12px;min-width:0">
@@ -3003,7 +3330,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }).join("");
     const needsTarget = d.wildcard && W[d.wildcard.card].needsTarget;
     const target = `<div class="ctl" ${needsTarget ? "" : "hidden"} id="wc-target-wrap"><label for="wc-target">Target</label><select id="wc-target">${rivals.map((o) => `<option value="${o.id}" ${d.wildcard && d.wildcard.target === o.id ? "selected" : ""}>${esc(o.companyName)} (${esc(o.playerName)})</option>`).join("")}</select></div>`;
-    const sales = salesOpen().map((l) => {
+    const sales = liveLots().filter((x) => x.key !== "auction").map(lotPanel).join("");
+    const salesOld = salesOpen().map((l) => {
       const dead = byId(l.companyId), cap = Math.round(dead.capacity * FT.BANKRUPTCY_SALE.capacityShare), id = "f-bk-" + dead.id;
       return `<div class="card reqbox" style="box-shadow: inset 0 0 0 2px var(--gold)"><h3>Bankruptcy sale: ${esc(dead.companyName)}</h3>
         <div class="kv"><div${tipAttr(unitsX(cap) + " " + ind().labels.unit + " of capacity, added to yours")}><span>Factory</span><b>+${units(cap)}</b></div><div><span>Stores</span><b>${dead.stores}</b></div><div${tipAttr("You get " + Math.round(FT.BANKRUPTCY_SALE.brandShare * 100) + "% of their brand")}><span>Brand</span><b>+${(dead.brand * FT.BANKRUPTCY_SALE.brandShare).toFixed(1)}</b></div></div>
@@ -3011,9 +3339,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${stepper(id, "Your bid for " + esc(dead.companyName), (d.bankruptBids || {})[dead.id] || 0, 0, Math.max(0, Math.round((c.cash + Math.max(0, creditLimitUI(c) - c.debt)) / 10000) * 10000), 10000, eur)}`;
     }).join("");
     const playable = (list) => list.filter((r) => r <= g.config.rounds);
+    void salesOld;
     const auction = g.auction && g.auction.round === g.round
-      ? `<div class="card"><h3>Sealed-bid auction: ${esc(FT.AUCTION.items[g.auction.item].name)}</h3><div class="hint">${esc(FT.AUCTION.items[g.auction.item].description)}. Highest bid wins and pays its bid; everyone else pays nothing. Minimum bid ${eurX(FT.AUCTION.minBid)}.</div></div>${stepper("f-bid", "Your bid", d.auctionBid, 0, Math.max(0, Math.round(c.cash / 10000) * 10000), 10000, eur)}`
-      : `<div class="card"><h3>Auctions</h3><div class="hint">Sealed-bid auctions happen in rounds ${playable(FT.AUCTION.rounds).join(", ")}: a celebrity endorsement, a patent, a bankrupt rival's factory or a prime high-street location.${playable(FT.AUCTION.rounds).some((r) => r > g.round) ? " Next one: round " + playable(FT.AUCTION.rounds).find((r) => r > g.round) + "." : ""}</div></div>`;
+      ? lotPanel(liveLots().find((x) => x.key === "auction"))
+      : `<div class="card"><h3>Auctions</h3><div class="hint">Live auctions happen in rounds ${playable(FT.AUCTION.rounds).join(", ")}: a celebrity endorsement, a patent, a bankrupt rival's factory or a prime high-street location.${playable(FT.AUCTION.rounds).some((r) => r > g.round) ? " Next one: round " + playable(FT.AUCTION.rounds).find((r) => r > g.round) + "." : ""}</div></div>`;
     const summit = g.summit && g.summit.round === g.round
       ? `<div class="ctl ${d.vote ? "" : "reqbox"}"><span class="lbl">Industry summit: vote on a new rule ${d.vote ? "" : '<span class="neg">(required before you can submit)</span>'}</span><div class="choices">${g.summit.options.map((r, k) => { const reg = FT.SUMMIT.regulations[r], v = k ? "b" : "a"; return `<label class="choice"><input type="radio" name="vote" value="${v}" ${d.vote === v ? "checked" : ""}><span><b>${reg.name}</b><small>${reg.description}</small></span></label>`; }).join("")}</div><div class="hint muted" style="font-size:12.5px">Majority wins, a tie is a coin flip. The rule starts next round.</div></div>`
       : `<div class="card"><h3>Industry summits</h3><div class="hint">In rounds ${playable(FT.SUMMIT.rounds).join(", ")} every company votes between two new rules (taxes, cheap credit, green rules…). The winner applies for ${FT.SUMMIT.duration} rounds. Talk to your rivals before you vote.</div></div>`;
@@ -3553,6 +3882,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="kv">
         <div${tipAttr(last ? "Total market at average offers in " + (last.round ? "round " + last.round : "year 0") + ": " + unitsX(tot(last)) + " " + u : "")}><span>Market last round</span><b>${last ? units(tot(last)) : "—"}</b></div>
         <div${tipAttr("The whole market grows about " + Math.round(ind().growth * 100) + "% a round. Single buyer groups can grow or shrink on top of that.")}><span>Normal growth</span><b>+${Math.round(ind().growth * 100)}%</b></div>
+        <div${tipAttr("Analysts' view on next round's material price (right about 3 times out of 4)")}><span>Material outlook</span><b class="${OUTLOOK[(g.market && g.market.materialOutlook) || "flat"][2]}">${OUTLOOK[(g.market && g.market.materialOutlook) || "flat"][0]} ${(g.market && g.market.materialOutlook) || "flat"}</b></div>
+        <div${tipAttr("What the bulk buyer pays per unit for leftovers this round")}><span>Bulk price</span><b>${eur((g.market && g.market.bulkPrice) || 0)}</b></div>
         <div${tipAttr("Raw material price index this round: " + idx.toFixed(3) + (prevIdx ? " (last round " + prevIdx.toFixed(3) + ")" : "") + "\nMaterial is " + Math.round(FT.COSTS.materialShare * 100) + "% of your standard unit cost")}><span>Material index</span><b>${idx.toFixed(2)}${prevIdx ? ` <small class="${idx > prevIdx ? "neg" : idx < prevIdx ? "pos" : "muted"}">${idx > prevIdx ? "▲" : idx < prevIdx ? "▼" : "="}</small>` : ""}</b></div>
       </div>
       ${newsBits.length ? `<div class="fxrow" style="margin-top:4px">${newsBits.map(([k, x]) => `<span class="fx ${x > 0 === (k !== "Production costs") ? "up" : "down"}">${esc(k)} ${signed(x)}</span>`).join("")}</div>` : `<div class="hint">No news moves the market this round.</div>`}
@@ -3635,13 +3966,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     let body = "";
     if (rt === "income") body = `<div class="card"><h3>Income statement</h3>${roundTable([
       ["Sold to shops", (h) => h.wholesaleSold, "units"], ["Shop price", (h) => h.price], ["Sold in own stores", (h) => h.retailSold, "units"], ["Store price", (h) => (h.retailSold ? h.retailPrice : 0)],
-      ["Revenue from shops", (h) => h.revenue - h.retailRevenue], ["Revenue from own stores", (h) => h.retailRevenue], ["Total revenue", (h) => h.revenue],
+      ["Sold to the bulk buyer", (h) => h.bulkSold || 0, "units"], ["Revenue from shops", (h) => h.revenue - h.retailRevenue - (h.bulkRevenue || 0)], ["Revenue from own stores", (h) => h.retailRevenue], ["Revenue from the bulk buyer", (h) => h.bulkRevenue || 0], ["Total revenue", (h) => h.revenue],
       ["Cost of goods sold", (h) => -(h.revenue - h.profit - h.holdingCost - h.fixedCost - (h.idleCost || 0) - h.marketingCost - h.rndCost - h.brandCost - h.researchCost - h.storeUpkeep - h.interest - (h.wildcardCost || 0) - (h.legalCost || 0) - (h.staffCost || 0) - (h.auctionPaid || 0))],
       ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
       ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Profit", (h) => h.profit, "eur", true],
     ], true)}<div class="hint">Cost of goods sold = production cost of the ${esc(i.labels.unit)} you actually sold.</div></div>`;
     if (rt === "cash") body = `<div class="card"><h3>Cash flow</h3>${roundTable([
-      ["Cash at start", (h) => h.cashStart, "eur", false, true], ["Loans (net)", (h) => h.loanChange], ["Sales revenue", (h) => h.revenue], ["Production", (h) => -h.productionCost],
+      ["Cash at start", (h) => h.cashStart, "eur", false, true], ["Loans (net)", (h) => h.loanChange], ["Sales revenue", (h) => h.revenue], ["Production", (h) => -h.productionCost], ["Materials for next round", (h) => -(h.materialOrderCost || 0)], ["Stock exchange (live)", (h) => h.exchangeCash || 0], ["Deals with players", (h) => h.dealCash || 0],
       ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
       ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Factory expansion", (h) => -h.capacityInvest], ["Store openings", (h) => -h.storeOpenCost],
       ["Shares in rivals", (h) => -h.sharePurchases], ["Shares sold", (h) => h.shareSales || 0], ["Showdown stakes", (h) => -(h.showdownPaid || 0)], ["Share buyback", (h) => -h.buybackCost], ["Dividends received", (h) => h.dividendsReceived], ["Dividends paid", (h) => -h.dividendsPaid],
@@ -3651,7 +3982,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ["Capacity", (h) => h.capacity, "units"], ["Produced", (h) => h.produced, "units"], ["Utilisation", (h) => (h.utilization ?? (h.capacity ? h.produced / h.capacity : 0)), "pct"],
       ["Made in overtime", (h) => h.overtimeUnits || 0, "units"], ["Idle capacity", (h) => h.idleUnits || 0, "units"],
       ["Stock at start", (h) => h.inventoryStart, "units"], ["Sold to shops", (h) => h.wholesaleSold, "units"], ["Sold in own stores", (h) => h.retailSold, "units"], ["Missed sales", (h) => h.unmetDemand, "units"], ["Stock at end", (h) => h.inventoryEnd, "units"],
-      ["Production cost", (h) => h.productionCost], ["of which overtime", (h) => h.overtimeCost || 0], ["Idle machines", (h) => h.idleCost || 0],
+      ["Production cost (paid now)", (h) => h.productionCost], ["of which overtime", (h) => h.overtimeCost || 0], ["of which spot materials", (h) => h.materialSpotCost || 0], ["Idle machines", (h) => h.idleCost || 0],
+      ["Materials used from stock (list €)", (h) => h.materialFromStock || 0], ["Materials bought on the spot (list €)", (h) => h.materialSpot || 0], ["Materials ordered for next round", (h) => h.materialOrderUnits || 0, "units"], ["Paid for them", (h) => h.materialOrderCost || 0], ["Materials in stock after (list €)", (h) => h.materialStockEnd || 0], ["Sold to the bulk buyer", (h) => h.bulkSold || 0, "units"], ["Bulk price", (h) => h.bulkPrice || 0],
       ["Cost per " + i.labels.product + " (before overtime)", (h) => h.unitCostBase || (h.produced ? h.productionCost / h.produced : 0), "eur3"], ["Quality made", (h) => h.quality, "plain"], ["Material index", (h) => h.materialIndex ?? 1, "idx"],
     ])}<div class="hint">Cost per ${esc(i.labels.product)} = standard cost for that quality × materials × news × your experience. Work out how much cheaper experience has made you.</div></div>`;
     if (rt === "balance") {
@@ -3788,14 +4120,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (c.bankrupt) {
       out.push(sec("boardroom", "Journalist", [["Investigating", d.journalistTarget ? esc(byId(d.journalistTarget).companyName) : "nobody"]]));
     } else {
-      out.push(sec("production", "Production", [["Price per " + i.labels.product, eurX(d.price)], ["Production", unitsX(Math.min(d.production, c.capacity)) + " " + i.labels.unit], ["Quality", d.quality], ["Build more capacity", eurX(d.investCapacity)], ...(g.config.difficulty === "tycoon" ? [["Teams hired / laid off", (d.hire > 0 ? "+" : "") + d.hire]] : [])]));
+      out.push(sec("production", "Production", [["Price per " + i.labels.product, eurX(d.price)], ["Production", unitsX(Math.min(d.production, c.capacity)) + " " + i.labels.unit], ["Quality", d.quality], ["Materials for next round", unitsX(d.materialOrder) + " " + i.labels.unit + " (" + eurX(d.materialOrder * FT.materialList(i, d.quality, c.trait) * ((g.market && g.market.materialIndex) || 1)) + ")"], ["Bulk buyer, up to", unitsX(d.bulkSell) + " " + i.labels.unit], ["Build more capacity", eurX(d.investCapacity)], ...(g.config.difficulty === "tycoon" ? [["Teams hired / laid off", (d.hire > 0 ? "+" : "") + d.hire]] : [])]));
       out.push(sec("marketing", "Marketing and R&D", [["Campaign", CAMPAIGNS[d.campaign][0]], ["Marketing budget", eurX(d.marketingBudget)], ["Brand building", eurX(d.investBrand)], ["R&D", eurX(d.investRnd)]]));
       if (g.round >= D.retailUnlockRound) out.push(sec("retail", "Own stores", [["Open", d.storesOpen], ["Close", d.storesClose], ["Store price", eurX(d.retailPrice)]]));
       out.push(sec("finance", "Finance and research", [["Loan", (d.loanChange >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(d.loanChange))], ["Market research", d.research.length ? d.research.map((r) => FT.RESEARCH[r].name).join(", ") : "none"], ["Investor call", d.guidance ? unitsX(d.guidance.units) + " " + i.labels.unit + " · " + eurX(d.guidance.profit) + " profit" : "skipped"]]));
       if (g.round >= D.takeoverUnlockRound || Object.keys(d.sellShares || {}).length) out.push(sec("takeovers", "Shares", [["Buy", (Object.entries(d.buyShares).filter(([, n]) => n).map(([k, n]) => n + " of " + esc(byId(k).companyName)).join(", ") || "nothing") + (Object.keys(d.buyShares).length ? " (about " + eur(planShareCost()) + ")" : "")], ["Sell", Object.entries(d.sellShares || {}).filter(([, n]) => n).map(([k, n]) => n + " of " + esc(byId(k).companyName)).join(", ") || "nothing"], ["Buy back own", d.buyback], ["Attack stake", eurX(d.takeoverStake)], ["Defense fund", eurX(d.defenseStake)]]));
       const br = [["Wildcard", d.wildcard ? FT.WILDCARDS[d.wildcard.card].name + (d.wildcard.target ? " on " + esc(byId(d.wildcard.target).companyName) : "") : "none"]];
-      if (auctionOpen()) br.push(["Auction bid", eurX(d.auctionBid || 0)]);
-      for (const l of salesOpen()) br.push(["Bid on " + esc(byId(l.companyId).companyName), eurX((d.bankruptBids || {})[l.companyId] || 0)]);
+      for (const lot of liveLots()) { const L = liveOf(), l = L && L.lots[lot.key]; br.push([lot.short, l && l.high ? (l.high.bidder === "you" ? "you lead with " : "highest: ") + eurX(l.high.amount) : "no bids"]); }
       if (g.summit && g.summit.round === g.round) br.push(["Summit vote", FT.SUMMIT.regulations[g.summit.options[d.vote === "b" ? 1 : 0]].name]);
       out.push(sec("boardroom", "Boardroom", br));
     }
@@ -4315,14 +4646,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- events ----------------
-  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire" };
+  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire", "f-morder": "materialOrder", "f-bulk": "bulkSell" };
   function fmtFor(id) {
     const i = ind();
     if (id.startsWith("f-bk-")) return eur;
-    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x >= 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams" }[id];
+    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x >= 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams", "f-morder": units, "f-bulk": units }[id];
   }
   function exactFor(id) {
-    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-prod": (x) => unitsX(x) + " " + ind().labels.unit, "f-buyback": (x) => x + " shares", "f-loan": (x) => (x >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(x)), "f-hire": (x) => (x >= 0 ? "Hire " : "Lay off ") + Math.abs(x) + " teams" }[id] || eurX;
+    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-prod": (x) => unitsX(x) + " " + ind().labels.unit, "f-buyback": (x) => x + " shares", "f-loan": (x) => (x >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(x)), "f-hire": (x) => (x >= 0 ? "Hire " : "Lay off ") + Math.abs(x) + " teams", "f-morder": (x) => unitsX(x) + " " + ind().labels.unit, "f-bulk": (x) => unitsX(x) + " " + ind().labels.unit }[id] || eurX;
   }
   function setRange(id, value) {
     const el = document.getElementById(id);
@@ -4340,6 +4671,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function refreshDerived() {
 
     const cn = $("#cap-note"); if (cn) cn.textContent = capNote();
+    const mn = $("#morder-note"); if (mn) mn.textContent = morderNote();
     const sn = $("#staff-note"); if (sn) sn.textContent = staffNote();
   }
 
@@ -4360,6 +4692,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#btn-menu", "click", goTitle);
     on("#btn-calc", "click", () => { if (!CALC.open) TALK.open = false, renderTalk(); toggleCalc(); sfx("click"); });
     on("#btn-chat", "click", () => { toggleTalk(); sfx("click"); });
+    bindLiveButtons();
     bindSubmit();
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
     on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
@@ -4507,12 +4840,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
   try { document.fonts && document.fonts.ready.then(() => S && drawCity(1)); } catch (e) {}
 
   // Test hook (only in the automated smoke test).
-  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound() };
+  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick() };
   window.claude?.hot?.snapshot?.(() => (S ? { S: JSON.parse(JSON.stringify({ ...S, anim: null })) } : {}));
   function start(data) {
     if (data && data.S && data.S.screen === "title") { S = data.S; render(); return; }
     if (data && data.S && data.S.game && data.S.marketHist && data.S.game.companies[0].mission) { S = data.S; render(); return; }
     S = { screen: "title", opts: DEFAULT_OPTS, modal: null };
+    try { const tv = new URLSearchParams(location.search).get("tv"); if (tv && /^[0-9a-f-]{36}\.[0-9a-f]{6,32}$/i.test(tv)) { const [id, code] = tv.split("."); tvStart(id, code); return; } } catch (e) {}
     const back = readLoginFromUrl();
     if (back) S.modal = back;
     try { const fc = new URLSearchParams(location.search).get("friend"); if (fc && /^[A-Za-z0-9]{6}$/.test(fc)) { S.friendCode = fc.toUpperCase(); S.modal = "friends"; } } catch (e) {}

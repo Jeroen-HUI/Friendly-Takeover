@@ -63,9 +63,25 @@ export interface Decisions {
   hire: number;
   /** Investor call (optional): what you tell investors you'll sell and earn this round. */
   guidance: { units: number; profit: number } | null;
+  /** Raw materials to buy now (at this round's price) for next round's production, in units of product at your quality. */
+  materialOrder: number;
+  /** Leftover stock to sell to the bulk buyer after the market, at the bulk price (max units). */
+  bulkSell: number;
 }
 
 export type GuidanceResult = "hit" | "close" | "miss";
+
+/** Live play during a round: stock exchange prices and trades, and the live auctions. */
+export interface LiveTrade { t: number; trader: string; target: string; qty: number; price: number; cash: number }
+export interface LiveBid { bidder: string; amount: number; t: number }
+export interface LiveLot { high: LiveBid | null; endsAt: number | null; bids: number }
+export interface LiveState {
+  round: number;
+  prices: Record<string, number>;
+  trades: LiveTrade[];
+  /** The round's auction (key "auction") and bankruptcy sales (key = the bankrupt company's id). */
+  lots: Record<string, LiveLot>;
+}
 
 /** Private deals between players, agreed outside the decisions and carried out when the round resolves. */
 export type DealKind = "shares" | "loan" | "pact";
@@ -149,6 +165,9 @@ export interface Company {
   workers: number;
   /** Bankrupt players: exposés that hit. */
   journalistPoints: number;
+  /** Raw materials in stock, at list value (index 1.00), and the average index paid for them. */
+  materials?: number;
+  materialPaid?: number;
   /** Total units ever produced (year 0 included): drives the experience curve. */
   cumProduced?: number;
   /** Investor trust from the investor call, -2..3: moves company value and the interest rate. */
@@ -230,6 +249,19 @@ export interface RoundReport {
   sharePrice: number;
   segments: Record<SegmentId, SegmentSales>;
   events: string[];
+  /** Raw materials: ordered for next round, used from stock, bought on the spot market (list values and cost). */
+  materialOrderUnits?: number;
+  materialOrderCost?: number;
+  materialFromStock?: number;
+  materialSpot?: number;
+  materialSpotCost?: number;
+  materialStockEnd?: number;
+  /** Bulk buyer: leftover units sold at the bulk price. */
+  bulkSold?: number;
+  bulkRevenue?: number;
+  bulkPrice?: number;
+  /** Net cash from live stock exchange trades this round. */
+  exchangeCash?: number;
   /** Cost sheet details (optional for older saves). */
   materialIndex?: number;
   experienceFactor?: number;
@@ -313,7 +345,19 @@ export interface GameState {
   /** What happened to each deal in the round just played. */
   dealLog?: { id: string; round: number; ok: boolean; reason: string; from: string; to: string }[];
   /** Hidden market drivers (server only online): raw material price index for the coming round, slow trends per buyer group, and this game's price sensitivity per group. */
-  market?: { materialIndex: number; trend?: Record<SegmentId, number>; sensitivity?: Record<SegmentId, number> };
+  market?: {
+    materialIndex: number;
+    /** Next round's index, drawn a round early (server only online). */
+    materialNext?: number;
+    /** Public hint about next round's material price (right about 3 times out of 4). */
+    materialOutlook?: "up" | "down" | "flat";
+    /** What the bulk buyer pays per unit this round. */
+    bulkPrice?: number;
+    trend?: Record<SegmentId, number>;
+    sensitivity?: Record<SegmentId, number>;
+  };
+  /** The live stock exchange and live auctions of the round being played. */
+  live?: LiveState;
   /** Special rounds announced a round ahead (Black Friday, Investor Day). */
   specialEvents?: { round: number; id: "blackFriday" | "investorDay" }[];
   /** Bankrupt companies whose factory and stores are auctioned off in a given round. */

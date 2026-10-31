@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, DIFFICULTIES, INDUSTRIES, RETAIL, SUMMIT, WILDCARDS,
-  COSTS, activeNewsEffects, companyValues, creditLimit, experienceFactor, materialFactor, retailRefPrice, segmentPotential, sharePrices, storeCapacity, teamOutput, unitCost,
+  COSTS, activeNewsEffects, companyValues, creditLimit, experienceFactor, materialFactor, materialList, retailRefPrice, segmentPotential, sharePrices, storeCapacity, teamOutput, unitCost,
   type Company, type Decisions, type GameState, type RegulationId, type SegmentId,
 } from "../engine";
 import { Rng } from "../engine/rng";
@@ -112,7 +112,16 @@ export function smartDecisions(pos: Position, state: GameState, c: Company, rng:
   const units = Math.round(Math.min(expected, production + c.inventory));
   const overtime = Math.max(0, production - c.capacity * COSTS.overtimeFrom) * uc * COSTS.overtimePremium;
   const estProfit = units * price - units * uc - overtime - c.capacity * BALANCE.fixedCostPerCapacity * ind.baseUnitCost - marketingBudget - investBrand - investRnd - stores * RETAIL.upkeep - c.debt * BALANCE.baseInterest;
+  // --- Materials for next round: about next round's production, more when prices should rise, less when they should fall.
+  const mList = materialList(ind, quality, c.trait);
+  const leftoverUnits = Math.max(0, ((c.materials ?? 0) - Math.min(production, c.capacity) * mList) / mList);
+  const outlook = state.market?.materialOutlook;
+  const nextNeed = final ? 0 : Math.min(c.capacity, expected * 1.03) * (outlook === "up" ? 1.35 : outlook === "down" ? 0.8 : 1.0) * jitter();
+  const materialOrder = Math.max(0, Math.round(nextNeed - leftoverUnits));
+  // --- Bulk buyer: clear big leftovers, and everything in the final round.
+  const bulkSell = final ? c.capacity : c.inventory > production * 0.25 ? Math.round(c.inventory * 0.5) : 0;
   const d: Partial<Decisions> = {
+    materialOrder, bulkSell,
     price, quality, production, campaign: plan.campaign, marketingBudget, investBrand, investRnd, investCapacity, loanChange,
     research: [], storesOpen, storesClose, retailPrice,
     guidance: state.round >= 1 ? { units, profit: Math.round(estProfit) } : null,

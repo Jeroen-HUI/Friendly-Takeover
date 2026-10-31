@@ -3,7 +3,7 @@
 // result for the same input, so the server can re-run or audit any round.
 
 import {
-  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, CAMPAIGNS, COSTS, DEALS, ECONOMY, GUIDANCE, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
+  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, BULK, CAMPAIGNS, COSTS, DEALS, ECONOMY, EXCHANGE, GUIDANCE, LIVE_AUCTION, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
   WILDCARD_EFFECTS, WILDCARDS, type IndustryConfig,
 } from "./config";
 import { Rng } from "./rng";
@@ -27,6 +27,8 @@ import {
   type SegmentSales,
   type Standing,
   type GuidanceResult,
+  type LiveState,
+  type LiveTrade,
   type DealOrder,
   type ShareDealTerms,
   type LoanDealTerms,
@@ -69,6 +71,8 @@ export function defaultDecisions(industry: IndustryConfig): Decisions {
     journalistTarget: null,
     hire: 0,
     guidance: null,
+    materialOrder: Math.round(s.capacity * 0.8),
+    bulkSell: 0,
   };
 }
 
@@ -115,6 +119,8 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     journalistPoints: 0,
     cumProduced: 0,
     credibility: 0,
+    materials: Math.round(industry.start.capacity * 0.8) * materialList(industry, industry.start.quality, p.trait),
+    materialPaid: 1,
     inventoryUnitCost: 0,
     shares: { founder: BALANCE.startShares.founder, float: BALANCE.startShares.float, treasury: 0, holders: {} },
     controlledBy: null,
@@ -157,7 +163,7 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     auction: null,
     summit: null,
     specialEvents,
-    market: { materialIndex: 1, trend, sensitivity },
+    market: { materialIndex: 1, materialNext: 1, materialOutlook: "flat", bulkPrice: Math.round(industry.start.price * 0.5 * 100) / 100, trend, sensitivity },
   };
   return resolveRound(yearZero, {});
 }
@@ -180,6 +186,11 @@ export function experienceFactor(industry: IndustryConfig, cum: number): number 
   return Math.max(COSTS.learningFloor, Math.pow((prior + Math.max(0, cum)) / prior, Math.log2(1 - COSTS.learningRate)));
 }
 
+/** Raw materials needed for one unit at this quality, at list price (material index 1.00). */
+export function materialList(industry: IndustryConfig, quality: number, trait?: Company["trait"]): number {
+  return COSTS.materialShare * unitCost(industry, quality, 1, trait, false);
+}
+
 /** Raw material price index → cost multiplier (only the material part of a unit follows it). */
 export function materialFactor(index: number): number {
   return 1 + COSTS.materialShare * (index - 1);
@@ -197,6 +208,7 @@ function baseValue(c: Company, industry: IndustryConfig): number {
     (c.stores ?? 0) * RETAIL.bookValue +
     c.inventory * c.inventoryUnitCost * BALANCE.inventoryValueRate +
     c.brand * BALANCE.brandValuePerPoint +
+    (c.materials ?? 0) * (c.materialPaid ?? 1) * COSTS.materialBookValue +
     Math.max(0, avgProfit) * BALANCE.earningsMultiple
   );
   // Investor panic after someone dumped shares; investor trust from the investor call.
@@ -315,6 +327,8 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     storesOpen: clamp(Math.floor(num(d.storesOpen, 0)), 0, RETAIL.maxOpenPerRound),
     storesClose: Math.max(0, Math.floor(num(d.storesClose, 0))),
     retailPrice: clamp(num(d.retailPrice, prev.retailPrice ?? retailRefPrice(industry)), industry.priceRange[0], industry.priceRange[1]),
+    materialOrder: Math.min(Math.round(c.capacity * 3), Math.max(0, Math.round(num(d.materialOrder, prev.materialOrder ?? Math.round(c.capacity * 0.8))))),
+    bulkSell: Math.max(0, Math.round(num(d.bulkSell, 0))),
     guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(d.guidance.units)), profit: Math.round(d.guidance.profit) } : null,
   };
 }
@@ -463,6 +477,10 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     capacityStart: number;
     ucBase: number;
     expF: number;
+    productionCash: number;
+    matFromStock: number;
+    matSpot: number;
+    matSpotCost: number;
     overtimeUnits: number;
     overtimeCost: number;
     idleUnits: number;
@@ -474,7 +492,23 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   }
   // 2. Specials before the market: staff, wildcards, auction, summit vote, journalists. ------------
   const tycoon = state.config.difficulty === "tycoon";
-  const cashAtStart: Record<string, number> = Object.fromEntries(alive.map((c) => [c.id, c.cash]));
+  // Live exchange trades already moved cash and shares during the round: report them separately.
+  const live = state.live && state.live.round === round ? state.live : null;
+  const exNet: Record<string, number> = {};
+  for (const t of live?.trades ?? []) exNet[t.trader] = (exNet[t.trader] ?? 0) + t.cash;
+  for (const t of live?.trades ?? []) {
+    if (t.qty >= 0) continue;
+    const target = state.companies.find((c) => c.id === t.target);
+    if (target && !target.bankrupt) target.sentiment = Math.min(BALANCE.sentimentMax, target.sentiment + Math.min(BALANCE.dumpImpactCapPerRound, -t.qty * BALANCE.dumpImpactPerShare));
+  }
+  // Live auction bids count as bids (the highest live bid against any sealed bid).
+  for (const [lot, l] of Object.entries(live?.lots ?? {})) {
+    if (!l.high || !dec[l.high.bidder]) continue;
+    const d = dec[l.high.bidder];
+    if (lot === "auction") d.auctionBid = Math.max(d.auctionBid, l.high.amount);
+    else d.bankruptBids = { ...d.bankruptBids, [lot]: Math.max(d.bankruptBids[lot] ?? 0, l.high.amount) };
+  }
+  const cashAtStart: Record<string, number> = Object.fromEntries(alive.map((c) => [c.id, c.cash - (exNet[c.id] ?? 0)]));
   const byIdAll = new Map(state.companies.map((c) => [c.id, c]));
   const special: Record<string, { wildcard: number; legal: number; staff: number; auction: number; events: string[] }> = {};
   for (const c of alive) special[c.id] = { wildcard: 0, legal: 0, staff: 0, auction: 0, events: [] };
@@ -737,15 +771,27 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const produced = Math.min(d.production, cap);
     // Unit cost: quality, news, raw material prices and the experience curve.
     const expF = experienceFactor(industry, c.cumProduced ?? 0);
-    // Experience makes the process cheaper, not the materials: it saves the same amount per unit at every quality.
-    const ucBase = unitCost(industry, d.quality, (shield ? Math.min(1, fx.costMultiplier) : fx.costMultiplier) * materialFactor(state.market?.materialIndex ?? 1), c.trait, tycoon)
-      - (1 - expF) * unitCost(industry, 1, 1, c.trait, tycoon);
+    // Process cost (labour, energy, packaging): moved by the news; experience saves the same amount per unit at every quality.
+    const newsCost = shield ? Math.min(1, fx.costMultiplier) : fx.costMultiplier;
+    const mList = materialList(industry, d.quality, c.trait);
+    const process = (unitCost(industry, d.quality, 1, c.trait, tycoon) - mList) * newsCost - (1 - expF) * unitCost(industry, 1, 1, c.trait, tycoon);
+    // Materials: from stock (bought a round earlier at that round's price), the rest on the spot market at a premium.
+    const idxNow = state.market?.materialIndex ?? 1;
+    const need = produced * mList;
+    const matFromStock = Math.min(need, c.materials ?? need);
+    const matSpot = need - matFromStock;
+    const matSpotCost = matSpot * idxNow * (1 + COSTS.spotPremium);
+    const materialCost = matFromStock * (c.materialPaid ?? 1) + matSpotCost;
+    c.materials = (c.materials ?? need) - matFromStock;
+    const ucBase = produced > 0 ? process + materialCost / produced : process + mList * idxNow;
     // Factory load: overtime above 90% of capacity, idle machines below 60%.
     const overtimeUnits = Math.max(0, produced - Math.floor(factoryCap * COSTS.overtimeFrom));
     const overtimeCost = overtimeUnits * ucBase * COSTS.overtimePremium;
     const idleUnits = Math.max(0, Math.floor(factoryCap * COSTS.idleBelow) - produced);
     const idleCost = idleUnits * COSTS.idleCostRate * industry.baseUnitCost;
     const uc = produced > 0 ? (produced * ucBase + overtimeCost) / produced : ucBase;
+    // Cash now: the process, spot materials and overtime (stock materials were paid when ordered).
+    const productionCash = produced * process + matSpotCost + overtimeCost;
     const available = c.inventory + produced;
     const avgCost = available > 0 ? (c.inventory * c.inventoryUnitCost + produced * uc) / available : uc;
     const viralFlop = d.campaign === "viral" && d.marketingBudget > 0 && rng.chance(CAMPAIGNS.viral.flopChance);
@@ -775,6 +821,10 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       capacityStart,
       ucBase,
       expF,
+      productionCash,
+      matFromStock,
+      matSpot,
+      matSpotCost,
       overtimeUnits,
       overtimeCost,
       idleUnits,
@@ -882,20 +932,32 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const { c, d } = w;
     const totalSold = w.sold + w.retailSold;
     const retailRevenue = w.retailSold * d.retailPrice;
-    const revenue = w.sold * d.price + retailRevenue;
-    const cogs = totalSold * w.avgCost;
-    const inventoryEnd = w.available - totalSold;
+    const revenue = w.sold * d.price + retailRevenue + (state.market?.bulkPrice ?? 0) * Math.max(0, Math.min(d.bulkSell, w.available - (w.sold + w.retailSold), Math.round(c.capacity * BULK.maxShareOfCapacity)));
+    // Bulk buyer: takes leftover stock after the market at a low price.
+    const bulkPrice = state.market?.bulkPrice ?? 0;
+    const bulkSold = bulkPrice > 0 ? Math.max(0, Math.min(d.bulkSell, w.available - totalSold, Math.round(c.capacity * BULK.maxShareOfCapacity))) : 0;
+    const bulkRevenue = bulkSold * bulkPrice;
+    const cogs = (totalSold + bulkSold) * w.avgCost;
+    const inventoryEnd = w.available - totalSold - bulkSold;
     const storeOpenCost = w.storesOpened * RETAIL.openCost;
     const storeUpkeep = c.stores * RETAIL.upkeep;
-    const holdingCost = inventoryEnd * w.avgCost * BALANCE.holdingCostRate;
+    // Order materials for next round at today's price.
+    const orderList = d.materialOrder * materialList(industry, d.quality, c.trait);
+    const idxNow = state.market?.materialIndex ?? 1;
+    const materialOrderCost = orderList * idxNow;
+    if (orderList > 0) {
+      c.materialPaid = ((c.materials ?? 0) * (c.materialPaid ?? 1) + orderList * idxNow) / ((c.materials ?? 0) + orderList);
+      c.materials = (c.materials ?? 0) + orderList;
+    }
+    const holdingCost = inventoryEnd * w.avgCost * BALANCE.holdingCostRate + (c.materials ?? 0) * (c.materialPaid ?? 1) * COSTS.materialHolding;
     const fixedCost = c.capacity * BALANCE.fixedCostPerCapacity * industry.baseUnitCost;
-    const productionCost = w.produced * w.ucBase + w.overtimeCost;
+    const productionCost = w.productionCash;
     const researchCost = d.research.reduce((a, r) => a + RESEARCH[r].cost, 0);
     const sp = special[c.id];
     // Same array as w.events, so share trades and takeovers added later still show up in the report.
     w.events.unshift(...sp.events);
     const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction;
-    c.cash += revenue - productionCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
+    c.cash += revenue - productionCost - materialOrderCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
     c.cumProduced = (c.cumProduced ?? 0) + w.produced;
     // Investor call: compare the guidance with what actually happened.
     let guidance: RoundReport["guidance"];
@@ -972,6 +1034,16 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       segments,
       events: w.events,
       materialIndex: state.market?.materialIndex ?? 1,
+      materialOrderUnits: d.materialOrder,
+      materialOrderCost,
+      materialFromStock: w.matFromStock,
+      materialSpot: w.matSpot,
+      materialSpotCost: w.matSpotCost,
+      materialStockEnd: c.materials ?? 0,
+      bulkSold,
+      bulkRevenue,
+      bulkPrice,
+      exchangeCash: exNet[c.id] ?? 0,
       experienceFactor: w.expF,
       unitCostBase: w.ucBase,
       utilization: w.capacityStart > 0 ? w.produced / Math.max(1, Math.floor(w.capacityStart * (shielded.has(c.id) ? Math.max(1, fx.capacityMultiplier) : fx.capacityMultiplier))) : 0,
@@ -1014,7 +1086,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     if (cap > c.qualityCap) w.events.push(`R&D breakthrough: quality ${cap} unlocked`);
     c.qualityCap = Math.max(c.qualityCap, cap);
     c.capacity = Math.round(c.capacity * (1 - BALANCE.capacityDepreciation) + d.investCapacity / (BALANCE.capacityCostPerUnit * industry.baseUnitCost));
-    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null };
+    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null, bulkSell: 0 };
   }
 
   // 5. Share trading: sales first, then buybacks (defense), then purchases in random order. ------
@@ -1204,6 +1276,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     state.feed.push({ round, headline: `MONOPOLY! ${boss.playerName} controls every company in the industry. Game over.` });
   }
   state.pacts = (state.pacts ?? []).filter((p) => p.until > round);
+  delete state.live;
   state.round = round + 1;
   state.auction = null;
   state.summit = null;
@@ -1212,9 +1285,20 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   } else {
     // Raw material prices move a little every round (pulled back toward normal). It shows in the market report.
     if (state.market) {
-      const shock = (rng.next() + rng.next() + rng.next() - 1.5) * 2 * COSTS.materialVol;
-      const idx = state.market.materialIndex;
-      state.market.materialIndex = Math.round(clamp(idx + COSTS.materialPull * (1 - idx) + shock, COSTS.materialRange[0], COSTS.materialRange[1]) * 1000) / 1000;
+      // The index drawn last round becomes today's; the next one is drawn now and hinted at in the outlook.
+      const M = state.market;
+      M.materialIndex = M.materialNext ?? M.materialIndex;
+      const idx = M.materialIndex;
+      const dir = rng.pick([-1, 0, 1] as const);
+      const noise = (rng.next() + rng.next() + rng.next() - 1.5) * 2 * COSTS.materialVol;
+      M.materialNext = Math.round(clamp(idx + COSTS.materialPull * (1 - idx) + dir * COSTS.materialMove + noise, COSTS.materialRange[0], COSTS.materialRange[1]) * 1000) / 1000;
+      const truth: "up" | "down" | "flat" = M.materialNext > idx * 1.025 ? "up" : M.materialNext < idx * 0.975 ? "down" : "flat";
+      M.materialOutlook = rng.chance(COSTS.outlookAccuracy) ? truth : rng.pick((["up", "down", "flat"] as const).filter((x) => x !== truth));
+      const material = ECONOMY.material[state.config.industry];
+      state.feed.push({ round: state.round, headline: M.materialOutlook === "up" ? `${material} outlook: analysts expect prices to RISE next round. Stock up now?` : M.materialOutlook === "down" ? `${material} outlook: analysts expect prices to FALL next round. Maybe buy less now` : `${material} outlook: analysts expect prices to stay about the same next round` });
+      // The bulk buyer's offer for the new round: a share of the average price just paid.
+      const avg = state.marketLog?.at(-1)?.avgPrice || industry.start.price;
+      M.bulkPrice = Math.round(avg * (BULK.priceShare[0] + rng.next() * (BULK.priceShare[1] - BULK.priceShare[0])) * 100) / 100;
     }
     drawNews(state, rng, industry);
     if (AUCTION.rounds.includes(state.round)) {
@@ -1280,6 +1364,102 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     reports[id].research = { ...(reports[id].research ?? {}), spy };
   }
   state.rngState = rng.state;
+  return state;
+}
+
+// ---------------------------------------------------------------------------
+// Live play during a round: the stock exchange and live auctions
+// ---------------------------------------------------------------------------
+
+function liveFor(state: GameState): LiveState {
+  if (!state.live || state.live.round !== state.round) state.live = { round: state.round, prices: sharePrices(state), trades: [], lots: {} };
+  return state.live;
+}
+
+/** Live share price of a company right now (moves with every trade during the round). */
+export function livePrice(state: GameState, id: string): number {
+  return state.live && state.live.round === state.round && state.live.prices[id] !== undefined ? state.live.prices[id] : sharePrices(state)[id] ?? 0;
+}
+
+/**
+ * Buy (qty > 0) or sell (qty < 0) shares on the live exchange. Each share moves the price by EXCHANGE.impactPerShare.
+ * Holdings and cash change immediately; you can't pass 50% this way (that takes a takeover bid at the end of the round).
+ * Returns a new state, or throws an Error with a reason the player can read.
+ */
+export function exchangeTrade(input: GameState, traderId: string, targetId: string, qty: number, now = Date.now()): { state: GameState; trade: LiveTrade } {
+  const state = deepClone(input);
+  const diff = DIFFICULTIES[state.config.difficulty];
+  const n = Math.trunc(qty);
+  const trader = state.companies.find((c) => c.id === traderId), target = state.companies.find((c) => c.id === targetId);
+  if (state.finished) throw new Error("The game is over");
+  if (!trader || !target || trader.bankrupt || target.bankrupt) throw new Error("That company isn't trading");
+  if (trader.id === target.id) throw new Error("Buy back your own shares in the Takeovers tab");
+  if (state.round < diff.takeoverUnlockRound) throw new Error(`The stock exchange opens in round ${diff.takeoverUnlockRound}`);
+  if (!n) throw new Error("Choose how many shares");
+  const live = liveFor(state);
+  const p0 = live.prices[target.id] ?? sharePrices(state)[target.id];
+  const held = target.shares.holders[trader.id] ?? 0;
+  const k = 1 + (n > 0 ? EXCHANGE.impactPerShare : -EXCHANGE.impactPerShare), m = Math.abs(n);
+  const gross = k === 1 ? p0 * m : (p0 * (Math.pow(k, m) - 1)) / (k - 1);
+  if (n > 0) {
+    if (trader.takeoverCooldown > 0) throw new Error("Your board is resting after a takeover: no buying this round");
+    if (target.controlledBy && target.controlledBy !== trader.id) throw new Error(`${target.companyName} is controlled by someone else`);
+    if (n > target.shares.float) throw new Error(`Only ${target.shares.float} shares of ${target.companyName} are for sale`);
+    if (held + n > EXCHANGE.maxHolding) throw new Error(`On the exchange you can own up to ${EXCHANGE.maxHolding}%. Control takes a takeover bid (Takeovers tab)`);
+    const boughtThisRound = live.trades.filter((t) => t.trader === trader.id && t.target === target.id).reduce((a, t) => a + t.qty, 0);
+    if (boughtThisRound + n > EXCHANGE.maxPerRound) throw new Error(`At most ${EXCHANGE.maxPerRound} shares of one company per round on the exchange`);
+    const cost = gross * (1 + EXCHANGE.fee);
+    if (trader.cash < cost) throw new Error(`Not enough cash: ${n} shares cost €${Math.round(cost).toLocaleString("en")}`);
+    trader.cash -= cost;
+    target.shares.float -= n;
+    target.shares.holders[trader.id] = held + n;
+    live.prices[target.id] = p0 * Math.pow(k, m);
+    const trade = { t: now, trader: trader.id, target: target.id, qty: n, price: gross / m, cash: -cost };
+    live.trades.push(trade);
+    return { state, trade };
+  }
+  if (held < m) throw new Error(`You only own ${held} shares of ${target.companyName}`);
+  const proceeds = gross * (1 - EXCHANGE.fee);
+  trader.cash += proceeds;
+  if (held - m > 0) target.shares.holders[trader.id] = held - m; else delete target.shares.holders[trader.id];
+  target.shares.float += m;
+  if (target.controlledBy === trader.id && held - m <= BALANCE.controlThreshold) target.controlledBy = null;
+  live.prices[target.id] = Math.max(0.01, p0 * Math.pow(k, m));
+  const trade = { t: now, trader: trader.id, target: target.id, qty: n, price: gross / m, cash: proceeds };
+  live.trades.push(trade);
+  return { state, trade };
+}
+
+/** Minimum next bid on a live lot. */
+export function liveMinBid(state: GameState, lot: string): number {
+  const l = state.live && state.live.round === state.round ? state.live.lots[lot] : undefined;
+  const floor = lot === "auction" ? AUCTION.minBid : BANKRUPTCY_SALE.minBid;
+  if (!l || !l.high) return floor;
+  return Math.ceil(Math.max(l.high.amount + LIVE_AUCTION.minRaise, l.high.amount * (1 + LIVE_AUCTION.raiseShare)) / 1000) * 1000;
+}
+
+/** Is a live lot still open? (It closes "going once, going twice" after the last bid, or when the round ends.) */
+export function liveLotOpen(state: GameState, lot: string, now = Date.now()): boolean {
+  const l = state.live && state.live.round === state.round ? state.live.lots[lot] : undefined;
+  const exists = lot === "auction" ? state.auction?.round === state.round : (state.bankruptcySales ?? []).some((s) => s.round === state.round && s.companyId === lot);
+  return exists && !state.finished && (!l || !l.endsAt || now < l.endsAt);
+}
+
+/** Place a live bid on the round's auction ("auction") or a bankruptcy sale (the bankrupt company's id). */
+export function liveBid(input: GameState, bidderId: string, lot: string, amount: number, now = Date.now()): GameState {
+  const state = deepClone(input);
+  const bidder = state.companies.find((c) => c.id === bidderId);
+  if (!bidder || bidder.bankrupt) throw new Error("You can't bid");
+  if (!liveLotOpen(state, lot, now)) throw new Error("Sold! This auction is closed");
+  const min = liveMinBid(state, lot);
+  if (!(amount >= min)) throw new Error(`The next bid must be at least €${min.toLocaleString("en")}`);
+  if (bidder.cash < amount) throw new Error("You don't have that much cash");
+  const live = liveFor(state);
+  const l = (live.lots[lot] ??= { high: null, endsAt: null, bids: 0 });
+  if (l.high && l.high.bidder === bidderId) throw new Error("You already have the highest bid");
+  l.high = { bidder: bidderId, amount: Math.round(amount), t: now };
+  l.endsAt = now + LIVE_AUCTION.goingMs;
+  l.bids++;
   return state;
 }
 

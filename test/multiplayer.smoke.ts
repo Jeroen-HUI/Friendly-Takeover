@@ -3,13 +3,14 @@
 // checks the whole loop: create → lobby → join → settings → start → submit → wait → host skips → results.
 // Run: npx tsx test/multiplayer.smoke.ts
 // @ts-expect-error jsdom ships without types
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany } from "../src/server/core";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid } from "../src/server/core";
 
 // ---------------------------------------------------------------- fake backend
 type Row = Record<string, any>;
+const live = new Map<string, any>();
 const db = { invites: [] as Row[], games: [] as Row[], players: [] as Row[], states: new Map<string, any>(), decisions: [] as Row[], reports: [] as Row[], messages: [] as Row[], deals: [] as Row[], results: [] as Row[] };
 let seq = 1;
 const listeners = new Map<string, Set<() => void>>();
@@ -23,13 +24,14 @@ function publish(gameId: string, round: number, state: any) {
     db.reports = db.reports.filter((r) => !(r.game_id === gameId && r.round === round && r.player_id === p.id));
     db.reports.push({ game_id: gameId, round, player_id: p.id, report: JSON.parse(JSON.stringify({ view: viewFor(state, p.id) })) });
   }
+  live.set(gameId, { round: state.round, data: JSON.parse(JSON.stringify(publicLive(state))) });
   db.results = db.results.filter((r) => !(r.game_id === gameId && r.round === round));
   db.results.push({ game_id: gameId, round, public_data: JSON.parse(JSON.stringify(publicData(state, round))) });
 }
 
 const server = {
   createGame(userId: string, name: string, company: string, trait: string, a: any = {}) {
-    const g = { id: randomUUID(), code: newCode(), host_user_id: userId, industry: a.p_industry ?? "chocolate", difficulty: a.p_difficulty ?? "standard", mode: "live", rounds: a.p_rounds ?? 8, round_seconds: a.p_round_seconds ?? 300, status: "lobby", current_round: 0, round_deadline: null, bot_count: a.p_bot_count ?? 0, bot_skill: a.p_bot_skill ?? "normal", league_id: a.p_league_id ?? null, created_at: new Date().toISOString() };
+    const g = { id: randomUUID(), code: newCode(), host_user_id: userId, industry: a.p_industry ?? "chocolate", difficulty: a.p_difficulty ?? "standard", mode: "live", rounds: a.p_rounds ?? 8, round_seconds: a.p_round_seconds ?? 300, status: "lobby", current_round: 0, round_deadline: null, tv_code: "abc123def456", bot_count: a.p_bot_count ?? 0, bot_skill: a.p_bot_skill ?? "normal", league_id: a.p_league_id ?? null, created_at: new Date().toISOString() };
     db.games.push(g);
     const p = { id: randomUUID(), game_id: g.id, user_id: userId, player_name: name, company_name: company, trait, is_host: true, submitted_round: 0, joined_at: new Date(Date.now() + joined++).toISOString() };
     db.players.push(p);
@@ -91,6 +93,16 @@ const server = {
       publish(g.id, round, next);
       notify(g.id);
       return { ok: true, resolved: round };
+    }
+    if (action === "trade" || action === "bid") {
+      const state = db.states.get(g.id);
+      try {
+        const next = action === "trade" ? exchangeTrade(state, me.id, body.target_id, body.qty) : null;
+        const st2 = next ? next.state : liveBid(state, me.id, body.lot, body.amount);
+        db.states.set(g.id, st2);
+        live.set(g.id, { round: st2.round, data: JSON.parse(JSON.stringify(publicLive(st2))) });
+        return { ok: true, trade: next ? next.trade : null, live: live.get(g.id).data };
+      } catch (e) { fail(400, (e as Error).message); }
     }
     if (action === "rename") {
       const state = db.states.get(g.id);
@@ -156,6 +168,14 @@ const fakeApi = {
     return JSON.parse(JSON.stringify(db.messages.filter((m) => m.game_id === gameId && m.id > after && (m.to_player_id === null || mine.includes(m.to_player_id) || mine.includes(m.from_player_id)))));
   },
   async sendMessage(gameId: string, round: number, from: string, to: string | null, body: string, kind: string) { server.message(gameId, round, from, to, body, kind); },
+  async marketLive(gameId: string) { return JSON.parse(JSON.stringify(live.get(gameId) ?? null)); },
+  async tvSnapshot(id: string, code: string) {
+    const g = db.games.find((x) => x.id === id && x.tv_code === code);
+    if (!g) return null;
+    const last = db.results.filter((r) => r.game_id === id).sort((a, b) => b.round - a.round)[0];
+    return JSON.parse(JSON.stringify({ game: g, players: db.players.filter((p) => p.game_id === id).map((p) => ({ id: p.id, name: p.player_name, company: p.company_name, trait: p.trait, submitted_round: p.submitted_round, is_host: p.is_host })),
+      results: last ? { round: last.round, data: last.public_data } : null, live: live.get(id)?.round === g.current_round ? live.get(id).data : null, chat: [], now: new Date().toISOString() }));
+  },
   async deals(gameId: string) {
     const mine = db.players.filter((p) => p.user_id === HOST).map((p) => p.id);
     return JSON.parse(JSON.stringify(db.deals.filter((d) => d.game_id === gameId && (mine.includes(d.from_player_id) || mine.includes(d.to_player_id)))));
@@ -229,6 +249,7 @@ await wait(30);
 }
 // The host's own game is the second one (the first is Kim's).
 const HG = () => db.games[1];
+const myIdNow = () => db.players.find((p) => p.user_id === HOST && p.game_id === HG().id)!.id;
 // Title → Multiplayer → create a game.
 click("#t-online");
 if (!/Host a game/.test($(".overlay")!.textContent!)) throw new Error("online modal missing");
@@ -289,6 +310,17 @@ for (let r = 1; r <= 6; r++) {
     await until("deal accepted", () => db.deals[0].status === "accepted");
     click("#talk-close");
   }
+  if (r === 3) {
+    // Live exchange online: my trade goes through the server; the friend's trade shows up on my ticker.
+    click('[data-tab="takeovers"]');
+    const buy = $(`[data-trade="${friend.player_id}"][data-qty="5"]`);
+    if (!buy) throw new Error("exchange row for the friend missing");
+    buy.click();
+    await until("my live trade", () => (D().game.companies.find((c: any) => c.id === friend.player_id).shares.holders.you || 0) >= 5);
+    server.call("user-friend", "trade", { game_id: HG().id, target_id: myIdNow(), qty: 3 });
+    await until("friend's trade on my ticker", () => /Sanne|Bar None/.test($("#ticker")?.textContent || "") && /bought 3% of/.test($("#ticker")!.textContent!), 8000);
+    if ((D().game.companies[0].shares.holders[friend.player_id] || 0) !== 3) throw new Error("friend's stake in me should show live");
+  }
   if (r === 2) {
     const mine = D().game.companies[0].history.at(-1);
     if (db.deals[0].status !== "done" || mine.dealCash !== 200000) throw new Error("loan deal should be done with +200k: " + JSON.stringify([db.deals[0], mine.dealCash]));
@@ -317,6 +349,30 @@ for (let r = 1; r <= 6; r++) {
   closeResults();
 }
 await until("final screen", () => /Final results/.test(doc.body.textContent || ""));
+// Party mode: the TV link shows the final standings for the room.
+{
+  const tvDom = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></html>`, {
+    runScripts: "dangerously", pretendToBeVisual: true, url: `http://localhost/?tv=${HG().id}.abc123def456`,
+    virtualConsole: new VirtualConsole().on("error", (...a: any[]) => errors.push("tv console: " + a.map((x) => (x && x.stack) || String(x)).join(" ").slice(0, 400))).on("jsdomError", (e: any) => errors.push("tv jsdom: " + String(e && e.stack).slice(0, 400))),
+    beforeParse(w: any) {
+      w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+      w.__ftFast = true; w.scrollTo = () => {};
+      w.__ftApi = fakeApi;
+      const ctx: any = new Proxy({}, { get: (t: any, k) => (k === "createLinearGradient" ? () => ({ addColorStop() {} }) : k in t ? t[k] : () => {}), set: (t: any, k, v) => { t[k] = v; return true; } });
+      w.HTMLCanvasElement.prototype.getContext = () => ctx;
+      w.addEventListener("error", (e: any) => errors.push("tv: " + e.message));
+      w.addEventListener("unhandledrejection", (e: any) => errors.push("tv rejection: " + (e.reason && e.reason.message)));
+    },
+  });
+  const tdoc = tvDom.window.document;
+  const t0 = Date.now();
+  // (#app, not body: the page's own script text mentions "Final results" too)
+  const tvText = () => tdoc.getElementById("app")!.textContent || "";
+  while (Date.now() - t0 < 4000 && !(/Final results/.test(tvText()) && tdoc.querySelector(".tv-bld"))) await wait(20);
+  if (!/Final results/.test(tvText()) || !tdoc.querySelector(".tv-bld")) throw new Error("TV screen should show the skyline and final results: " + errors.join(" / ") + " :: " + (tdoc.getElementById("app") || tdoc.body).textContent!.replace(/\s+/g, " ").slice(0, 300));
+  if (!tvText().includes(code)) throw new Error("TV should show the game code");
+  tvDom.window.close();
+}
 // Season table and rematch: the rematch is a new lobby in the same league.
 await until("season table", () => /Season standings/.test(doc.body.textContent || "") && $("#btn-rematch"), 8000);
 if (!/Jeroen/.test($(".overlay")!.textContent!)) throw new Error("season table should list me");

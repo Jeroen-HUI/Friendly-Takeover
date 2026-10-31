@@ -80,7 +80,7 @@ const HIDDEN_REPORT: Partial<RoundReport> = {
   marketingCost: 0, rndCost: 0, brandCost: 0, researchCost: 0, capacityInvest: 0, interest: 0, storeOpenCost: 0, storeUpkeep: 0,
   wildcardCost: 0, legalCost: 0, staffCost: 0, workers: 0, auctionPaid: 0, sharePurchases: 0, buybackCost: 0, shareSales: 0,
   loanChange: 0, emergencyLoan: 0, emergencyFee: 0, retailDemand: 0, cashStart: 0, dividendsPaid: 0, dividendsReceived: 0,
-  dealCash: 0, experienceFactor: 0, unitCostBase: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
+  dealCash: 0, experienceFactor: 0, unitCostBase: 0, materialOrderUnits: 0, materialOrderCost: 0, materialFromStock: 0, materialSpot: 0, materialSpotCost: 0, materialStockEnd: 0, bulkSold: 0, bulkRevenue: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
 };
 
 /** What one player may see: everything public, their own company in full, rivals without their secrets. */
@@ -99,7 +99,7 @@ export function viewFor(state: GameState, playerId: string): GameState {
   view.playerLoans = (view.playerLoans ?? []).filter((l) => l.lender === playerId || l.borrower === playerId);
   view.dealLog = (view.dealLog ?? []).filter((d) => d.from === playerId || d.to === playerId);
   // Hidden market drivers: only the raw material index is public (it's in the market report).
-  if (view.market) view.market = { materialIndex: view.market.materialIndex };
+  if (view.market) view.market = { materialIndex: view.market.materialIndex, materialOutlook: view.market.materialOutlook, bulkPrice: view.market.bulkPrice };
   view.companies = view.companies.map((c: Company) => {
     if (c.id === playerId) return c;
     const last = c.lastDecisions;
@@ -112,6 +112,8 @@ export function viewFor(state: GameState, playerId: string): GameState {
       inventory: 0,
       inventoryUnitCost: 0,
       cumProduced: 0,
+      materials: 0,
+      materialPaid: 1,
       capacity: c.bankrupt ? c.capacity : 0,
       workers: 0,
       wildcardsUsed: {},
@@ -135,6 +137,9 @@ export function publicData(state: GameState, round: number) {
     headlines: state.feed.filter((f) => f.round === round).map((f) => f.headline),
     nextNews: state.finished ? [] : state.news.map((n) => ({ headline: n.event.headline + (n.targetCompanyId ? ` (it's ${names.get(n.targetCompanyId)})` : ""), effect: n.event.effect, roundsLeft: n.roundsLeft })),
     companies: publicInfo(state),
+    values: companyValues(state),
+    valueHistory: Object.fromEntries(state.companies.map((c) => [c.id, c.history.map((h) => Math.round(h.value))])),
+    upcoming: state.feed.filter((f) => f.round === round + 1).map((f) => f.headline),
     standings: standings(state).map((r) => (state.finished ? r : { ...r, mission: undefined, missionDone: undefined, missionBonus: undefined })),
     auction: state.auction,
     summit: state.summit,
@@ -142,3 +147,18 @@ export function publicData(state: GameState, round: number) {
 }
 
 export { renameCompany };
+
+/** What everyone may see of the live round: exchange prices, share registers, recent trades and live auctions. */
+export function publicLive(state: GameState) {
+  const live = state.live && state.live.round === state.round ? state.live : null;
+  const prices = sharePrices(state);
+  return {
+    round: state.round,
+    prices: Object.fromEntries(state.companies.map((c) => [c.id, live?.prices[c.id] ?? prices[c.id]])),
+    shares: Object.fromEntries(state.companies.map((c) => [c.id, c.shares])),
+    trades: (live?.trades ?? []).slice(-60),
+    lots: live?.lots ?? {},
+    serverNow: Date.now(),
+  };
+}
+export { exchangeTrade, liveBid, liveMinBid, liveLotOpen } from "../engine";

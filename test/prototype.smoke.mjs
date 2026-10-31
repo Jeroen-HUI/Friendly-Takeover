@@ -7,7 +7,7 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></h
   runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",
   beforeParse(w) {
     w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
-    w.__ftFast = true;
+    w.__ftFast = true; w.__ftLiveBotMs = 1e9; // live bots only tick when the test asks (deterministic)
     w.scrollTo = () => {};
     // Fake 2D context: records draw calls so the canvas code actually runs.
     w.__draws = 0;
@@ -157,7 +157,18 @@ for (let r = 1; r <= 8; r++) {
     click('input[name="wildcard"][value="' + (r === 1 ? "spy" : "scandal") + '"]');
     if (doc.getElementById("wc-target-wrap").hidden) throw new Error("wildcard target should show");
   }
-  if (doc.getElementById("f-bid")) { auctionSeen = true; const b = doc.getElementById("f-bid"); b.value = "200000"; b.dispatchEvent(new window.Event("input")); }
+  if (doc.querySelector("[data-bid]:not([disabled])")) {
+    // Live auction: bid, and the lot shows us as the highest bidder.
+    auctionSeen = true;
+    doc.querySelector("[data-bid]:not([disabled])").click();
+    const L = window.__ftDebug.S.game.live;
+    if (!L || !Object.values(L.lots).some((l) => l.high && l.high.bidder === "you")) throw new Error("live bid not placed: " + [...doc.querySelectorAll("[data-lot-msg]")].map((x) => x.textContent).join(" | ") + " btn=" + doc.querySelector("[data-bid]").outerHTML.slice(0, 200) + " cash=" + window.__ftDebug.S.game.companies[0].cash + " live=" + String(JSON.stringify(L)).slice(0, 300) + " tab=" + window.__ftDebug.S.tab + " round=" + window.__ftDebug.S.game.round);
+    // Bots join in: they raise the auction or trade on the exchange.
+    for (let k = 0; k < 40; k++) window.__ftDebug.liveBotTick();
+    const L2 = window.__ftDebug.S.game.live;
+    if (!(Object.values(L2.lots).some((l) => l.high && l.high.bidder !== "you") || L2.trades.some((t) => t.trader !== "you"))) throw new Error("live bots did nothing");
+    if (!doc.querySelector("#ticker")) throw new Error("ticker should show during a live auction");
+  }
   if (doc.querySelector('input[name="vote"]')) {
     summitSeen = true;
     // The vote is required: submitting first opens the vote, then the decision sheet.
@@ -193,11 +204,25 @@ for (let r = 1; r <= 8; r++) {
     click('[data-tab="market"]');
     if (!/Market history/.test(doc.body.textContent) || !/Rivals per round/.test(doc.body.textContent)) throw new Error("market history missing");
   }
-  if (r === 5) {
+  if (r >= 3) {
+    // Live stock exchange: buy 5 of a rival right now; the price moves and the ticker shows it.
     click('[data-tab="takeovers"]');
-    const sell = doc.querySelector('[data-sell-step][data-dir="1"]');
-    if (!sell) throw new Error("sell control missing after buying shares");
+    if (!doc.querySelector("#live-exchange")) throw new Error("stock exchange missing");
+    const buy = doc.querySelector('[data-trade][data-qty="5"]:not([disabled])');
+    if (buy) {
+      const id = buy.dataset.trade, before = window.__ftDebug.S.game.companies.find((c) => c.id === id).shares.holders.you || 0;
+      buy.click();
+      const after = window.__ftDebug.S.game.companies.find((c) => c.id === id).shares.holders.you || 0;
+      if (r === 3 && after !== before + 5 && !/Not enough cash|up to 50%|At most/.test(doc.getElementById("ex-msg").textContent)) throw new Error("live buy failed: " + doc.getElementById("ex-msg").textContent);
+      if (after > before && !/bought 5% of/.test(doc.getElementById("ticker").textContent)) throw new Error("ticker should show the trade");
+    }
+  }
+  if (r === 5) {
+    const sell = doc.querySelector('[data-trade][data-qty="-1"]:not([disabled])');
+    if (!sell) throw new Error("sell button missing after buying shares");
+    const id = sell.dataset.trade, before = window.__ftDebug.S.game.companies.find((c) => c.id === id).shares.holders.you;
     sell.click();
+    if (window.__ftDebug.S.game.companies.find((c) => c.id === id).shares.holders.you !== before - 1) throw new Error("live sell failed");
     sellTried = true;
   }
   if (r === 3) {
@@ -207,7 +232,8 @@ for (let r = 1; r <= 8; r++) {
   }
   if (r === 4) {
     click('[data-tab="retail"]');
-    if (!/Your stores: 2/.test(doc.body.textContent)) throw new Error("stores not opened");
+    // (2 opened; the live auction can add 2 more when its lot is "2 stores")
+    if (!(Number((doc.body.textContent.match(/Your stores: (\d+)/) || [])[1]) >= 2)) throw new Error("stores not opened: " + (doc.body.textContent.match(/Your stores[^.]{0,80}/) || [""])[0]);
     if (!/Sold in your stores/.test(doc.body.textContent)) throw new Error("store sales missing");
     click('[data-tab="market"]');
     if (!/Market report for round/.test(doc.body.textContent) || !/Material index/.test(doc.body.textContent) || /Market outlook/.test(doc.body.textContent)) throw new Error("market tab wrong");
@@ -233,7 +259,7 @@ for (let r = 1; r <= 8; r++) {
     rb.click();
     if (!doc.querySelector(".floatemoji")) throw new Error("reaction did not float");
   }
-  if (r === 5 && sellTried && !/Sold \d+ shares of/.test(doc.body.textContent)) throw new Error("share sale missing from results: " + doc.querySelector(".overlay").textContent.slice(0, 600));
+  if (r === 5 && sellTried && !(window.__ftDebug.S.game.companies[0].history.at(-1).exchangeCash !== 0)) throw new Error("exchange cash missing from the report");
   if (r < 8) {
     if (!doc.querySelector("#btn-continue")) throw new Error("no results after round " + r);
     if (!doc.querySelector(".overlay .dossier") && !window.__ftDebug.S.game.companies[0].bankrupt) throw new Error("mission progress missing from results in round " + r + ": " + doc.querySelector(".overlay").textContent.replace(/\s+/g, " ").slice(0, 300));
@@ -267,9 +293,10 @@ if (doc.getElementById("fb-send").disabled) throw new Error("feedback send shoul
   if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
   if (!/Bankruptcy sale/.test(doc.querySelector(".agenda").textContent)) throw new Error("bankruptcy sale not announced");
   click('[data-tab="boardroom"]');
-  const bid = doc.querySelector('input[id^="f-bk-"]');
-  if (!bid) throw new Error("bankruptcy bid control missing");
-  bid.value = "500000"; bid.dispatchEvent(new window.Event("input"));
+  const lot = doc.querySelector('.livelot:not([data-lot="auction"])');
+  if (!lot) throw new Error("live bankruptcy sale missing");
+  const custom = lot.querySelector("[data-bid-custom]"); custom.value = "500k"; lot.querySelector("[data-bid-go]").click();
+  if (!(D.S.game.live && D.S.game.live.lots[lot.dataset.lot] && D.S.game.live.lots[lot.dataset.lot].high.amount === 500000)) throw new Error("bankruptcy live bid not placed");
   click("#btn-submit"); if (doc.querySelector("[data-vote]")) click('[data-vote="a"]'); click("#btn-confirm"); if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
   if (!/buys what's left of|trampoline/.test(doc.querySelector(".overlay").textContent + D.S.game.feed.map((f) => f.headline).join(" "))) throw new Error("bankruptcy sale not resolved");
   click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");

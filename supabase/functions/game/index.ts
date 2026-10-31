@@ -4,13 +4,15 @@
 //                                                       the timer) or when the deadline has passed (any player).
 // POST { action: "rename", game_id, target_id, name }   the controller of a company renames it.
 // POST { action: "tick" } + header x-tick-secret        the scheduler (pg_cron, every minute) closes every overdue round.
+// POST { action: "trade", game_id, target_id, qty }      live stock exchange: buy (qty > 0) or sell (qty < 0) right now.
+// POST { action: "bid", game_id, lot, amount }          live auction bid ("auction", or a bankrupt company's id).
 // The full engine state never leaves the server: each player gets their own view (rivals' secrets removed).
 // Accepted deals between players are carried out when the round resolves.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // Bundle of src/server/core.ts (supabase/functions/game/engine.js), pinned to a commit so a deploy is reproducible.
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@f2877e41aafe9f13958beb06fadf6625cf91addf/supabase/functions/game/engine.js";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@f2877e41aafe9f13958beb06fadf6625cf91addf/supabase/functions/game/engine.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +32,7 @@ type Admin = any;
 /** Writes the state, every human player's own view, and the public results for a round. */
 async function publish(admin: Admin, gameId: string, round: number, state: State, humanIds: string[]) {
   await admin.from("game_states").upsert({ game_id: gameId, state, updated_at: new Date().toISOString() });
+  await admin.from("market_live").upsert({ game_id: gameId, round: state.round, data: publicLive(state), updated_at: new Date().toISOString() });
   await admin.from("player_reports").upsert(humanIds.map((id) => ({ game_id: gameId, round, player_id: id, report: { view: viewFor(state, id) } })));
   // Results last: clients listen for this row, so everything else is in place when it arrives.
   await admin.from("round_results").upsert({ game_id: gameId, round, public_data: publicData(state, round), resolved_at: new Date().toISOString() });
@@ -42,7 +45,7 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   const { data: players } = await admin.from("players").select("*").eq("game_id", gameId).order("joined_at");
   const humanIds: string[] = (players ?? []).map((p: State) => p.id);
   const round = game.current_round as number;
-  const { data: stateRow } = await admin.from("game_states").select("state").eq("game_id", gameId).single();
+  const { data: stateRow } = await admin.from("game_states").select("state, updated_at").eq("game_id", gameId).single();
   const state = stateRow!.state as State;
   if (state.round !== round) return { status: 409, body: { error: "Round mismatch, try again" } };
 
@@ -60,6 +63,9 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   const { data: dealRows } = await admin.from("deals").select("*").eq("game_id", gameId).eq("round", round).eq("status", "accepted").order("id");
   const deals = (dealRows ?? []).map((d: State) => ({ id: String(d.id), from: d.from_player_id, to: d.to_player_id, kind: d.kind, terms: d.terms }));
   const next = resolveOnlineRound(state, decisions, deals);
+  // A live trade or bid that landed while we computed: start over with the newest state.
+  const { data: fresh } = await admin.from("game_states").select("updated_at").eq("game_id", gameId).single();
+  if (fresh && fresh.updated_at !== stateRow!.updated_at) return resolveGame(admin, game, who);
   const nextDeadline = next.finished ? null : new Date(Date.now() + game.round_seconds * 1000).toISOString();
   // Claim the round first so two simultaneous calls can never both write results.
   const { data: claimed } = await admin
@@ -83,7 +89,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  let body: { action?: string; game_id?: string; target_id?: string; name?: string };
+  let body: { action?: string; game_id?: string; target_id?: string; name?: string; qty?: number; lot?: string; amount?: number };
   try {
     body = await req.json();
   } catch {
@@ -140,6 +146,31 @@ Deno.serve(async (req) => {
   if (body.action === "resolve") {
     const r = await resolveGame(admin, game, { userId });
     return json(r.body, r.status);
+  }
+
+  // ------------------------------------------------- live exchange and auctions
+  if (body.action === "trade" || body.action === "bid") {
+    if (game.status !== "playing") return json({ error: "The game is not running" }, 409);
+    if (game.round_deadline && Date.now() >= new Date(game.round_deadline).getTime()) return json({ error: "Time's up: this round is closing" }, 409);
+    // Optimistic update: retry if someone else traded at the same moment.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data: row } = await admin.from("game_states").select("state, updated_at").eq("game_id", gameId).single();
+      const state = row!.state as State;
+      if (state.round !== game.current_round) return json({ error: "This round is closing" }, 409);
+      let next: State, trade: unknown = null;
+      try {
+        if (body.action === "trade") ({ state: next, trade } = exchangeTrade(state, mePlayer.id, String((body as State).target_id ?? ""), Math.trunc(Number((body as State).qty) || 0)));
+        else next = liveBid(state, mePlayer.id, String((body as State).lot ?? ""), Math.round(Number((body as State).amount) || 0));
+      } catch (e) {
+        return json({ error: (e as Error).message }, 400);
+      }
+      const stamp = new Date().toISOString();
+      const { data: saved } = await admin.from("game_states").update({ state: next, updated_at: stamp }).eq("game_id", gameId).eq("updated_at", row!.updated_at).select("game_id");
+      if (!saved?.length) continue;
+      await admin.from("market_live").upsert({ game_id: gameId, round: next.round, data: publicLive(next), updated_at: stamp });
+      return json({ ok: true, trade, live: publicLive(next) });
+    }
+    return json({ error: "The market is busy, try again" }, 409);
   }
 
   // ----------------------------------------------------------------- rename

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
+import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, exchangeTrade, livePrice, liveBid, liveMinBid, liveLotOpen, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
 import { runMatch } from "../src/sim/simulate";
 
 const players = [
@@ -166,7 +166,7 @@ test("every euro is accounted for: the cash flow adds up each round", () => {
     for (const c of res.state.companies) {
       for (const h of c.history) {
         const flow = h.cashStart + h.loanChange + h.revenue - h.productionCost - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost
-          - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
+          - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - (h.materialOrderCost ?? 0) + (h.exchangeCash ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
           + h.emergencyLoan - h.emergencyFee + (h.dealCash ?? 0) - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales;
         assert.ok(Math.abs(flow - h.cashEnd) < 0.01, `${industry} ${c.id} round ${h.round}: ${flow} vs ${h.cashEnd}`);
       }
@@ -433,7 +433,8 @@ test("factory load: overtime above 90% of capacity, idle cost below 60%", () => 
   const a = g.companies[0].history.at(-1)!, b = g.companies[1].history.at(-1)!;
   assert.equal(a.overtimeUnits, cap - Math.floor(cap * 0.9));
   assert.ok(Math.abs(a.overtimeCost! - a.overtimeUnits! * a.unitCostBase! * 0.25) < 1e-6);
-  assert.ok(Math.abs(a.productionCost - (a.produced * a.unitCostBase! + a.overtimeCost!)) < 1e-6);
+  // Production cash = process + spot materials + overtime; stock materials were paid when ordered.
+  assert.ok(a.productionCost > a.overtimeCost! && a.productionCost < a.produced * a.unitCostBase! + a.overtimeCost! + 1e-6);
   assert.equal(b.idleUnits, Math.floor(cap * 0.6) - Math.round(cap * 0.4));
   assert.ok(b.idleCost! > 0 && a.idleCost === 0 && b.overtimeUnits === 0);
 });
@@ -520,4 +521,72 @@ test("loans between players count in company value", () => {
   g.playerLoans = [{ lender: "a", borrower: "b", repay: 400_000, due: 5 }];
   const after = companyValues(g);
   assert.ok(after.a - before.a > 380_000 && before.b - after.b > 380_000);
+});
+
+
+test("materials are bought a round ahead: stock is used first, shortfalls cost the spot price plus a premium", () => {
+  let g = newGame(14);
+  const a0 = g.companies[0];
+  assert.ok(a0.materials! > 0, "round 1 starts with materials ordered in year 0");
+  // a orders nothing for round 2 and produces a lot; b orders plenty.
+  g = resolveRound(g, { a: { materialOrder: 0, production: 700_000 }, b: { materialOrder: 2_000_000, production: 700_000 } });
+  const a1 = g.companies[0].history.at(-1)!, b1 = g.companies[1].history.at(-1)!;
+  assert.equal(a1.materialOrderCost, 0);
+  assert.ok(b1.materialOrderCost! > 0 && g.companies[1].materials! > g.companies[0].materials!);
+  g = resolveRound(g, { a: { production: 700_000 }, b: { production: 700_000 } });
+  const a2 = g.companies[0].history.at(-1)!, b2 = g.companies[1].history.at(-1)!;
+  assert.ok(a2.materialSpot! > 0 && a2.materialSpotCost! > 0, "a had to buy on the spot market");
+  assert.equal(b2.materialSpot, 0, "b had enough in stock");
+  assert.ok(a2.unitCostBase! > b2.unitCostBase! * 0.98 || g.market!.materialIndex < 0.85, "spot buying costs more");
+  assert.ok(["up", "down", "flat"].includes(g.market!.materialOutlook!));
+  assert.ok(g.feed.some((f) => /outlook/.test(f.headline)));
+});
+
+test("bulk buyer takes leftover stock at the bulk price", () => {
+  let g = newGame(15);
+  const price = g.market!.bulkPrice!;
+  assert.ok(price > 0 && price < 2.2);
+  g = resolveRound(g, { a: { production: 850_000, price: 3.9, bulkSell: 999_999 } });
+  const r = g.companies[0].history.at(-1)!;
+  assert.ok(r.bulkSold! > 0 && r.bulkSold! <= Math.round(g.companies[0].capacity * 0.5) + 30_000);
+  assert.ok(Math.abs(r.bulkRevenue! - r.bulkSold! * price) < 1e-6);
+  assert.equal(r.inventoryEnd, r.inventoryStart + r.produced - r.sold - r.bulkSold!);
+});
+
+test("live exchange: prices move with every trade, holdings change at once, 50% needs a takeover bid", () => {
+  let g = newGame(16, "cutthroat");
+  g = resolveRound(g, {});
+  const p0 = livePrice(g, "b");
+  let r = exchangeTrade(g, "a", "b", 10, 1000);
+  g = r.state;
+  assert.equal(g.companies[1].shares.holders.a, 10);
+  assert.ok(livePrice(g, "b") > p0 * 1.04, "price rose");
+  assert.ok(r.trade.cash < -p0 * 10, "paid more than the starting price (impact + fee)");
+  assert.throws(() => exchangeTrade(g, "a", "b", 45, 1001), /up to 50%/);
+  r = exchangeTrade(g, "a", "b", -4, 1002); g = r.state;
+  assert.equal(g.companies[1].shares.holders.a, 6);
+  // c dumps nothing, d buys; the round then resolves and the cash flow adds up.
+  g = exchangeTrade(g, "d", "c", 5, 1003).state;
+  const before = g.companies.map((c) => c.cash);
+  g = resolveRound(g, {});
+  const ra = g.companies[0].history.at(-1)!;
+  assert.ok(ra.exchangeCash! < 0);
+  assert.equal(g.live, undefined, "live state is cleared after the round");
+  assert.ok(before.length === 4);
+});
+
+test("live auction: the highest live bid wins and pays; the lot closes after the going-once timer", () => {
+  let g = newGame(17);
+  while (!(g.auction && g.auction.round === g.round)) g = resolveRound(g, {});
+  const min = liveMinBid(g, "auction");
+  g = liveBid(g, "a", "auction", min, 5000);
+  assert.throws(() => liveBid(g, "b", "auction", min, 5001), /at least/);
+  g = liveBid(g, "b", "auction", liveMinBid(g, "auction"), 5002);
+  assert.equal(g.live!.lots.auction.high!.bidder, "b");
+  assert.ok(!liveLotOpen(g, "auction", 5002 + 46_000), "closed after the timer");
+  assert.throws(() => liveBid(g, "a", "auction", 9_000_000, 5002 + 46_000), /closed/);
+  const cash = g.companies[1].cash;
+  g = resolveRound(g, {});
+  assert.ok(g.feed.some((f) => f.headline.startsWith(g.companies[1].companyName + " wins")), "b wins");
+  assert.ok(g.companies[1].history.at(-1)!.auctionPaid > 0 && cash > 0);
 });
