@@ -396,46 +396,46 @@ button[data-tip] { cursor: pointer; }
 .toast b { font-family: var(--font-display); font-size: 16px; }
 input[type="email"] { padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
 html.tvmode body { overflow: hidden; }
-.tv { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; gap: 14px; padding: 18px 22px; background: radial-gradient(ellipse at 50% 0%, #22306b, #0a0f24 70%); color: var(--ink); overflow: hidden; }
-:root[data-theme="light"] .tv { background: radial-gradient(ellipse at 50% 0%, #fff2d8, #e8dcc2 70%); }
-.tvp-head { display: flex; align-items: center; gap: 18px; }
-.tv-brand { display: flex; align-items: center; gap: 12px; margin-right: auto; } .tv-brand canvas { width: 44px; height: 44px; image-rendering: pixelated; }
-.tv-brand b { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 38px); } .tv-brand span { font-weight: 900; color: var(--muted); }
-.tv-code, .tv-round { display: grid; justify-items: center; padding: 8px 18px; border-radius: 10px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); }
-.tv-code span, .tv-round span { font-size: 13px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-.tv-code b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); color: var(--gold); letter-spacing: .15em; }
-.tv-round b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); } .tv-round b.low { color: var(--bad); }
-.tv-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 26vw); gap: 16px; min-height: 0; }
-.tv-city { display: flex; align-items: flex-end; justify-content: space-around; gap: 2vw; padding: 20px 2vw 10px; border-radius: 14px; background: linear-gradient(#0d1430 0%, #1a2350 75%, #2a2a2a 75.5%, #1d1d1d 100%); box-shadow: 0 0 0 3px var(--frame-dark); min-height: 0; }
-.tv-bld { flex: 1; max-width: 220px; height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; align-items: end; text-align: center; gap: 4px; }
-.tv-tower { width: 72%; height: 100%; display: flex; align-items: flex-end; } .tv-tower i { display: block; width: 100%; height: var(--h); background: repeating-linear-gradient(0deg, var(--pc) 0 18px, rgba(255, 209, 102, 0.85) 18px 24px, var(--pc) 24px 30px); border: 3px solid rgba(0,0,0,0.35); border-bottom: 0; transition: height 1.2s cubic-bezier(.2, 1.2, .4, 1); }
-.tv-bld.dead .tv-tower i { background: #555; }
-.tv-bld b { font-family: var(--font-display); font-size: clamp(14px, 1.4vw, 22px); color: #fff; } .tv-bld span { font-weight: 800; color: #c8d0f0; font-size: clamp(12px, 1.1vw, 17px); }
-.tv-rank { font-family: var(--font-display); font-size: clamp(18px, 2vw, 30px); color: var(--gold) !important; }
-.tv-side { display: grid; gap: 12px; align-content: start; overflow: hidden; }
-.tv-box { padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); display: grid; gap: 6px; }
-.tv-box h3 { margin: 0; font-family: var(--font-display); font-size: 16px; color: var(--gold); }
-.tv-readys { display: flex; flex-wrap: wrap; gap: 6px; } .tv-ready { padding: 4px 10px; border-radius: 6px; background: var(--panel-3); font-weight: 900; } .tv-ready.ok { background: var(--good); color: #062614; }
-.tv-tk { font-weight: 800; font-size: 14px; } .tv-tk.up { color: var(--good); } .tv-tk.down { color: #ff8b7b; } .tv-tk b { color: var(--ink); }
-.tv-lot { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-weight: 800; } .tv-lot i { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-family: var(--font-display); color: var(--gold); }
-.tv-news, .tv-heads { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-weight: 800; }
-.tv-msg { font-weight: 700; } .tv-muted { color: var(--muted); font-weight: 700; }
-.tv-lobby { display: grid; justify-items: center; align-content: center; gap: 14px; text-align: center; }
-.tv-lobby h2 { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 4vw, 56px); }
-.tv-join { font-family: var(--font-display); font-size: clamp(18px, 2.2vw, 32px); color: var(--gold); padding: 10px 18px; border-radius: 10px; background: rgba(0,0,0,0.35); }
-.tv-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 10px; }
-.tv-player { display: grid; justify-items: center; gap: 4px; padding: 14px 18px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--pc); animation: pop 400ms cubic-bezier(.2, 1.5, .4, 1) both; }
-.tv-player canvas { width: 84px; height: 84px; image-rendering: pixelated; border-radius: 8px; } .tv-player b { font-family: var(--font-display); font-size: 20px; } .tv-player i { font-style: normal; font-size: 12px; color: var(--gold); font-weight: 900; }
-.tv-wait { color: var(--muted); font-weight: 800; }
-.tv-center { display: grid; place-items: center; text-align: center; } .tv-logo { font-family: var(--font-display); font-size: 56px; }
-.tv-show { position: absolute; inset: 10% 14%; z-index: 5; display: grid; align-content: start; gap: 12px; padding: 26px 32px; border-radius: 16px; background: rgba(10, 15, 36, 0.96); box-shadow: 0 0 0 4px var(--frame), 0 30px 80px rgba(0,0,0,0.6); animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
-.tv-show h2 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 54px); color: var(--gold); text-align: center; }
-.tv-winner { text-align: center; font-family: var(--font-display); font-size: clamp(24px, 3vw, 44px); }
-.tv-rows { display: grid; gap: 8px; }
-.tv-row { display: grid; grid-template-columns: 50px 1fr auto auto; gap: 16px; align-items: center; padding: 10px 16px; border-radius: 10px; background: rgba(255,255,255,0.06); border-left: 8px solid var(--pc); font-size: clamp(18px, 1.8vw, 28px); font-weight: 900; animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
-.tv-row .n { font-family: var(--font-display); color: var(--gold); } .tv-row .v { font-family: var(--font-display); }
-@keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (max-width: 800px) { .tv-main { grid-template-columns: 1fr; } .tv-show { inset: 4%; } }
+html.tvmode .tv { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; gap: 14px; padding: 18px 22px; background: radial-gradient(ellipse at 50% 0%, #22306b, #0a0f24 70%); color: var(--ink); overflow: hidden; }
+html.tvmode[data-theme="light"] .tv { background: radial-gradient(ellipse at 50% 0%, #fff2d8, #e8dcc2 70%); }
+html.tvmode .tvp-head { display: flex; align-items: center; gap: 18px; }
+html.tvmode .tv-brand { display: flex; align-items: center; gap: 12px; margin-right: auto; } html.tvmode .tv-brand canvas { width: 44px; height: 44px; image-rendering: pixelated; }
+html.tvmode .tv-brand b { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 38px); } html.tvmode .tv-brand span { font-weight: 900; color: var(--muted); }
+html.tvmode .tv-code, html.tvmode .tv-round { display: grid; justify-items: center; padding: 8px 18px; border-radius: 10px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); }
+html.tvmode .tv-code span, html.tvmode .tv-round span { font-size: 13px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+html.tvmode .tv-code b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); color: var(--gold); letter-spacing: .15em; }
+html.tvmode .tv-round b { font-family: var(--font-display); font-size: clamp(26px, 3vw, 44px); } html.tvmode .tv-round b.low { color: var(--bad); }
+html.tvmode .tv-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 26vw); gap: 16px; min-height: 0; }
+html.tvmode .tv-city { display: flex; align-items: flex-end; justify-content: space-around; gap: 2vw; padding: 20px 2vw 10px; border-radius: 14px; background: linear-gradient(#0d1430 0%, #1a2350 75%, #2a2a2a 75.5%, #1d1d1d 100%); box-shadow: 0 0 0 3px var(--frame-dark); min-height: 0; }
+html.tvmode .tv-bld { flex: 1; max-width: 220px; height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; align-items: end; text-align: center; gap: 4px; }
+html.tvmode .tv-tower { width: 72%; height: 100%; display: flex; align-items: flex-end; } html.tvmode .tv-tower i { display: block; width: 100%; height: var(--h); background: repeating-linear-gradient(0deg, var(--pc) 0 18px, rgba(255, 209, 102, 0.85) 18px 24px, var(--pc) 24px 30px); border: 3px solid rgba(0,0,0,0.35); border-bottom: 0; transition: height 1.2s cubic-bezier(.2, 1.2, .4, 1); }
+html.tvmode .tv-bld.dead .tv-tower i { background: #555; }
+html.tvmode .tv-bld b { font-family: var(--font-display); font-size: clamp(14px, 1.4vw, 22px); color: #fff; } html.tvmode .tv-bld span { font-weight: 800; color: #c8d0f0; font-size: clamp(12px, 1.1vw, 17px); }
+html.tvmode .tv-rank { font-family: var(--font-display); font-size: clamp(18px, 2vw, 30px); color: var(--gold) !important; }
+html.tvmode .tv-side { display: grid; gap: 12px; align-content: start; overflow: hidden; }
+html.tvmode .tv-box { padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--frame-dark); display: grid; gap: 6px; }
+html.tvmode .tv-box h3 { margin: 0; font-family: var(--font-display); font-size: 16px; color: var(--gold); }
+html.tvmode .tv-readys { display: flex; flex-wrap: wrap; gap: 6px; } html.tvmode .tv-ready { padding: 4px 10px; border-radius: 6px; background: var(--panel-3); font-weight: 900; } html.tvmode .tv-ready.ok { background: var(--good); color: #062614; }
+html.tvmode .tv-tk { font-weight: 800; font-size: 14px; } html.tvmode .tv-tk.up { color: var(--good); } html.tvmode .tv-tk.down { color: #ff8b7b; } html.tvmode .tv-tk b { color: var(--ink); }
+html.tvmode .tv-lot { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-weight: 800; } html.tvmode .tv-lot i { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-family: var(--font-display); color: var(--gold); }
+html.tvmode .tv-news, html.tvmode .tv-heads { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-weight: 800; }
+html.tvmode .tv-msg { font-weight: 700; } html.tvmode .tv-muted { color: var(--muted); font-weight: 700; }
+html.tvmode .tv-lobby { display: grid; justify-items: center; align-content: center; gap: 14px; text-align: center; }
+html.tvmode .tv-lobby h2 { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 4vw, 56px); }
+html.tvmode .tv-join { font-family: var(--font-display); font-size: clamp(18px, 2.2vw, 32px); color: var(--gold); padding: 10px 18px; border-radius: 10px; background: rgba(0,0,0,0.35); }
+html.tvmode .tv-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 10px; }
+html.tvmode .tv-player { display: grid; justify-items: center; gap: 4px; padding: 14px 18px; border-radius: 12px; background: rgba(0,0,0,0.3); box-shadow: 0 0 0 3px var(--pc); animation: ptv-pop 400ms cubic-bezier(.2, 1.5, .4, 1) both; }
+html.tvmode .tv-player canvas { width: 84px; height: 84px; image-rendering: pixelated; border-radius: 8px; } html.tvmode .tv-player b { font-family: var(--font-display); font-size: 20px; } html.tvmode .tv-player i { font-style: normal; font-size: 12px; color: var(--gold); font-weight: 900; }
+html.tvmode .tv-wait { color: var(--muted); font-weight: 800; }
+html.tvmode .tv-center { display: grid; place-items: center; text-align: center; } html.tvmode .tvp-logo { font-family: var(--font-display); font-size: 56px; }
+html.tvmode .tv-show { position: absolute; inset: 10% 14%; z-index: 5; display: grid; align-content: start; gap: 12px; padding: 26px 32px; border-radius: 16px; background: rgba(10, 15, 36, 0.96); box-shadow: 0 0 0 4px var(--frame), 0 30px 80px rgba(0,0,0,0.6); animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
+html.tvmode .tv-show h2 { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 54px); color: var(--gold); text-align: center; }
+html.tvmode .tv-winner { text-align: center; font-family: var(--font-display); font-size: clamp(24px, 3vw, 44px); }
+html.tvmode .tv-rows { display: grid; gap: 8px; }
+html.tvmode .tv-row { display: grid; grid-template-columns: 50px 1fr auto auto; gap: 16px; align-items: center; padding: 10px 16px; border-radius: 10px; background: rgba(255,255,255,0.06); border-left: 8px solid var(--pc); font-size: clamp(18px, 1.8vw, 28px); font-weight: 900; animation: pop 500ms cubic-bezier(.2, 1.3, .4, 1) both; }
+html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); } html.tvmode .tv-row .v { font-family: var(--font-display); }
+@keyframes ptv-pop { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 800px) { html.tvmode .tv-main { grid-template-columns: 1fr; } html.tvmode .tv-show { inset: 4%; } }
 .ticker { display: flex; align-items: center; gap: 10px; overflow: hidden; padding: 6px 10px; border-radius: 8px; background: #0a0f24; box-shadow: 0 0 0 3px var(--frame-dark); font-size: 13px; font-weight: 800; white-space: nowrap; }
 :root[data-theme="light"] .ticker { background: #fff7e6; }
 .tk-live { flex: none; padding: 2px 7px; border-radius: 4px; background: var(--bad); color: #fff; font-family: var(--font-display); font-size: 11px; animation: pulse 1.6s ease-in-out infinite; }
@@ -2605,7 +2605,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function tvScreen() {
     const d = TV.data;
-    if (!d) return `<section class="tv"><div class="tv-center"><h1 class="tv-logo">Friendly Takeover</h1><p>${esc(TV.err || "Connecting to the game…")}</p></div></section>`;
+    if (!d) return `<section class="tv"><div class="tv-center"><h1 class="tvp-logo">Friendly Takeover</h1><p>${esc(TV.err || "Connecting to the game…")}</p></div></section>`;
     const g = d.game, R = d.results && d.results.data, comps = R ? R.companies : [];
     const colorOf = (id) => { const i = comps.findIndex((c) => c.companyId === id); return css(COLORS[Math.max(0, i) % COLORS.length]); };
     const nameOf = (id) => { const c = comps.find((x) => x.companyId === id); return c ? c.companyName : tvName(d, id) || "?"; };

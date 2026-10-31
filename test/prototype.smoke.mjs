@@ -56,6 +56,8 @@ if (!doc.querySelector("#btn-submit")) throw new Error("game screen did not rend
 // First game shows How to play, then the news.
 if (!/How to play/.test(doc.querySelector(".overlay")?.textContent || "")) throw new Error("help not shown on first launch");
 click("#btn-close");
+// The news TV sits inside its window (party-mode styles must not make it fill the screen).
+if (doc.querySelector(".tv") && window.getComputedStyle(doc.querySelector(".tv")).position === "fixed") throw new Error("news TV took over the whole screen (party-mode CSS leaking)");
 while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
 if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
 // Then the secret mission briefing, once.
