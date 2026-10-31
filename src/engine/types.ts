@@ -1,0 +1,302 @@
+// Friendly Takeover — core engine types.
+// The engine is pure: (state, decisions) -> new state. No I/O, no clocks, no Math.random.
+
+export type SegmentId = "budget" | "mainstream" | "premium" | "hype";
+export const SEGMENTS: SegmentId[] = ["budget", "mainstream", "premium", "hype"];
+
+export type CampaignType = "discount" | "tv" | "luxury" | "viral";
+export type CeoTrait = "ruthless" | "visionary" | "influencer" | "pennyPincher";
+export type IndustryId = "chocolate" | "ai" | "weed";
+export type DifficultyId = "standard" | "tycoon" | "cutthroat";
+export type WildcardId = "crazy" | "poach" | "spy" | "lobby" | "scandal" | "lawsuit";
+export type MissionId = "stake" | "stores" | "premiumLead" | "budgetLead" | "debtFree" | "quality5" | "volume" | "brand";
+export type AuctionItemId = "endorsement" | "patent" | "factory" | "location";
+export type RegulationId = "luxuryTax" | "bargainBan" | "influencerLaw" | "middleClassCut" | "cheapCredit" | "greenRules";
+export interface Mission { id: MissionId; targetId?: string }
+/** Market research a player can buy for a round (like TOPSIM's market research reports). */
+export type ResearchId = "competitors" | "survey" | "forecast";
+
+/** One player's choices for one round. Every field is optional: missing fields keep last round's value. */
+export interface Decisions {
+  /** Price per unit in euros. */
+  price: number;
+  /** Units to produce this round (capped by capacity). */
+  production: number;
+  /** Quality level 1..5 (capped by the company's quality cap). */
+  quality: number;
+  /** Marketing spend in euros. */
+  marketingBudget: number;
+  campaign: CampaignType;
+  /** Investment split, euros each. */
+  investRnd: number;
+  investCapacity: number;
+  investBrand: number;
+  /** Positive = take a loan, negative = repay. Euros. */
+  loanChange: number;
+  /** Share purchases in other companies: targetId -> number of shares to buy from the public float. */
+  buyShares: Record<string, number>;
+  /** Own shares to buy back from the public float (takeover defense). */
+  buyback: number;
+  /** Market research reports to buy this round. */
+  research: ResearchId[];
+  /** Retail (unlocks in a later round): stores to open and close, and the price in your own stores. */
+  storesOpen: number;
+  storesClose: number;
+  retailPrice: number;
+  /** Shares in rivals to sell back to the market (dumping them scares investors). */
+  sellShares: Record<string, number>;
+  /** One wildcard per round; each card can be used a limited number of times per match. */
+  wildcard: { card: WildcardId; target?: string } | null;
+  /** Sealed stake for a boardroom showdown when one of your share purchases would take control. */
+  takeoverStake: number;
+  /** Sealed defense fund, paid only if someone tries to take control of you this round. */
+  defenseStake: number;
+  /** Sealed bid in this round's auction. */
+  auctionBid: number;
+  /** Sealed bids on bankrupt companies' assets, per bankrupt company. */
+  bankruptBids: Record<string, number>;
+  /** Vote at this round's industry summit. */
+  vote: "a" | "b" | null;
+  /** Bankrupt players only: the company your exposé targets. */
+  journalistTarget: string | null;
+  /** Tycoon only: production teams to hire (positive) or lay off (negative). */
+  hire: number;
+}
+
+/** What a bought research report reveals, delivered with the round report. */
+export interface ResearchResult {
+  /** Each rival's spending and plan for the round just played. */
+  competitors?: {
+    companyId: string;
+    companyName: string;
+    produced: number;
+    quality: number;
+    marketingBudget: number;
+    campaign: CampaignType;
+    investRnd: number;
+    investBrand: number;
+    investCapacity: number;
+    capacity: number;
+    stores: number;
+    retailPrice: number;
+  }[];
+  /** How customers see every company after the round. */
+  survey?: { companyId: string; companyName: string; brand: number; hype: number }[];
+  /** Expected market potential per segment for the next round, including announced news. */
+  /** Insider tip: the news that will break in the round after next (null = nothing big coming). */
+  forecast?: { round: number; news: { headline: string; effect: NewsEffect; duration: number; kind: "story" | "economy" }[] };
+  /** Board seats: owning 25% or more of a company gives you a copy of its round report. */
+  boardSeats?: { companyId: string; companyName: string; held: number; report: Pick<RoundReport, "price" | "quality" | "produced" | "sold" | "revenue" | "profit" | "cashEnd" | "debtEnd" | "marketingCost" | "rndCost" | "capacityInvest" | "stores"> }[];
+  /** Spy wildcard: one rival's full plan for the round. */
+  spy?: { companyId: string; companyName: string; decisions: Omit<Decisions, "wildcard" | "journalistTarget"> };
+}
+
+export interface ShareRegister {
+  /** Founder (the player) holding. */
+  founder: number;
+  /** Shares held by the public, buyable by anyone. */
+  float: number;
+  /** Shares the company bought back. They cannot be bought by others. */
+  treasury: number;
+  /** Shares held by other companies: holderCompanyId -> shares. */
+  holders: Record<string, number>;
+}
+
+export interface Company {
+  id: string;
+  playerName: string;
+  companyName: string;
+  trait: CeoTrait;
+  cash: number;
+  debt: number;
+  /** Units per round the factory can make. */
+  capacity: number;
+  /** Maximum quality the company can produce (raised by R&D). */
+  qualityCap: number;
+  /** Accumulated R&D progress towards the next quality cap. */
+  rndProgress: number;
+  /** Long-term reputation, 0..100. */
+  brand: number;
+  /** Short-term buzz, 0..100, decays fast. */
+  hype: number;
+  inventory: number;
+  /** Own retail stores. */
+  stores: number;
+  /** The name the company started with (it can be renamed by whoever takes it over). */
+  originalName?: string;
+  /** Investor panic after share dumps: knocks this fraction off the company's value, fades every round. */
+  sentiment: number;
+  /** Times each wildcard has been used. */
+  wildcardsUsed: Partial<Record<WildcardId, number>>;
+  /** Secret mission, revealed at the end. */
+  mission: Mission;
+  /** Tycoon only: production teams. */
+  workers: number;
+  /** Bankrupt players: exposés that hit. */
+  journalistPoints: number;
+  /** Average production cost of the units in inventory. */
+  inventoryUnitCost: number;
+  shares: ShareRegister;
+  /** Id of the company that controls this one (owns more than 50 shares), if any. */
+  controlledBy: string | null;
+  /** Rounds left before this company may buy shares in others again (set after a takeover). */
+  takeoverCooldown: number;
+  bankrupt: boolean;
+  /** Last decisions, used as defaults. */
+  lastDecisions: Decisions;
+  history: RoundReport[];
+}
+
+export interface SegmentSales {
+  demand: number;
+  sold: number;
+  share: number;
+}
+
+export interface RoundReport {
+  round: number;
+  cashStart: number;
+  loanChange: number;
+  capacity: number;
+  inventoryStart: number;
+  capacityInvest: number;
+  researchCost: number;
+  sharePurchases: number;
+  buybackCost: number;
+  emergencyLoan: number;
+  emergencyFee: number;
+  /** Special costs: wildcards, lawsuits, Tycoon staff, auctions, showdowns. */
+  wildcardCost: number;
+  /** Money received from selling shares in rivals. */
+  shareSales: number;
+  legalCost: number;
+  staffCost: number;
+  workers: number;
+  auctionPaid: number;
+  showdownPaid: number;
+  /** Retail channel. `sold` and `revenue` include retail; these split it out. */
+  wholesaleSold: number;
+  retailPrice: number;
+  retailDemand: number;
+  retailSold: number;
+  retailRevenue: number;
+  stores: number;
+  storesOpened: number;
+  storesClosed: number;
+  storeOpenCost: number;
+  storeUpkeep: number;
+  research?: ResearchResult;
+  price: number;
+  quality: number;
+  produced: number;
+  sold: number;
+  unmetDemand: number;
+  inventoryEnd: number;
+  revenue: number;
+  productionCost: number;
+  holdingCost: number;
+  fixedCost: number;
+  marketingCost: number;
+  rndCost: number;
+  brandCost: number;
+  interest: number;
+  dividendsPaid: number;
+  dividendsReceived: number;
+  profit: number;
+  cashEnd: number;
+  debtEnd: number;
+  value: number;
+  sharePrice: number;
+  segments: Record<SegmentId, SegmentSales>;
+  events: string[];
+}
+
+export interface NewsEffect {
+  /** Multiplies unit production cost. */
+  costMultiplier?: number;
+  /** Multiplies total market demand. */
+  demandMultiplier?: number;
+  /** Multiplies demand in specific segments. */
+  segmentMultiplier?: Partial<Record<SegmentId, number>>;
+  /** Added to the loan interest rate (e.g. 0.02 = +2 points). */
+  interestDelta?: number;
+  /** Multiplies everybody's capacity this round. */
+  capacityMultiplier?: number;
+  /** Demand boost for one random company. */
+  randomCompanyBoost?: number;
+  /** Extra sales attraction for the cheapest company. */
+  cheapestBoost?: number;
+}
+
+export interface NewsEvent {
+  id: string;
+  headline: string;
+  effect: NewsEffect;
+  /** Rounds the effect lasts, including the round it is announced. */
+  duration: number;
+  /** "economy" = a small market-report item (TOPSIM-style indicators); stories are the funny headlines. */
+  kind?: "story" | "economy";
+}
+
+export interface ActiveNews {
+  event: NewsEvent;
+  roundsLeft: number;
+  /** For randomCompanyBoost: the company it hits. */
+  targetCompanyId?: string;
+}
+
+export interface GameConfig {
+  industry: IndustryId;
+  difficulty: DifficultyId;
+  rounds: number;
+  seed: number;
+}
+
+export interface GameState {
+  config: GameConfig;
+  /** The round about to be played (1-based). After the last round, equals rounds + 1. */
+  round: number;
+  companies: Company[];
+  /** News announced for the coming round. */
+  news: ActiveNews[];
+  /** Headlines generated during resolution (flops, takeovers, bankruptcies). */
+  feed: { round: number; headline: string }[];
+  rngState: number;
+  finished: boolean;
+  /** The news that breaks next round (drawn a round early so insiders can learn it). undefined = not drawn yet. */
+  upcomingNews?: ActiveNews[];
+  /** Special rounds announced a round ahead (Black Friday, Investor Day). */
+  specialEvents?: { round: number; id: "blackFriday" | "investorDay" }[];
+  /** Bankrupt companies whose factory and stores are auctioned off in a given round. */
+  bankruptcySales?: { round: number; companyId: string }[];
+  /** Set when one player controls every other company: the game ends and they win. */
+  monopolyBy?: string | null;
+  /** Sealed-bid auction held this round, if any. */
+  auction: { round: number; item: AuctionItemId } | null;
+  /** Industry summit vote held this round, if any. */
+  summit: { round: number; options: [RegulationId, RegulationId] } | null;
+}
+
+export interface PlayerSetup {
+  id: string;
+  playerName: string;
+  companyName: string;
+  trait: CeoTrait;
+}
+
+export interface Standing {
+  companyId: string;
+  playerName: string;
+  companyName: string;
+  value: number;
+  score: number;
+  controlledBy: string | null;
+  controls: string[];
+  bankrupt: boolean;
+  mission: Mission;
+  /** Won by controlling every other company. */
+  monopoly: boolean;
+  missionDone: boolean;
+  missionBonus: number;
+  journalistPoints: number;
+}
