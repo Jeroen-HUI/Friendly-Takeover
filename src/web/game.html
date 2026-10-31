@@ -349,6 +349,39 @@ button[data-tip] { cursor: pointer; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .optwin { width: min(620px, 100%) !important; }
 .lobby { max-width: 1000px; width: 100%; margin: 0 auto; }
+/* Secret mission: a manila folder that looks the same by day and night. */
+.dossier, .folder { position: relative; padding: 14px 16px 12px; border-radius: 4px 10px 10px 10px; background: linear-gradient(#f0d898, #e2c27a); color: #3b2a0c; box-shadow: inset 0 -4px 0 rgba(90,60,10,0.25), 0 0 0 2px #8a6420; min-width: 0; }
+.dossier::before, .folder::before { content: ""; position: absolute; left: -2px; top: -14px; width: 110px; height: 14px; border-radius: 6px 6px 0 0; background: #e8ca86; box-shadow: 0 0 0 2px #8a6420; clip-path: inset(-3px -3px 0 -3px); }
+.ds-k { font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
+.ds-name { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.1; margin: 2px 0 4px; color: #2b1d00; }
+.dossier.big .ds-name, .folder .ds-name { font-size: clamp(24px, 4vw, 32px); }
+.ds-goal { font-weight: 800; font-size: 15px; }
+.ds-line { font-weight: 800; font-size: 13.5px; margin-top: 6px; }
+.ds-meta { font-size: 12.5px; font-weight: 700; color: #6a4c14; margin-top: 6px; }
+.ds-stamp { position: absolute; right: 12px; top: 10px; padding: 3px 9px; border: 3px solid #b3261e; border-radius: 6px; color: #b3261e; font-family: var(--font-display); font-weight: 700; font-size: 13px; text-transform: uppercase; transform: rotate(8deg); opacity: 0.85; }
+.ds-stamp.big { font-size: 22px; padding: 6px 14px; border-width: 4px; right: 14px; top: 14px; }
+.dossier .ds-stamp { max-width: 40%; }
+.dossier.urgent { box-shadow: inset 0 -4px 0 rgba(90,60,10,0.25), 0 0 0 3px var(--bad); }
+.mbar { height: 12px; margin-top: 8px; border-radius: 6px; background: rgba(90,60,10,0.22); overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,0.15); }
+.mbar i { display: block; height: 100%; background: linear-gradient(#c9822a, #9a5b14); border-radius: 6px; transition: width 600ms ease; }
+.mbar.done i { background: linear-gradient(#3fa864, #23784a); }
+.mbar.lost i { background: #8c8c8c; }
+.briefing { width: min(620px, 100%) !important; }
+.folder { margin-top: 16px; padding: 22px 20px 16px; }
+.brief-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 6px; }
+.brief-facts div { background: rgba(255,255,255,0.35); border-radius: 8px; padding: 8px 10px; display: grid; gap: 1px; min-width: 0; }
+.brief-facts span { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #7a5716; }
+.brief-facts b { font-family: var(--font-display); font-size: 16px; color: #2b1d00; }
+.brief-facts small { font-size: 11.5px; font-weight: 700; color: #6a4c14; }
+@media (max-width: 520px) { .brief-facts { grid-template-columns: 1fr; } .ds-stamp, .ds-stamp.big { position: static; display: inline-block; margin: 0 0 8px; } .dossier .ds-stamp { max-width: none; } }
+.agenda .mchip { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; box-shadow: inset 0 -3px 0 rgba(90,60,10,0.3), 0 0 0 2px #8a6420; max-width: 100%; }
+.mchip .mc-k { font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #b3261e; }
+.mchip b { font-family: var(--font-display); font-size: 13px; white-space: nowrap; }
+.mchip .mc-bar { width: 64px; height: 8px; border-radius: 4px; background: rgba(90,60,10,0.25); overflow: hidden; flex: none; }
+.mchip .mc-bar i { display: block; height: 100%; background: #9a5b14; }
+.mchip.done .mc-bar i { background: #23784a; }
+.mchip .mc-v { font-size: 12.5px; font-weight: 900; white-space: nowrap; }
+.mchip.urgent { box-shadow: inset 0 -3px 0 rgba(90,60,10,0.3), 0 0 0 3px var(--bad); }
 .bigcode { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 8vw, 64px); letter-spacing: 0.18em; color: var(--gold); line-height: 1; }
 .codecard { text-align: left; }
 .lplayer { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--panel-3); border-radius: 8px; border-left: 5px solid var(--pc, var(--muted)); }
@@ -400,7 +433,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
   .win-body.enter > * { animation: slidein 260ms ease-out both; }
   .win-body.enter > *:nth-child(2) { animation-delay: 50ms; }
   @keyframes slidein { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .mbtn .tag.req, .agenda button.req { animation: pulse 1.2s ease-in-out infinite; }
+  .mbtn .tag.req, .agenda button.req, .agenda .mchip.urgent { animation: pulse 1.2s ease-in-out infinite; }
+  .folder { animation: folderIn 480ms cubic-bezier(.2, 1.3, .4, 1) both; }
+  .folder .ds-stamp.big { animation: dsStamp 420ms 380ms cubic-bezier(.2, 1.6, .4, 1) both; }
+  @keyframes folderIn { from { transform: translateY(40px) rotate(-3deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes dsStamp { from { transform: rotate(8deg) scale(2.6); opacity: 0; } to { transform: rotate(8deg) scale(1); opacity: 0.85; } }
   @keyframes pulse { 50% { transform: scale(1.08); filter: brightness(1.25); } }
   .pcard.flash-up { animation: flash-up 1.4s ease-out 1; }
   .pcard.flash-down { animation: flash-down 1.4s ease-out 1; }
@@ -514,7 +551,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     retail: "<b>Decide:</b> whether to open or close your own stores and what to charge in them.",
     finance: "<b>Decide:</b> borrow or repay. Check here that you have the cash for everything you planned.",
     takeovers: "<b>Decide:</b> whether to buy shares in rivals, buy back your own, and how much to stake if it comes to a showdown.",
-    boardroom: "<b>Decide:</b> your wildcard, auction bid and summit vote. Your secret mission is here too.",
+    boardroom: "<b>Decide:</b> your wildcard, auction bid and summit vote. Your secret mission and its progress are here too.",
   };
   const CHAT = {
     takeover: ["Nothing personal. Okay, a little personal.", "Welcome to the family. Our family. That I own.", "Your logo will look great on my letterhead."],
@@ -1061,6 +1098,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
         S.tvQueue = PREFS.tv ? v.news.filter((n) => n.event.kind !== "economy").map(newsItem) : [];
         let seen = false; try { seen = !!localStorage.getItem("ft-help-seen"); } catch (e) {}
         S.modal = !seen ? "help" : S.tvQueue.length ? "tv" : null; S.pendingTv = !seen && S.tvQueue.length > 0; S.tvIndex = 0;
+        try { S.missionSeen = localStorage.getItem("ft-mission-" + MP.gameId) === "1"; } catch (e) {}
+        if (!S.modal && missionPending()) S.modal = "mission";
       }
       render();
       return;
@@ -1234,6 +1273,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     let seen = false;
     try { seen = !!localStorage.getItem("ft-help-seen"); } catch (e) {}
     if (!seen) { S.pendingTv = S.modal === "tv"; S.modal = "help"; }
+    if (!S.modal && missionPending()) S.modal = "mission";
     saveGame();
     render();
   }
@@ -1268,7 +1308,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
     if (g.round === g.config.rounds) items.push(["finance", "gold", "Final round: the game ends after this one"]);
     const steps = `<span class="muted" style="font-size:12.5px;font-weight:800">Read the news, market and reports, go through the decision tabs, then press Submit.</span>`;
-    return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}</section>`;
+    return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}${missionChip()}</section>`;
+  }
+
+  function missionChip() {
+    const c = me();
+    if (!c.mission || c.bankrupt) return "";
+    const st = missionStatus(c), urgent = roundsLeft() <= 1 && !st.done && !st.lost;
+    return `<button type="button" class="mchip ${st.done ? "done" : ""} ${urgent ? "urgent" : ""}" data-tab="boardroom" aria-label="Secret mission: ${esc(missionText(c).name)}, ${esc(st.chip)}"${tipAttr(missionText(c).text + "\n" + st.line)}><span class="mc-k">${urgent ? "Last chance" : "Secret mission"}</span><b>${esc(missionText(c).name)}</b>${st.pct == null ? "" : `<span class="mc-bar"><i style="width:${Math.round(st.pct * 100)}%"></i></span>`}<span class="mc-v">${st.done ? "✓ " : ""}${esc(st.chip)}</span></button>`;
   }
 
   // Showdowns, auctions, summits and dirty tricks get their own broadcast.
@@ -1717,16 +1764,90 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- boardroom tab ----------------
-  const MISSION_PROGRESS = {
-    stake: (c) => { const t = byId(c.mission.targetId); return t ? "You own " + (t.shares.holders.you || 0) + "% of " + t.companyName : ""; },
-    stores: (c) => "You have " + (c.stores || 0) + " stores",
-    premiumLead: () => "Checked on the final round's premium sales",
-    budgetLead: () => "Checked on the final round's budget sales",
-    debtFree: (c) => "Debt " + eurX(c.debt) + ", cash " + eurX(c.cash),
-    quality5: (c) => "Your top quality is " + c.qualityCap,
-    volume: (c) => "You've sold " + unitsX(c.history.filter((h) => h.round >= 1).reduce((a, h) => a + h.sold, 0)) + " so far",
-    brand: (c) => "Your brand is " + c.brand.toFixed(1),
+  // How far along your secret mission is: a 0–1 bar, a short chip label, a full line and a state.
+  function missionStatus(c) {
+    const g = S.game, B = FT.BALANCE, alive = g.companies.filter((o) => !o.bankrupt);
+    const rankBy = (f) => {
+      const mine = f(c), better = alive.filter((o) => o.id !== c.id && f(o) > mine).length, tied = alive.some((o) => o.id !== c.id && f(o) === mine);
+      return { rank: better + 1, n: alive.length, mine, top: Math.max(...alive.map(f), 1), tied, label: "#" + (better + 1) + (tied ? " (tied)" : "") + " of " + alive.length };
+    };
+    const segSold = (seg) => (o) => (o.history.at(-1)?.segments?.[seg]?.sold) || 0;
+    const total = (o) => o.history.filter((h) => h.round >= 1).reduce((a, h) => a + h.sold, 0);
+    // Online, rivals' brands are secret, so "strongest brand" can't be judged until the end.
+    const done = S.mp && c.mission.id === "brand" ? false : FT.missionDone(g, c);
+    const out = (pct, chip, line, extra) => ({ pct: pct == null ? null : Math.max(0, Math.min(1, pct)), chip, line, done, ...(extra || {}) });
+    if (c.bankrupt) return out(0, "failed", "Bankrupt companies can't complete missions.", { lost: true });
+    switch (c.mission.id) {
+      case "stake": {
+        const t = byId(c.mission.targetId), own = t ? t.shares.holders.you || 0 : 0;
+        if (!t || t.bankrupt) return out(0, "target gone", "Your target went bankrupt, so this one can't be completed any more.", { lost: true });
+        return out(own / 30, own + "/30%", `You own ${own}% of ${t.companyName}. You need 30%.`);
+      }
+      case "stores": return out((c.stores || 0) / 8, (c.stores || 0) + "/8 stores", `You have ${c.stores || 0} stores. You need 8.`);
+      case "debtFree": return out(c.debt > 0 ? Math.min(0.9, (c.cash - c.debt) / 2_000_000) : c.cash / 2_000_000, c.debt > 0 ? "debt " + eur(c.debt) : eur(c.cash) + "/€2M", `Cash ${eurX(c.cash)}, debt ${eurX(c.debt)}. You need zero debt and at least €2M cash at the end.`);
+      case "quality5": { const need = B.rndThresholds[5]; return out(c.qualityCap >= 5 ? 1 : c.rndProgress / need, "Q" + c.qualityCap + "/5", c.qualityCap >= 5 ? "Quality 5 is unlocked." : `R&D so far ${eurX(c.rndProgress)} of the ${eurX(need)} that unlocks quality 5.`); }
+      case "volume": { const r = rankBy(total); return out(r.mine / r.top, r.label, `You're ${r.label} in units sold so far (${unitsX(r.mine)}). You need to be #1 at the end.`); }
+      case "premiumLead":
+      case "budgetLead": {
+        const seg = c.mission.id === "premiumLead" ? "premium" : "budget", r = rankBy(segSold(seg));
+        if (g.round <= 1) return out(null, "final round", `Checked on ${seg} sales in the final round (round ${g.config.rounds}).`);
+        return out(r.mine / r.top, r.label, `Last round you were ${r.label} in ${seg} sales (${unitsX(r.mine)}). Only the final round counts.`);
+      }
+      case "brand": {
+        if (!S.mp) { const r = rankBy((o) => o.brand); return out(r.mine / r.top, r.label, `Your brand is ${c.brand.toFixed(1)}, ${r.label}. You need the strongest brand at the end.`); }
+        return out(null, "brand " + c.brand.toFixed(1), `Your brand is ${c.brand.toFixed(1)}. Rivals' brand strength is secret; Competitor spending research shows how much they put into it.`);
+      }
+    }
+    return out(null, "", "");
+  }
+  const MISSION_TIPS = {
+    stake: () => `Share trading opens in round ${diff().takeoverUnlockRound}. 30% is below control, so no boardroom showdown can stop you.`,
+    stores: () => `Stores open in round ${diff().retailUnlockRound} (Retail tab). Eight by the end means opening about two a round.`,
+    debtFree: () => "Pay loans back in Finance and keep the cash. Watch emergency loans: one bad round undoes it.",
+    quality5: () => "Put money into R&D every round. Quality 4 unlocks first, then 5.",
+    volume: () => "Big factory, sharp prices, no missed sales. Every unit counts, from round 1.",
+    premiumLead: () => "High quality, strong brand, Luxury sponsor campaign. Only the final round's premium sales count.",
+    budgetLead: () => "Lowest price in the market and the Discount promo campaign. Only the final round's budget sales count.",
+    brand: () => "Brand building money, Luxury sponsor and TV campaigns. Scandals and exposés hurt it.",
   };
+  function missionBar(st) {
+    return st.pct == null ? "" : `<div class="mbar ${st.done ? "done" : st.lost ? "lost" : ""}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(st.pct * 100)}"><i style="width:${Math.round(st.pct * 100)}%"></i></div>`;
+  }
+  const roundsLeft = () => S.game.config.rounds - S.game.round;
+  function missionDeadline() {
+    const left = roundsLeft();
+    return left <= 0 ? "Final round: it's checked after this one" : left === 1 ? "Checked after next round" : `Checked at the end of round ${S.game.config.rounds} · ${left + 1} rounds to go`;
+  }
+  const missionPending = () => !!(S.game && !S.game.finished && S.game.round <= 1 && !S.missionSeen && me().mission && !me().bankrupt);
+  function briefingModal() {
+    const c = me(), mt = missionText(c);
+    return `<div class="win briefing"><div class="win-title">Classified<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="folder"><span class="ds-stamp big">Top secret</span>
+        <div class="ds-k">For ${esc(c.id === "you" ? (S.opts && S.opts.name && S.opts.name !== "You" ? S.opts.name : "the CEO") : c.playerName)}'s eyes only · ${esc(c.companyName)}</div>
+        <div class="ds-k" style="margin-top:14px">Your secret mission</div>
+        <div class="ds-name">${esc(mt.name)}</div>
+        <div class="ds-goal">${esc(mt.text)}</div>
+        <div class="brief-facts">
+          <div><span>Reward</span><b>+${eurX(FT.MISSION_BONUS)}</b><small>on your final score</small></div>
+          <div><span>Deadline</span><b>Round ${S.game.config.rounds}</b><small>checked at the very end</small></div>
+          <div><span>Rivals</span><b>Have one too</b><small>revealed on the final screen</small></div>
+        </div>
+        <div class="ds-meta"><b>How:</b> ${esc(MISSION_TIPS[c.mission.id]())}</div>
+      </div>
+      <div class="hint">It stays pinned in the round strip above your decisions, and the Boardroom tab tracks your progress every round.</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-mission-ok" data-autofocus>Understood. Burn after reading</button></div>
+    </div></div>`;
+  }
+  function missionCard(big) {
+    const c = me(), mt = missionText(c), st = missionStatus(c), urgent = roundsLeft() <= 1 && !st.done && !st.lost;
+    return `<div class="dossier ${big ? "big" : ""} ${urgent ? "urgent" : ""}"><span class="ds-stamp">${st.done ? "On track" : st.lost ? "Failed" : "Top secret"}</span>
+      <div class="ds-k">Secret mission · +${eurX(FT.MISSION_BONUS)}</div>
+      <div class="ds-name">${esc(mt.name)}</div>
+      <div class="ds-goal">${esc(mt.text)}</div>
+      ${missionBar(st)}
+      <div class="ds-line">${st.done ? "✓ " : ""}${esc(st.line)}</div>
+      <div class="ds-meta">${esc(missionDeadline())}${big ? " · " + esc(MISSION_TIPS[c.mission.id]()) : ""}</div></div>`;
+  }
   function missionText(c) {
     const m = FT.MISSIONS[c.mission.id], t = c.mission.targetId ? byId(c.mission.targetId) : null;
     return { name: m.name, text: m.description.replace("{target}", t ? t.companyName : "a rival") };
@@ -1734,8 +1855,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function tabBoardroom() {
     const c = me(), d = S.draft, g = S.game, W = FT.WILDCARDS, mt = missionText(c);
     const rivals = g.companies.filter((o) => o.id !== "you" && !o.bankrupt);
-    const mission = `<div class="card"><h3>Secret mission: ${esc(mt.name)}</h3><div class="note" style="color:var(--ink)">${esc(mt.text)}</div>
-      <div class="hint">${esc(MISSION_PROGRESS[c.mission.id](c))}. Complete it by the end of round ${g.config.rounds} for a ${eurX(FT.MISSION_BONUS)} bonus on your final score. Everyone has a mission; they're revealed at the end.</div></div>`;
+    const mission = missionCard(true);
     if (c.bankrupt) {
       const opts = rivals.map((o) => `<label class="choice"><input type="radio" name="jtarget" value="${o.id}" ${d.journalistTarget === o.id ? "checked" : ""}><span><b>${esc(o.companyName)}</b><small>${esc(o.playerName)}</small></span></label>`).join("");
       return `<div class="grid2"><div class="card"><h3>You're a journalist now</h3><div class="hint">Your company went bust, but you have a press badge. Each round, pick a company to investigate: it loses ${FT.JOURNALIST.brand} brand and ${FT.JOURNALIST.hype} hype. You score a point every time the company you exposed loses value that round.</div>
@@ -1763,7 +1883,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ? `<div class="ctl ${d.vote ? "" : "reqbox"}"><span class="lbl">Industry summit: vote on a new rule ${d.vote ? "" : '<span class="neg">(required before you can submit)</span>'}</span><div class="choices">${g.summit.options.map((r, k) => { const reg = FT.SUMMIT.regulations[r], v = k ? "b" : "a"; return `<label class="choice"><input type="radio" name="vote" value="${v}" ${d.vote === v ? "checked" : ""}><span><b>${reg.name}</b><small>${reg.description}</small></span></label>`; }).join("")}</div><div class="hint muted" style="font-size:12.5px">Majority wins, a tie is a coin flip. The rule starts next round.</div></div>`
       : `<div class="card"><h3>Industry summits</h3><div class="hint">In rounds ${playable(FT.SUMMIT.rounds).join(", ")} every company votes between two new rules (taxes, cheap credit, green rules…). The winner applies for ${FT.SUMMIT.duration} rounds. Talk to your rivals before you vote.</div></div>`;
     return `<div class="grid2">
-      <div style="display:grid;gap:12px;min-width:0">${sales}${g.summit && g.summit.round === g.round ? summit + mission + auction : mission + auction + summit}</div>
+      <div style="display:grid;gap:12px;min-width:0">${sales}${g.summit && g.summit.round === g.round ? summit + mission + auction : mission + auction + summit}<div class="hint">Everyone has a secret mission. They're revealed on the final screen.</div></div>
       <div style="display:grid;gap:12px;min-width:0">
         <div class="ctl"><span class="lbl">Wildcard (one per round)</span><div class="choices"><label class="choice"><input type="radio" name="wildcard" value="" ${d.wildcard ? "" : "checked"}><span><b>No wildcard</b><small>Keep your cards for later.</small></span></label>${cards}</div></div>
         ${target}
@@ -2438,6 +2558,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "help") inner = helpModal();
     if (S.modal === "show") inner = showModal();
     if (S.modal === "online") inner = onlineModal();
+    if (S.modal === "mission") inner = briefingModal();
     if (S.modal === "wait") inner = waitModal();
     if (S.modal === "board") inner = boardModal();
     if (S.modal === "soon") inner = soonModal();
@@ -2498,7 +2619,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <ol class="steps">
         <li><span><b>Watch the news.</b> Each round starts with broadcasts: news that changes demand, costs or interest this round.</span></li>
         <li><span><b>Read (left menu, part 1).</b> <b>Market</b> shows how big each customer group is and what rivals did. <b>Reports</b> has your profit, cash, balance and cost per unit. Like TOPSIM, the maths is up to you.</span></li>
-        <li><span><b>Decide (left menu, part 2).</b> Go top to bottom: Production (price, amount, quality), R&amp;D, Marketing, Retail (own stores, from round ${S.game ? diff().retailUnlockRound : 3}), Finance (loans), Takeovers (shares, from round ${S.game ? diff().takeoverUnlockRound : 3}) and the Boardroom (wildcards, auctions, votes, your secret mission). A ✓ shows which tabs you've visited this round.</span></li>
+        <li><span><b>Decide (left menu, part 2).</b> Go top to bottom: Production (price, amount, quality), R&amp;D, Marketing, Retail (own stores, from round ${S.game ? diff().retailUnlockRound : 3}), Finance (loans), Takeovers (shares, from round ${S.game ? diff().takeoverUnlockRound : 3}) and the Boardroom (wildcards, auctions, votes). A ✓ shows which tabs you've visited this round.</span></li>
         <li><span><b>Watch the strip above the menu.</b> It shows what's special this round: a required vote, an open auction, something newly unlocked, or the final round.</span></li>
         <li><span><b>Submit.</b> You'll see your decision sheet first. Then everyone's decisions are resolved together and you get your results.</span></li>
       </ol>
@@ -2529,6 +2650,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="grid2">
         ${r.research && r.research.spy ? spyCard(r.research.spy) : ""}
         ${r.research && r.research.boardSeats ? boardSeatCard(r.research.boardSeats, r.round) : ""}
+        ${c.mission && !c.bankrupt && !S.game.finished ? missionCard(false) : ""}
         <div class="card"><h3>What happened</h3>${r.events.length || heads.length ? `<div class="feed" style="max-height:none">${r.events.map((e) => `<div class="msg"><span class="icon">YOU</span><div>${esc(e)}</div></div>`).join("")}${heads.map((t) => `<div class="msg"><span class="icon news">NEWS</span><div>${esc(t)}</div></div>`).join("")}</div>` : `<div class="hint">A quiet round. Suspiciously quiet.</div>`}</div>
       </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-continue" data-autofocus>Plan round ${S.game.round}</button></div>
@@ -3078,7 +3200,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       sfx("profit"); saveGame(); renderModal(); bindModal();
     });
     on("#btn-tv-next", "click", () => { S.tvIndex++; renderModal(); bindModal(); });
-    on("#btn-tv-done", "click", () => { S.modal = needsVote() ? "vote" : null; S.tvQueue = []; render(); });
+    on("#btn-tv-done", "click", () => { S.modal = missionPending() ? "mission" : needsVote() ? "vote" : null; S.tvQueue = []; render(); });
+    on("#btn-mission-ok", "click", () => { S.missionSeen = true; if (S.mp) { try { localStorage.setItem("ft-mission-" + MP.gameId, "1"); } catch (e) {} } sfx("click"); S.modal = needsVote() ? "vote" : null; saveGame(); render(); });
     on("[data-vote]", "click", (e) => { S.draft.vote = e.currentTarget.dataset.vote; sfx("click"); S.modal = S.afterVote || null; S.afterVote = null; render(); });
     on("[data-edit]", "click", (e) => { S.tab = e.currentTarget.dataset.edit; S.modal = null; render(); });
     on("#btn-confirm", "click", () => {
@@ -3095,6 +3218,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.afterVote = null;
       if (S.modal === "help") { try { localStorage.setItem("ft-help-seen", "1"); } catch (e) {} }
       if (S.modal === "help" && S.pendingTv) { S.pendingTv = false; S.modal = "tv"; S.tvIndex = 0; renderModal(); bindModal(); return; }
+      if (S.modal === "help" && missionPending()) { S.modal = "mission"; renderModal(); bindModal(); return; }
       S.modal = null; renderModal(); bindModal();
     });
     on("#btn-menu-final", "click", goTitle);

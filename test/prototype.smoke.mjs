@@ -35,6 +35,13 @@ if (!/How to play/.test(doc.querySelector(".overlay")?.textContent || "")) throw
 click("#btn-close");
 while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
 if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+// Then the secret mission briefing, once.
+if (!/Your secret mission/.test(doc.querySelector(".overlay")?.textContent || "")) throw new Error("mission briefing missing at the start");
+click("#btn-mission-ok");
+if (doc.querySelector("#btn-mission-ok")) throw new Error("briefing should close");
+if (!doc.querySelector(".agenda .mchip")) throw new Error("mission chip missing from the round strip");
+click(".agenda .mchip");
+if (!doc.querySelector(".dossier.big .mbar, .dossier.big .ds-line")) throw new Error("mission dossier missing in the boardroom");
 // Menu goes back to the title, Continue resumes.
 click("#btn-menu");
 if (!doc.querySelector(".title-screen") || doc.getElementById("t-continue").disabled) throw new Error("menu/continue broken");
@@ -148,6 +155,7 @@ for (let r = 1; r <= 8; r++) {
   if (r === 5 && sellTried && !/Sold \d+ shares of/.test(doc.body.textContent)) throw new Error("share sale missing from results: " + doc.querySelector(".overlay").textContent.slice(0, 600));
   if (r < 8) {
     if (!doc.querySelector("#btn-continue")) throw new Error("no results after round " + r);
+    if (!doc.querySelector(".overlay .dossier")) throw new Error("mission progress missing from results in round " + r);
     click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
     // Breaking news plays on the TV before the next round.
     while (doc.querySelector("#btn-tv-next")) { tvShown++; tvTags.add(doc.querySelector(".tv-tag").textContent); click("#btn-tv-next"); }
@@ -162,13 +170,13 @@ if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen m
 {
   click("#btn-again"); click("#btn-start");
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
-  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
   const D = window.__ftDebug, g = D.S.game;
   const bot = g.companies[1]; bot.cash = -50_000_000; bot.debt = 6_000_000;
   D.endRound(); if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
   click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
-  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
   if (!/Bankruptcy sale/.test(doc.querySelector(".agenda").textContent)) throw new Error("bankruptcy sale not announced");
   click('[data-tab="boardroom"]');
   const bid = doc.querySelector('input[id^="f-bk-"]');
@@ -178,7 +186,7 @@ if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen m
   if (!/buys what's left of|trampoline/.test(doc.querySelector(".overlay").textContent + D.S.game.feed.map((f) => f.headline).join(" "))) throw new Error("bankruptcy sale not resolved");
   click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
-  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
   // A takeover by the player: the results show, the boardroom scene and renaming.
   {
     const S0 = D.S, t = S0.game.companies.find((c) => c.id !== "you" && !c.bankrupt && !c.controlledBy);
@@ -197,7 +205,7 @@ if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen m
     if (!/It's now called/.test(doc.querySelector(".overlay").textContent)) throw new Error("rename failed");
     while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
     while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
-    if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+    if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
     if (doc.querySelector("[data-vote]")) click('[data-vote="a"]');
   }
   // Monopoly: hand the player majority control of every company still alive.
@@ -219,7 +227,7 @@ click("#btn-start");
 if (!/AI/.test(doc.querySelector(".topbar .sub").textContent)) throw new Error("new AI game did not start");
 if (!/ROUND 1 \/ 6/.test(doc.querySelector(".topbar .round").textContent)) throw new Error("rounds setting ignored");
 while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
-if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
 click('[data-tab="production"]');
 if (!doc.getElementById("f-hire") || !/teams/.test(doc.getElementById("staff-note").textContent)) throw new Error("tycoon staff control missing");
 click('[data-step="f-hire"][data-dir="1"]');

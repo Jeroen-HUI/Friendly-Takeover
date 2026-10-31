@@ -150,6 +150,8 @@ const closeIntro = () => {
   if (/How to play/.test($(".overlay")?.textContent || "")) click("#btn-close");
   while ($("#btn-tv-next")) click("#btn-tv-next");
   if ($("#btn-tv-done")) click("#btn-tv-done");
+  if (!/Your secret mission/.test($(".overlay")?.textContent || "")) throw new Error("mission briefing should follow the intro");
+  click("#btn-mission-ok");
 };
 const closeResults = () => {
   if ($("#btn-show-done")) click("#btn-show-done");
