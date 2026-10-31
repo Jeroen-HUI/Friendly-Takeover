@@ -63,7 +63,13 @@ click('[data-tab="reports"]');
 if (!/Y0/.test(doc.querySelector(".tbl thead").textContent)) throw new Error("year 0 missing from reports");
 click('[data-tab="retail"]');
 if (!/unlock in round 3/.test(doc.body.textContent)) throw new Error("retail should be locked in round 1");
-click("#btn-sfx"); click("#btn-music"); click("#btn-music");
+click("#btn-options");
+if (doc.querySelectorAll(".overlay .switch").length < 6) throw new Error("options switches missing");
+click('[data-pref="music"]'); click('[data-pref="music"]'); click('[data-pref="sfx"]'); click('[data-pref="sfx"]');
+{ const v = doc.querySelector('[data-vol="sfx"]'); v.value = "40"; v.dispatchEvent(new window.Event("input")); if (doc.getElementById("vol-sfx").textContent !== "40%") throw new Error("volume label"); }
+click('[data-theme-pick="light"]'); if (doc.documentElement.dataset.theme !== "light") throw new Error("theme switch");
+click('[data-theme-pick="dark"]');
+click("#btn-close");
 click('[data-tab="market"]');
 click('input[name="research"][value="competitors"]');
 click('input[name="research"][value="forecast"]');

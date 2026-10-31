@@ -347,6 +347,27 @@ button[data-tip] { cursor: pointer; }
 .boardroom canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
 .title-chip { display: inline-block; font-size: 11px; font-weight: 900; padding: 1px 7px; border-radius: 999px; background: var(--gold); color: #2b1d00; margin: 2px 4px 2px 0; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
+.optwin { width: min(620px, 100%) !important; }
+.ogroup { display: grid; gap: 2px; }
+.ogroup h3 { margin: 6px 0 4px; font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.orow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 12px; background: var(--panel-2); border-radius: 8px; margin-bottom: 4px; }
+.otext { display: grid; gap: 2px; min-width: 0; }
+.otext b { font-size: 14.5px; }
+.otext small { font-size: 12px; color: var(--muted); font-weight: 700; }
+.octl { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.octl input[type="range"] { width: 120px; }
+.octl .vol { width: 38px; text-align: right; font-size: 12.5px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--muted); }
+.switch { position: relative; width: 50px; height: 28px; border-radius: 14px; border: 0; cursor: pointer; background: var(--bg-deep); box-shadow: inset 0 2px 0 rgba(0,0,0,0.35), 0 0 0 2px #0b1027; transition: background 160ms; flex-shrink: 0; }
+.switch i { position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: #c9d2f0; box-shadow: 0 2px 0 rgba(0,0,0,0.3); transition: left 160ms; }
+.switch[aria-checked="true"] { background: var(--good); }
+.switch[aria-checked="true"] i { left: 26px; background: #fff; }
+.seg { display: inline-flex; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 2px #0b1027; }
+.seg button { border: 0; cursor: pointer; padding: 7px 14px; font-weight: 900; font-size: 13px; background: var(--panel-3); color: var(--ink); }
+.seg button[aria-checked="true"] { background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.5); }
+.btn.danger { background: linear-gradient(#ff7b7b, var(--bad)); color: #fff; }
+@media (max-width: 520px) { .orow { flex-wrap: wrap; } .octl input[type="range"] { width: 100px; } }
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation: none !important; transition: none !important; }
 details.howto summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
 details.howto summary::-webkit-details-marker { display: none; }
 details.howto summary::after { content: "▸ show"; margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 900; }
@@ -616,6 +637,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
     cv.width = rows[0].length; cv.height = rows.length;
     rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") { g.fillStyle = IC[ch]; g.fillRect(x, y, 1, 1); } }));
   }
+  // Player preferences (this browser only).
+  const PREFS = { anim: true, tv: true, show: true };
+  try { Object.assign(PREFS, JSON.parse(localStorage.getItem("ft-prefs") || "{}")); } catch (e) {}
+  function savePrefs() { try { localStorage.setItem("ft-prefs", JSON.stringify(PREFS)); } catch (e) {} }
+  function reduceMotion() { return !PREFS.anim || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
+  document.documentElement.dataset.motion = PREFS.anim ? "on" : "off";
   const isDay = () => document.documentElement.dataset.theme === "light";
   function applyTheme(t) {
     document.documentElement.dataset.theme = t === "light" ? "light" : "dark";
@@ -702,7 +729,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     cancelAnimationFrame(titleRaf);
     const cv = $("#title-bg");
     if (!cv) return;
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reduceMotion();
     let last = -1;
     const tick = (now) => {
       if (!document.body.contains(cv)) return;
@@ -869,16 +896,27 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function optionsModal() {
     const save = loadSave();
-    return `<div class="win"><div class="win-title">Options<span class="x" aria-hidden="true">×</span></div><div class="win-body">
-      <div class="ctl"><span class="lbl">Look</span><div class="choices" role="radiogroup" aria-label="Look">
-        <label class="choice"><input type="radio" name="theme" value="dark" ${isDay() ? "" : "checked"}><span><b>Night</b><small>Dark city, neon lights</small></span></label>
-        <label class="choice"><input type="radio" name="theme" value="light" ${isDay() ? "checked" : ""}><span><b>Day</b><small>Blue sky, light screens</small></span></label></div></div>
-      <div class="kv"><div><span>Sound effects</span><b>${SND.sfx ? "On" : "Off"}</b></div><div><span>Music</span><b>${SND.music ? "On" : "Off"}</b></div></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" type="button" id="o-sfx">Turn sound effects ${SND.sfx ? "off" : "on"}</button>
-        <button class="btn" type="button" id="o-music">Turn music ${SND.music ? "off" : "on"}</button>
-        <button class="btn" type="button" id="o-tutorial">Show How to play on next start</button>
-        <button class="btn" type="button" id="o-delete" ${save ? "" : "disabled"}>Delete saved game</button>
+    let helpOn = false;
+    try { helpOn = !localStorage.getItem("ft-help-seen"); } catch (e) {}
+    const sw = (key, on, label) => `<button type="button" class="switch" role="switch" aria-checked="${on}" data-pref="${key}" aria-label="${label}"><i></i></button>`;
+    const vol = (key, v, label) => `<input type="range" min="0" max="100" step="5" value="${Math.round(v * 100)}" data-vol="${key}" aria-label="${label}"><span class="vol" id="vol-${key}">${Math.round(v * 100)}%</span>`;
+    const row = (title, desc, ctl) => `<div class="orow"><div class="otext"><b>${title}</b><small>${desc}</small></div><div class="octl">${ctl}</div></div>`;
+    return `<div class="win optwin"><div class="win-title">Options<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="ogroup"><h3>Display</h3>
+        ${row("Look", "Night city or daytime", `<div class="seg" role="radiogroup" aria-label="Look"><button type="button" role="radio" aria-checked="${!isDay()}" data-theme-pick="dark">Night</button><button type="button" role="radio" aria-checked="${isDay()}" data-theme-pick="light">Day</button></div>`)}
+        ${row("Animations", "Coins, confetti, moving skyline, sliding screens", sw("anim", PREFS.anim, "Animations"))}
+      </div>
+      <div class="ogroup"><h3>Sound</h3>
+        ${row("Sound effects", "Clicks, cash, news jingles", sw("sfx", SND.sfx, "Sound effects") + vol("sfx", SND.sfxVol, "Sound effects volume"))}
+        ${row("Music", "Chiptune loop while you play", sw("music", SND.music, "Music") + vol("music", SND.musicVol, "Music volume"))}
+      </div>
+      <div class="ogroup"><h3>Game</h3>
+        ${row("TV news between rounds", "Off: news only shows in the News tab", sw("tv", PREFS.tv, "TV news between rounds"))}
+        ${row("Results show", "Reveal everyone's numbers one by one after each round", sw("show", PREFS.show, "Results show"))}
+        ${row("How to play", "Show the guide when you start your next game", sw("help", helpOn, "How to play"))}
+      </div>
+      <div class="ogroup"><h3>Saved game</h3>
+        ${row(save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game", "Your game saves in this browser after every round", `<button class="btn danger small" type="button" id="o-delete" ${save ? "" : "disabled"}>Delete</button>`)}
       </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-close" data-autofocus>Done</button></div></div></div>`;
   }
@@ -907,7 +945,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.chat.push({ round: 1, kind: "system", text: "Welcome to " + ind().name + ". " + game.config.rounds + " rounds, one winner (or one monopoly). Last year's numbers (year 0) are in Reports and Market: everyone starts equal." });
     for (const n of game.news) S.chat.push({ round: 1, kind: "news", text: n.event.headline + (n.targetCompanyId ? " (it's " + byId(n.targetCompanyId).companyName + ")" : "") });
     resetDraft();
-    S.tvQueue = game.news.filter((n) => n.event.kind !== "economy").map(newsItem);
+    S.tvQueue = PREFS.tv ? game.news.filter((n) => n.event.kind !== "economy").map(newsItem) : [];
     if (showTv && S.tvQueue.length) { S.modal = "tv"; S.tvIndex = 0; }
     let seen = false;
     try { seen = !!localStorage.getItem("ft-help-seen"); } catch (e) {}
@@ -1038,7 +1076,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ? [{ scene: "anchor", variant: "shop", short: "RETAIL OPENS: BUILD YOUR OWN STORES", full: "From this round every company can open its own stores. Check the new Retail tab.", chips: [{ label: "New: Retail tab", good: true }], rounds: 0 }]
       : [];
     const specials = specialTv(S.game.feed.filter((f) => f.round === round || f.round === round + 1));
-    S.tvQueue = [...specials.filter((x) => x.tag !== "Showdown"), ...unlocks, ...fresh];
+    S.tvQueue = PREFS.tv ? [...specials.filter((x) => x.tag !== "Showdown"), ...unlocks, ...fresh] : [];
     S.newsIdx = 0;
     const v = FT.companyValues(S.game);
     for (const c of S.game.companies) S.hist[c.id].push(v[c.id]);
@@ -1051,7 +1089,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.anim = { from: prevValues, to: v, start: performance.now() };
     S.flash = Object.fromEntries(S.game.companies.map((c) => [c.id, v[c.id] >= prevValues[c.id] ? "up" : "down"]));
     S.show = { round, before: prevValues, after: v };
-    S.modal = "show";
+    S.modal = PREFS.show ? "show" : S.game.finished ? (S.boardQueue.length ? "board" : "final") : "results";
     resetDraft();
     saveGame();
     render();
@@ -1106,7 +1144,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
-      <span class="tools"><button class="btn snd" id="btn-sfx" type="button" aria-pressed="${SND.sfx}">SFX ${SND.sfx ? "on" : "off"}</button><button class="btn snd" id="btn-music" type="button" aria-pressed="${SND.music}">Music ${SND.music ? "on" : "off"}</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
+      <span class="tools"><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
       ${g.finished ? "" : `<button class="btn go" id="btn-submit" type="button">${needsVote() ? "Vote, then submit" : "Submit decisions"}</button>`}
     </header>`;
   }
@@ -1752,7 +1790,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   let tvRaf = 0;
   function runTv() {
     cancelAnimationFrame(tvRaf);
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reduceMotion();
     const start = performance.now();
     const tick = (now) => {
       const canvases = document.querySelectorAll("canvas[data-tv]");
@@ -1803,17 +1841,33 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- sound ----------------
-  const SND = { ctx: null, sfx: true, music: false, master: null, musicTimer: 0, nextNote: 0, step: 0, lastTick: 0 };
-  try { const pref = JSON.parse(localStorage.getItem("ft-sound") || "{}"); if (typeof pref.sfx === "boolean") SND.sfx = pref.sfx; if (typeof pref.music === "boolean") SND.music = pref.music; } catch (e) {}
-  function saveSound() { try { localStorage.setItem("ft-sound", JSON.stringify({ sfx: SND.sfx, music: SND.music })); } catch (e) {} }
+  const SND = { ctx: null, sfx: true, music: false, sfxVol: 0.7, musicVol: 0.5, master: null, sfxBus: null, musicBus: null, musicTimer: 0, nextNote: 0, step: 0, lastTick: 0 };
+  try {
+    const pref = JSON.parse(localStorage.getItem("ft-sound") || "{}");
+    if (typeof pref.sfx === "boolean") SND.sfx = pref.sfx;
+    if (typeof pref.music === "boolean") SND.music = pref.music;
+    if (typeof pref.sfxVol === "number") SND.sfxVol = Math.max(0, Math.min(1, pref.sfxVol));
+    if (typeof pref.musicVol === "number") SND.musicVol = Math.max(0, Math.min(1, pref.musicVol));
+  } catch (e) {}
+  function saveSound() { try { localStorage.setItem("ft-sound", JSON.stringify({ sfx: SND.sfx, music: SND.music, sfxVol: SND.sfxVol, musicVol: SND.musicVol })); } catch (e) {} }
+  function setVolume(kind, v) {
+    if (kind === "sfx") SND.sfxVol = v; else SND.musicVol = v;
+    const bus = kind === "sfx" ? SND.sfxBus : SND.musicBus;
+    if (bus) bus.gain.value = v * (kind === "sfx" ? 1.4 : 1.6);
+    saveSound();
+  }
   function audio() {
     if (SND.ctx) return SND.ctx;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
-    try { SND.ctx = new AC(); SND.master = SND.ctx.createGain(); SND.master.gain.value = 0.5; SND.master.connect(SND.ctx.destination); } catch (e) { SND.ctx = null; }
+    try {
+      SND.ctx = new AC(); SND.master = SND.ctx.createGain(); SND.master.gain.value = 0.5; SND.master.connect(SND.ctx.destination);
+      SND.sfxBus = SND.ctx.createGain(); SND.sfxBus.gain.value = SND.sfxVol * 1.4; SND.sfxBus.connect(SND.master);
+      SND.musicBus = SND.ctx.createGain(); SND.musicBus.gain.value = SND.musicVol * 1.6; SND.musicBus.connect(SND.master);
+    } catch (e) { SND.ctx = null; }
     return SND.ctx;
   }
-  function tone(freq, start, dur, type, vol, slideTo) {
+  function tone(freq, start, dur, type, vol, slideTo, bus) {
     const ac = SND.ctx;
     if (!ac) return;
     const o = ac.createOscillator(), g = ac.createGain();
@@ -1823,7 +1877,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     g.gain.setValueAtTime(0.0001, start);
     g.gain.exponentialRampToValueAtTime(vol || 0.12, start + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    o.connect(g); g.connect(SND.master);
+    o.connect(g); g.connect(bus || SND.sfxBus || SND.master);
     o.start(start); o.stop(start + dur + 0.02);
   }
   function noise(start, dur, vol) {
@@ -1833,7 +1887,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     for (let k = 0; k < data.length; k++) data[k] = (Math.random() * 2 - 1) * (1 - k / data.length);
     const src = ac.createBufferSource(), g = ac.createGain();
     src.buffer = buf; g.gain.value = vol || 0.08;
-    src.connect(g); g.connect(SND.master); src.start(start);
+    src.connect(g); g.connect(SND.sfxBus || SND.master); src.start(start);
   }
   const NOTE = (n) => 440 * Math.pow(2, (n - 69) / 12);
   function sfx(name) {
@@ -1865,8 +1919,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const stepDur = 0.16;
     while (SND.nextNote < ac.currentTime + 0.4) {
       const s = SND.step % 32;
-      if (MELODY[s]) tone(NOTE(MELODY[s]), SND.nextNote, stepDur * 0.9, "square", 0.025);
-      if (s % 2 === 0) tone(NOTE(BASS[(s / 2) % 16]), SND.nextNote, stepDur * 1.8, "triangle", 0.05);
+      if (MELODY[s]) tone(NOTE(MELODY[s]), SND.nextNote, stepDur * 0.9, "square", 0.025, 0, SND.musicBus);
+      if (s % 2 === 0) tone(NOTE(BASS[(s / 2) % 16]), SND.nextNote, stepDur * 1.8, "triangle", 0.05, 0, SND.musicBus);
       SND.nextNote += stepDur;
       SND.step++;
     }
@@ -1887,7 +1941,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   document.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("button");
     if (!b || b.disabled) return;
-    if (b.id === "btn-submit" || b.id === "btn-sfx" || b.id === "btn-music") return;
+    if (b.id === "btn-submit" || b.dataset.pref) return;
     sfx(b.dataset.tab ? "tab" : "click");
   });
   document.addEventListener("input", (e) => {
@@ -2187,7 +2241,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   // Celebration layers: coins for a profit, a little rain for a loss, confetti for a win.
   function fxLayer(kind) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return "";
+    if (reduceMotion()) return "";
     const r = seeded(kind + (S.game ? S.game.round : 0)), n = kind === "confetti" ? 60 : kind === "coins" ? 26 : 34;
     const cols = ["#ffd166", "#ff5c9a", "#4fd987", "#3d8bff", "#b15cff", "#ff6b3d"];
     let out = "";
@@ -2199,7 +2253,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="fx-layer" aria-hidden="true">${out}</div>`;
   }
   function countUp(root) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (reduceMotion()) return;
     const els = [...root.querySelectorAll("[data-count]")];
     if (!els.length) return;
     const start = performance.now(), D = 900;
@@ -2252,7 +2306,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function runShow() {
     const box = $("#srows");
     if (!box) return;
-    const rows = [...box.children], reduce = matchMedia("(prefers-reduced-motion: reduce)").matches || window.__ftFast;
+    const rows = [...box.children], reduce = reduceMotion() || window.__ftFast;
     const finish = () => {
       const order = [...rows].sort((a, b) => S.show.after[b.dataset.sid] - S.show.after[a.dataset.sid]);
       const h = rows[0].getBoundingClientRect().height + 6;
@@ -2295,7 +2349,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const cv = $("#board-cv"), item = S.boardQueue[S.boardIndex];
     const g = cv && cv.getContext && cv.getContext("2d");
     if (!g || !item) return;
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches || window.__ftFast;
+    const reduce = reduceMotion() || window.__ftFast;
     const start = performance.now(), played = new Set();
     const once = (key, fn) => { if (!played.has(key)) { played.add(key); fn(); } };
     const tick = (now) => {
@@ -2471,7 +2525,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   let cityFrame = 0, lastCityDraw = 0;
   function animateSkyline() {
     cancelAnimationFrame(rafId);
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reduceMotion();
     if (reduce) { drawCity(1); S.anim = null; return; }
     drawCity(S.anim ? 0 : 1);
     const tick = (now) => {
@@ -2669,8 +2723,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       renderModal(); bindModal();
     });
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
-    on("#btn-sfx", "click", () => { SND.sfx = !SND.sfx; saveSound(); sfx("click"); render(); });
-    on("#btn-music", "click", () => { setMusic(!SND.music); render(); });
+    on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
     for (const id of Object.keys(RANGES)) on("#" + id, "input", (e) => setRange(id, Number(e.target.value)));
     on('input[id^="f-bk-"]', "input", (e) => setRange(e.target.id, Number(e.target.value)));
     on("[data-step]", "click", (e) => {
@@ -2736,7 +2789,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("[data-edit]", "click", (e) => { S.tab = e.currentTarget.dataset.edit; S.modal = null; render(); });
     on("#btn-confirm", "click", () => {
       const win = modal.querySelector(".win");
-      if (win && !matchMedia("(prefers-reduced-motion: reduce)").matches && !window.__ftFast) {
+      if (win && !reduceMotion() && !window.__ftFast) {
         sfx("submit");
         const st = document.createElement("div"); st.className = "stamp"; st.textContent = "Submitted!"; win.appendChild(st);
         setTimeout(() => { S.modal = null; endRound(true); }, 650);
@@ -2750,11 +2803,20 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.modal = null; renderModal(); bindModal();
     });
     on("#btn-menu-final", "click", goTitle);
-    on('input[name="theme"]', "change", (e) => { applyTheme(e.target.value); sfx("click"); render(); });
-    on("#o-sfx", "click", () => { SND.sfx = !SND.sfx; saveSound(); sfx("click"); renderModal(); bindModal(); });
-    on("#o-music", "click", () => { setMusic(!SND.music); renderModal(); bindModal(); });
-    on("#o-tutorial", "click", (e) => { try { localStorage.removeItem("ft-help-seen"); } catch (er) {} e.currentTarget.textContent = "Done: it shows next game"; });
-    on("#o-delete", "click", () => { try { localStorage.removeItem("ft-save"); } catch (e) {} S.modal = null; render(); });
+    on("[data-theme-pick]", "click", (e) => { applyTheme(e.currentTarget.dataset.themePick); sfx("click"); render(); });
+    on("[data-pref]", "click", (e) => {
+      const key = e.currentTarget.dataset.pref;
+      if (key === "sfx") { SND.sfx = !SND.sfx; saveSound(); }
+      else if (key === "music") setMusic(!SND.music);
+      else if (key === "help") { try { if (localStorage.getItem("ft-help-seen")) localStorage.removeItem("ft-help-seen"); else localStorage.setItem("ft-help-seen", "1"); } catch (er) {} }
+      else { PREFS[key] = !PREFS[key]; savePrefs(); if (key === "anim") { document.documentElement.dataset.motion = PREFS.anim ? "on" : "off"; if (S.screen === "title") runTitle(); else if (S.game) animateSkyline(); } }
+      sfx("click");
+      const btn = modal.querySelector(`[data-pref="${key}"]`);
+      if (btn) btn.setAttribute("aria-checked", btn.getAttribute("aria-checked") === "true" ? "false" : "true");
+    });
+    on("[data-vol]", "input", (e) => { const k = e.target.dataset.vol, v = Number(e.target.value) / 100; setVolume(k, v); const l = modal.querySelector("#vol-" + k); if (l) l.textContent = Math.round(v * 100) + "%"; });
+    on('[data-vol="sfx"]', "change", () => sfx("profit"));
+    on("#o-delete", "click", () => { try { localStorage.removeItem("ft-save"); } catch (e) {} renderModal(); bindModal(); if (S.screen === "title") { const m = S.modal; render(); S.modal = m; renderModal(); bindModal(); } });
     on("#btn-again", "click", () => { S.modal = "setup"; renderModal(); bindModal(); });
     on("#btn-start", "click", () => {
       const val = (name) => (modal.querySelector(`input[name="${name}"]:checked`) || {}).value;
