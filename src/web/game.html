@@ -357,6 +357,8 @@ button[data-tip] { cursor: pointer; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .optwin { width: min(620px, 100%) !important; }
 .lobby { max-width: 1000px; width: 100%; margin: 0 auto; }
+.hostcard { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 2px solid var(--gold); }
+.hostcard a.btn { text-decoration: none; }
 /* Secret mission: a manila folder that looks the same by day and night. */
 .dossier, .folder { position: relative; padding: 14px 16px 12px; border-radius: 4px 10px 10px 10px; background: linear-gradient(#f0d898, #e2c27a); color: #3b2a0c; box-shadow: inset 0 -4px 0 rgba(90,60,10,0.25), 0 0 0 2px #8a6420; min-width: 0; }
 .dossier::before, .folder::before { content: ""; position: absolute; left: -2px; top: -14px; width: 110px; height: 14px; border-radius: 6px 6px 0 0; background: #e8ca86; box-shadow: 0 0 0 2px #8a6420; clip-path: inset(-3px -3px 0 -3px); }
@@ -1002,6 +1004,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // Online multiplayer (Supabase). The server runs the engine; each player gets their own view.
   // ======================================================================
   const SB_URL = "https://jdtoluouqkaughquyjqx.supabase.co", SB_KEY = "sb_publishable_2pgQZ8LpIh2roQxnhbl9uA_BZBB2qN9";
+  // Online play needs a normal web page; some previews (like the Claude artifact viewer) block outside connections.
+  const PLAY_URL = "https://jeroen-hui.github.io/Friendly-Takeover/";
+  const onHostedPage = () => { try { return /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === "file:"; } catch (e) { return false; } };
+  const OFFLINE = "Couldn't reach the online service from this page.";
   // Plain REST calls (no extra library): auth, database (row-level security does the guarding) and the game server.
   let AUTH = null;
   function loadAuth() { if (AUTH) return AUTH; try { AUTH = JSON.parse(localStorage.getItem("ft-auth") || "null"); } catch (e) {} return AUTH; }
@@ -1010,7 +1016,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const headers = { apikey: SB_KEY, "Content-Type": "application/json", ...(opts.headers || {}) };
     if (auth) { const a = await session(); headers.Authorization = "Bearer " + a.access_token; }
     let res;
-    try { res = await fetch(SB_URL + path, { ...opts, headers }); } catch (e) { throw new Error("Couldn't reach the online service. Check your internet connection."); }
+    try { res = await fetch(SB_URL + path, { ...opts, headers }); } catch (e) { throw Object.assign(new Error(OFFLINE), { offline: true }); }
     const text = await res.text();
     let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
     if (!res.ok) throw Object.assign(new Error((j && (j.error || j.message || j.msg || j.error_description)) || "Online service error " + res.status), { status: res.status, code: j && (j.error_code || j.code) });
@@ -1175,7 +1181,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const ROUND_TIMES = [[120, "2 min"], [300, "5 min"], [600, "10 min"], [900, "15 min"], [86400, "1 day"]];
   function lobbyScreen() {
     const g = MP.game, host = mpIsHost(), dis = host ? "" : "disabled";
-    const link = location.origin + location.pathname + "?join=" + g.code;
+    const link = (onHostedPage() && location.protocol !== "file:" ? location.origin + location.pathname : PLAY_URL) + "?join=" + g.code;
     const players = MP.players.map((p, i) => `<div class="lplayer" style="--pc:var(${COLORS[i % COLORS.length]})"><canvas data-tavatar="${p.id === MP.playerId ? "you" : p.id}" data-color="${i}" width="12" height="12" aria-hidden="true"></canvas><div style="min-width:0"><b>${esc(p.player_name)}${p.id === MP.playerId ? " (you)" : ""}</b><div class="muted" style="font-size:12.5px">${esc(p.company_name)} · ${esc(TRAITS[p.trait] ? TRAITS[p.trait][0] : p.trait)}</div></div>${p.is_host ? '<span class="title-chip">host</span>' : ""}</div>`).join("")
       + Array.from({ length: g.bot_count || 0 }, (_, k) => `<div class="lplayer bot"><span class="botface">🤖</span><div><b>Bot ${k + 1}</b><div class="muted" style="font-size:12.5px">${g.bot_skill === "hard" ? "Hard" : "Normal"} bot</div></div></div>`).join("");
     const sel = (name, opts, cur) => `<div class="seg" role="radiogroup">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${String(cur) === String(v)}" data-set="${name}" data-val="${v}" ${dis}>${n}</button>`).join("")}</div>`;
@@ -1226,7 +1232,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function onlineModal() {
     const o = S.opts || DEFAULT_OPTS, saved = mpLocal(), code = S.joinCode || "";
     return `<div class="win"><div class="win-title">Multiplayer<span class="x" aria-hidden="true">×</span></div><div class="win-body">
-      ${S.onlineError ? `<div class="note neg">${esc(S.onlineError)}</div>` : ""}
+      ${S.onlineError ? `<div class="note neg">${esc(S.onlineError)}${S.onlineError === OFFLINE ? (onHostedPage() ? " Check your internet connection and try again." : " This preview blocks online play: open the hosted game instead.") : ""}</div>` : ""}
+      ${!onHostedPage() ? `<div class="card hostcard"><div><b>Play online from the hosted page</b><div class="hint">This preview can't connect to the game server. Open the game in your browser and choose Multiplayer there.</div></div><a class="btn go" href="${PLAY_URL}${S.joinCode ? "?join=" + esc(S.joinCode) : ""}" target="_blank" rel="noopener">Open the online game</a></div>` : ""}
       <div class="form">
         <div class="ctl"><label for="mp-name">Your name</label><input type="text" id="mp-name" maxlength="24" value="${esc(o.name === "You" ? "" : o.name)}" placeholder="Jeroen"></div>
         <div class="ctl"><label for="mp-company">Company name</label><input type="text" id="mp-company" maxlength="32" value="${esc(o.company)}"></div>
