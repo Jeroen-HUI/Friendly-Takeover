@@ -54,9 +54,13 @@ export function oracleDecisions(pos: Position, state: GameState, c: Company, rng
   for (const u of [0.1, 0.25]) consider({ ...b0, investCapacity: c.capacity * u * 5 * ind.baseUnitCost }, 2);
   const b1 = best.d;
   for (const n of [0, 2, RETAIL.maxOpenPerRound]) if (n !== (b1.storesOpen ?? 0)) consider({ ...b1, storesOpen: n }, 3);
+  let chosen = best.d;
   if (state.config.difficulty === "tycoon") {
-    const need = Math.ceil((best.d.production ?? 0) / teamOutput(ind));
-    return { ...best.d, hire: Math.max(-10, Math.min(10, need - c.workers)) };
+    const need = Math.ceil((chosen.production ?? 0) / teamOutput(ind));
+    chosen = { ...chosen, hire: Math.max(-10, Math.min(10, need - c.workers)) };
   }
-  return best.d;
+  // Investor call: forecast from its own model run (rivals assumed to repeat, dice unknown).
+  const { c: sim } = run(state, c, { ...chosen, guidance: null }, salt + 3);
+  const h = sim.history.at(-1)!;
+  return { ...chosen, guidance: { units: h.sold, profit: Math.round(h.profit) } };
 }

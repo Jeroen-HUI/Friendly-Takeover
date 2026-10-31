@@ -14,7 +14,7 @@ export type AuctionItemId = "endorsement" | "patent" | "factory" | "location";
 export type RegulationId = "luxuryTax" | "bargainBan" | "influencerLaw" | "middleClassCut" | "cheapCredit" | "greenRules";
 export interface Mission { id: MissionId; targetId?: string }
 /** Market research a player can buy for a round (like TOPSIM's market research reports). */
-export type ResearchId = "competitors" | "survey" | "forecast";
+export type ResearchId = "competitors" | "survey" | "forecast" | "marketStudy" | "buyerPanel";
 
 /** One player's choices for one round. Every field is optional: missing fields keep last round's value. */
 export interface Decisions {
@@ -61,7 +61,11 @@ export interface Decisions {
   journalistTarget: string | null;
   /** Tycoon only: production teams to hire (positive) or lay off (negative). */
   hire: number;
+  /** Investor call (optional): what you tell investors you'll sell and earn this round. */
+  guidance: { units: number; profit: number } | null;
 }
+
+export type GuidanceResult = "hit" | "close" | "miss";
 
 /** What a bought research report reveals, delivered with the round report. */
 export interface ResearchResult {
@@ -87,6 +91,10 @@ export interface ResearchResult {
   forecast?: { round: number; news: { headline: string; effect: NewsEffect; duration: number; kind: "story" | "economy" }[] };
   /** Board seats: owning 25% or more of a company gives you a copy of its round report. */
   boardSeats?: { companyId: string; companyName: string; held: number; report: Pick<RoundReport, "price" | "quality" | "produced" | "sold" | "revenue" | "profit" | "cashEnd" | "debtEnd" | "marketingCost" | "rndCost" | "capacityInvest" | "stores"> }[];
+  /** Market study: what every buyer group was worth in the round just played, and the outlook for the next one (news included). */
+  marketStudy?: { round: number; potential: Record<SegmentId, number>; next: { round: number; potential: Record<SegmentId, number> } | null };
+  /** Buyer panel: how price-sensitive each buyer group is in this game, relative to usual (1 = usual, 1.1 = 10% more sensitive). */
+  buyerPanel?: Record<SegmentId, number>;
   /** Spy wildcard: one rival's full plan for the round. */
   spy?: { companyId: string; companyName: string; decisions: Omit<Decisions, "wildcard" | "journalistTarget"> };
 }
@@ -134,6 +142,10 @@ export interface Company {
   workers: number;
   /** Bankrupt players: exposés that hit. */
   journalistPoints: number;
+  /** Total units ever produced (year 0 included): drives the experience curve. */
+  cumProduced?: number;
+  /** Investor trust from the investor call, -2..3: moves company value and the interest rate. */
+  credibility?: number;
   /** Average production cost of the units in inventory. */
   inventoryUnitCost: number;
   shares: ShareRegister;
@@ -209,6 +221,19 @@ export interface RoundReport {
   sharePrice: number;
   segments: Record<SegmentId, SegmentSales>;
   events: string[];
+  /** Cost sheet details (optional for older saves). */
+  materialIndex?: number;
+  experienceFactor?: number;
+  /** Cost per unit before overtime (material, labour and quality, after the experience curve). */
+  unitCostBase?: number;
+  utilization?: number;
+  overtimeUnits?: number;
+  overtimeCost?: number;
+  idleUnits?: number;
+  idleCost?: number;
+  /** Investor call: what was promised, how it went, and the trust level after. */
+  guidance?: { units: number; profit: number; result: GuidanceResult; unitsErr: number; profitErr: number };
+  credibility?: number;
 }
 
 export interface NewsEffect {
@@ -271,7 +296,9 @@ export interface GameState {
   publicValues?: Record<string, number>;
   publicSharePrices?: Record<string, number>;
   /** Market size and total sales per segment for every round played (year 0 included). */
-  marketLog?: { round: number; potential: Record<SegmentId, number>; sold: Record<SegmentId, number> }[];
+  marketLog?: { round: number; potential: Record<SegmentId, number>; sold: Record<SegmentId, number>; materialIndex?: number; avgPrice?: number }[];
+  /** Hidden market drivers (server only online): raw material price index for the coming round, slow trends per buyer group, and this game's price sensitivity per group. */
+  market?: { materialIndex: number; trend?: Record<SegmentId, number>; sensitivity?: Record<SegmentId, number> };
   /** Special rounds announced a round ahead (Black Friday, Investor Day). */
   specialEvents?: { round: number; id: "blackFriday" | "investorDay" }[];
   /** Bankrupt companies whose factory and stores are auctioned off in a given round. */

@@ -80,6 +80,29 @@ click("#btn-close");
 click('[data-tab="market"]');
 click('input[name="research"][value="competitors"]');
 click('input[name="research"][value="forecast"]');
+click('input[name="research"][value="marketStudy"]');
+click('input[name="research"][value="buyerPanel"]');
+// The desk: calculator with keyboard and click-to-paste, and notes.
+click("#btn-calc");
+if (!doc.querySelector("#calcwin:not([hidden]) .lcd")) throw new Error("calculator did not open");
+for (const k of ["1", "2", "+", "3", "0", "="]) window.document.dispatchEvent(new window.KeyboardEvent("keydown", { key: k, bubbles: true }));
+if (doc.querySelector(".lcd-num").textContent !== "42") throw new Error("calculator maths: " + doc.querySelector(".lcd-num").textContent);
+click('#calcwin [data-k="×"]'); click('#calcwin [data-k="2"]'); click('#calcwin [data-k="="]');
+if (doc.querySelector(".lcd-num").textContent !== "84") throw new Error("calculator keys: " + doc.querySelector(".lcd-num").textContent);
+click('[data-tab="reports"]');
+doc.querySelector(".tbl td.num[data-tip]").click();
+if (!/pasted/.test(doc.querySelector(".lcd-top").textContent)) throw new Error("click-to-paste did not work");
+click('#calcwin [data-ctab="notes"]');
+{ const ta = doc.getElementById("notes-ta"); ta.value = "Premium is shrinking?"; ta.dispatchEvent(new window.Event("input", { bubbles: true })); }
+click('#calcwin [data-ctab="calc"]'); click("#calc-close");
+if (!doc.querySelector("#calcwin[hidden]")) throw new Error("calculator did not close");
+// Investor call: promise numbers in Finance.
+click('[data-tab="finance"]');
+if (!/Investor call/.test(doc.body.textContent)) throw new Error("investor call missing");
+click("#g-on");
+{ const u = doc.getElementById("g-units"), p = doc.getElementById("g-profit"); u.value = "700k"; u.dispatchEvent(new window.Event("input")); p.value = "-50k"; p.dispatchEvent(new window.Event("input")); }
+if (!window.__ftDebug.S.draft.guidance || window.__ftDebug.S.draft.guidance.units !== 700000 || window.__ftDebug.S.draft.guidance.profit !== -50000) throw new Error("guidance not parsed: " + JSON.stringify(window.__ftDebug.S.draft.guidance));
+click('[data-tab="market"]');
 const tvTags = new Set();
 let auctionSeen = false, summitSeen = false, votePopups = 0, sellTried = false;
 for (let r = 1; r <= 8; r++) {
@@ -116,7 +139,8 @@ for (let r = 1; r <= 8; r++) {
   }
   if (r === 2) {
     click('[data-tab="production"]');
-    if (!/Planning data/.test(doc.body.textContent)) throw new Error("planning data missing");
+    if (/Planning data/.test(doc.body.textContent)) throw new Error("planning answers should be gone");
+    if (!/Your factory/.test(doc.body.textContent) || !/Overtime above/.test(doc.body.textContent)) throw new Error("factory card missing");
     const q1 = doc.querySelector('input[name="quality"][value="1"]');
     if (!q1.disabled) throw new Error("quality should not go down after round 1");
     click('[data-tab="reports"]'); click('[data-report="groups"]');
@@ -141,7 +165,8 @@ for (let r = 1; r <= 8; r++) {
     if (!/Your stores: 2/.test(doc.body.textContent)) throw new Error("stores not opened");
     if (!/Sold in your stores/.test(doc.body.textContent)) throw new Error("store sales missing");
     click('[data-tab="market"]');
-    if (!/Market outlook/.test(doc.body.textContent) || /Forecast/.test(doc.body.textContent)) throw new Error("market tab wrong");
+    if (!/Market report for round/.test(doc.body.textContent) || !/Material index/.test(doc.body.textContent) || /Market outlook/.test(doc.body.textContent)) throw new Error("market tab wrong");
+    if (!/Your market studies/.test(doc.body.textContent) || !/Buyer panel/.test(doc.body.textContent)) throw new Error("bought market study / buyer panel missing");
     click('[data-tab="reports"]');
     if (!doc.querySelector(".tbl td[data-tip]")) throw new Error("reports table missing");
     click('[data-tab="news"]');
@@ -152,6 +177,8 @@ for (let r = 1; r <= 8; r++) {
   click("#btn-confirm"); if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
   await wait(5);
   if (r === 1 && !/Spy report/.test(doc.body.textContent)) throw new Error("spy report missing");
+  if (r === 1 && !/Investor call/.test(doc.querySelector(".overlay").textContent)) throw new Error("investor call result missing");
+  if (r === 1 && window.__ftDebug.S.notes !== "Premium is shrinking?") throw new Error("notes not kept");
   if (r === 5 && sellTried && !/Sold \d+ shares of/.test(doc.body.textContent)) throw new Error("share sale missing from results: " + doc.querySelector(".overlay").textContent.slice(0, 600));
   if (r < 8) {
     if (!doc.querySelector("#btn-continue")) throw new Error("no results after round " + r);

@@ -298,6 +298,8 @@ button[data-tip] { cursor: pointer; }
 .tbl th, .tbl td { padding: 6px 7px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: left; white-space: nowrap; }
 .tbl th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .tbl .r { text-align: right; }
+.tbl.compact th, .tbl.compact td { padding: 6px 5px; }
+.tbl.compact th { letter-spacing: 0.02em; }
 .tbl tr.me td { background: rgba(243, 144, 47, 0.12); }
 .tbl tr.total td { font-weight: 900; border-top: 2px solid rgba(255,255,255,0.15); }
 .tbl tr.locked-row td { opacity: 0.5; }
@@ -357,6 +359,47 @@ button[data-tip] { cursor: pointer; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .optwin { width: min(620px, 100%) !important; }
 .lobby { max-width: 1000px; width: 100%; margin: 0 auto; }
+.calcwin { position: fixed; right: 16px; bottom: 16px; width: 292px; z-index: 30; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
+.calcwin[hidden] { display: none; }
+.calcwin .win-title { cursor: move; gap: 8px; user-select: none; touch-action: none; }
+.calc-tabs { display: flex; gap: 4px; margin-left: auto; }
+.calc-tabs button { border: 0; border-radius: 5px; padding: 3px 8px; font: inherit; font-size: 11px; cursor: pointer; background: var(--panel-3); color: var(--ink); }
+.calc-tabs button[aria-selected="true"] { background: var(--gold); color: #2b1d00; }
+.calc-x { border: 0; cursor: pointer; font: inherit; }
+.calcwin .win-body { gap: 8px; padding: 10px; }
+.lcd { background: #b9c99a; color: #1d2a12; border-radius: 6px; padding: 6px 10px 8px; box-shadow: inset 0 3px 0 rgba(0,0,0,0.25), inset 0 0 0 2px #5d6b45; font-family: var(--font-display); }
+.lcd-top { display: flex; justify-content: space-between; gap: 8px; min-height: 15px; font-size: 11px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lcd-num { text-align: right; font-size: 26px; font-weight: 700; line-height: 1.15; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.key { border: 0; border-radius: 7px; padding: 9px 0; font-family: var(--font-display); font-size: 16px; font-weight: 700; cursor: pointer; background: var(--panel-3); color: var(--ink); box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), 0 0 0 2px #0b1027; }
+.key:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3), 0 0 0 2px #0b1027; }
+.key.op { background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); }
+.key.op.armed { outline: 3px solid var(--gold); outline-offset: -3px; }
+.key.eq { background: linear-gradient(#5fd08a, #2e9a5c); color: #062614; }
+.key.clr { background: linear-gradient(#ff7a6b, #d1453a); color: #fff; }
+.key.mem, .key.fn { font-size: 12.5px; }
+:root[data-theme="light"] .key { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.12), 0 0 0 2px #c9b896; }
+.tape { font-size: 12px; font-weight: 800; display: grid; gap: 2px; max-height: 92px; overflow-y: auto; font-variant-numeric: tabular-nums; }
+.notes { width: 100%; min-height: 260px; resize: vertical; border: 0; border-radius: 7px; padding: 10px; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 700; font-size: 13.5px; line-height: 1.45; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
+.btn.calcbtn[aria-pressed="true"] { background: linear-gradient(#5fd08a, #2e9a5c); color: #062614; }
+.pasted { animation: pasted 600ms ease-out; }
+@keyframes pasted { from { background: rgba(255, 200, 60, 0.55); } to { background: transparent; } }
+@media (max-width: 640px) { .calcwin { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 70vh; overflow-y: auto; } .key { padding: 11px 0; } }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--gold); font: inherit; font-weight: 900; text-decoration: underline; cursor: pointer; }
+.trust { display: flex; gap: 4px; margin: 4px 0; }
+.trust .pip { flex: 1; text-align: center; padding: 5px 0; border-radius: 5px; background: var(--panel-3); font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--muted); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
+.trust .pip.zero { outline: 2px dashed var(--muted); outline-offset: -3px; }
+.trust .pip.on { background: var(--good); color: #062614; }
+.trust .pip.bad { background: var(--bad); color: #fff; }
+.gtoggle > span { grid-template-columns: 1fr; }
+.invcall .form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.invcall input[type="text"] { font-family: var(--font-display); letter-spacing: 0.04em; }
+.gres { padding: 2px 8px; border-radius: 5px; font-size: 12px; }
+.gres.hit, .gchip.hit { background: var(--good); color: #062614; }
+.gres.close, .gchip.close { background: var(--gold); color: #2b1d00; }
+.gres.miss, .gchip.miss { background: var(--bad); color: #fff; }
+.gchip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 900; }
+td.gold { color: var(--gold); font-weight: 900; }
 .hostcard { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 2px solid var(--gold); }
 .hostcard a.btn { text-decoration: none; }
 /* Secret mission: a manila folder that looks the same by day and night. */
@@ -565,13 +608,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const TABS = [...READ_TABS, ...DECIDE_TABS];
   const INTRO = {
     news: "<b>Read:</b> this round's news and what it does to demand, costs or interest. Rivals' chatter is in the feed.",
-    market: "<b>Read:</b> how big each customer group is this round, who sold to whom, and what rivals charged and sold. <b>Decide:</b> whether to buy market research.",
+    market: "<b>Read:</b> the market report, the history and what rivals charged and sold. The split per buyer group is in a paid Market study. <b>Decide:</b> which research is worth the money.",
     reports: "<b>Read:</b> your own numbers from every round so far: profit, cash, balance, production and the cost per unit.",
     production: "<b>Decide:</b> your price, how many to make, the quality, and whether to build more capacity for next round.",
     rnd: "<b>Decide:</b> how much to spend on research. Enough of it unlocks the next quality level.",
     marketing: "<b>Decide:</b> your campaign type and budget, and how much to spend on brand building.",
     retail: "<b>Decide:</b> whether to open or close your own stores and what to charge in them.",
-    finance: "<b>Decide:</b> borrow or repay. Check here that you have the cash for everything you planned.",
+    finance: "<b>Decide:</b> borrow or repay, and your investor call: forecast your sales and profit. Hit it and investors trust you more.",
     takeovers: "<b>Decide:</b> whether to buy shares in rivals, buy back your own, and how much to stake if it comes to a showdown.",
     boardroom: "<b>Decide:</b> your wildcard, auction bid and summit vote. Your secret mission and its progress are here too.",
   };
@@ -757,6 +800,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { localStorage.setItem("ft-save", JSON.stringify({ ...S, anim: null, modal: null, screen: "game", tvQueue: [], afterVote: null })); } catch (e) {}
   }
   function goTitle() {
+    CALC.open = false;
     saveGame();
     if (S && S.mp) mpStop();
     cancelAnimationFrame(rafId); cancelAnimationFrame(tvRaf);
@@ -1270,6 +1314,152 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }
   }
 
+
+  // ======================================================================
+  // The desk: a pixel calculator and a notepad, floating above the game.
+  // Click any number in a table while it's open to paste it in.
+  // ======================================================================
+  const CALC = { open: false, tab: "calc", cur: "0", acc: null, op: null, fresh: true, mem: 0, tape: [], pos: null, flash: "" };
+  try { const p = JSON.parse(localStorage.getItem("ft-calc-pos") || "null"); if (p && Number.isFinite(p.x)) CALC.pos = p; } catch (e) {}
+  const OPS = { "+": (a, b) => a + b, "−": (a, b) => a - b, "×": (a, b) => a * b, "÷": (a, b) => (b === 0 ? NaN : a / b) };
+  const calcVal = () => Number(CALC.cur);
+  const tidy = (x) => (Number.isFinite(x) ? Math.round(x * 1e9) / 1e9 : NaN);
+  function calcFmt(str) {
+    if (str === "Error") return str;
+    const n = String(str), neg = n.startsWith("-"), [a, b] = (neg ? n.slice(1) : n).split(".");
+    const big = Number(a) >= 1e15 ? Number(n).toExponential(6) : null;
+    if (big) return big;
+    return (neg ? "−" : "") + Number(a || 0).toLocaleString("en") + (b !== undefined ? "." + b : "");
+  }
+  const numFmt = (x) => calcFmt(String(tidy(x)));
+  function calcPress(k) {
+    const C = CALC;
+    if (C.cur === "Error" && k !== "C") { C.cur = "0"; C.fresh = true; }
+    if (/^[0-9]$/.test(k)) {
+      if (C.fresh) { C.cur = k; C.fresh = false; }
+      else if (C.cur.replace(/[-.]/g, "").length < 15) C.cur = C.cur === "0" ? k : C.cur === "-0" ? "-" + k : C.cur + k;
+    } else if (k === ".") {
+      if (C.fresh) { C.cur = "0."; C.fresh = false; } else if (!C.cur.includes(".")) C.cur += ".";
+    } else if (k === "⌫") {
+      if (!C.fresh) { C.cur = C.cur.slice(0, -1); if (C.cur === "" || C.cur === "-") { C.cur = "0"; C.fresh = true; } }
+    } else if (k === "C") {
+      if (C.cur !== "0" && !C.fresh) { C.cur = "0"; C.fresh = true; } else { C.acc = null; C.op = null; C.cur = "0"; C.fresh = true; }
+    } else if (k === "±") {
+      C.cur = C.cur.startsWith("-") ? C.cur.slice(1) : C.cur === "0" ? "0" : "-" + C.cur;
+    } else if (k === "%") {
+      const v = calcVal();
+      C.cur = String(tidy(C.acc !== null && (C.op === "+" || C.op === "−") ? (C.acc * v) / 100 : v / 100)); C.fresh = true;
+    } else if (OPS[k]) {
+      if (C.acc !== null && C.op && !C.fresh) calcEquals(false);
+      C.acc = calcVal(); C.op = k; C.fresh = true;
+    } else if (k === "=") calcEquals(true);
+    else if (k === "MC") C.mem = 0;
+    else if (k === "MR") { C.cur = String(tidy(C.mem)); C.fresh = true; }
+    else if (k === "M+") { C.mem = tidy(C.mem + calcVal()); C.fresh = true; }
+    else if (k === "M−") { C.mem = tidy(C.mem - calcVal()); C.fresh = true; }
+    renderCalcBody();
+  }
+  function calcEquals(log) {
+    const C = CALC;
+    if (C.acc === null || !C.op) return;
+    const b = calcVal(), r = tidy(OPS[C.op](C.acc, b));
+    if (log) C.tape.push(`${numFmt(C.acc)} ${C.op} ${numFmt(b)} = ${Number.isFinite(r) ? numFmt(r) : "Error"}`);
+    if (C.tape.length > 30) C.tape.shift();
+    C.cur = Number.isFinite(r) ? String(r) : "Error"; C.acc = null; C.op = null; C.fresh = true;
+  }
+  function calcPaste(n, label) {
+    CALC.cur = String(tidy(n)); CALC.fresh = true; CALC.flash = label || "";
+    renderCalcBody();
+  }
+  const CALC_KEYS = [["MC", "mem"], ["MR", "mem"], ["M+", "mem"], ["M−", "mem"], ["C", "clr"], ["⌫", "fn"], ["%", "fn"], ["÷", "op"], ["7"], ["8"], ["9"], ["×", "op"], ["4"], ["5"], ["6"], ["−", "op"], ["1"], ["2"], ["3"], ["+", "op"], ["±", "fn"], ["0"], ["."], ["=", "eq"]];
+  function calcHtml() {
+    const C = CALC;
+    const notes = notesGet();
+    return `<div class="win-title" id="calc-drag"><span>Desk</span><span class="calc-tabs" role="tablist"><button type="button" role="tab" data-ctab="calc" aria-selected="${C.tab === "calc"}">Calculator</button><button type="button" role="tab" data-ctab="notes" aria-selected="${C.tab === "notes"}">Notes</button></span><button class="x calc-x" type="button" id="calc-close" aria-label="Close the desk">×</button></div>
+      <div class="win-body" id="calc-body">${C.tab === "calc" ? calcBodyHtml() : `<textarea id="notes-ta" class="notes" placeholder="Your plan, assumptions, rivals' habits… Saved with this game." aria-label="Notes">${esc(notes)}</textarea><div class="hint">Saved automatically for this game.</div>`}</div>`;
+  }
+  function calcBodyHtml() {
+    const C = CALC;
+    return `<div class="lcd" aria-live="polite"><div class="lcd-top"><span>${C.mem ? "M " + numFmt(C.mem) : ""}</span><span>${C.acc !== null && C.op ? numFmt(C.acc) + " " + C.op : C.flash ? "pasted: " + esc(C.flash) : ""}</span></div><div class="lcd-num">${calcFmt(C.cur)}</div></div>
+      <div class="keys">${CALC_KEYS.map(([k, cls]) => `<button type="button" class="key ${cls || ""} ${C.op === k && C.fresh ? "armed" : ""}" data-k="${k}" aria-label="${{ "⌫": "Backspace", "±": "Plus or minus", "−": "Minus", "×": "Times", "÷": "Divide by", "M−": "Memory minus" }[k] || k}">${k}</button>`).join("")}</div>
+      <div class="tape" aria-label="Calculation history">${C.tape.length ? C.tape.slice(-6).map((t) => `<div>${esc(t)}</div>`).join("") : `<div class="muted">Tip: click any number in a table to paste it here. Keyboard works too.</div>`}</div>`;
+  }
+  function renderCalcBody() {
+    const b = $("#calc-body");
+    if (b && CALC.tab === "calc") b.innerHTML = calcBodyHtml();
+  }
+  let calcEl = null;
+  function renderCalc() {
+    if (!calcEl) {
+      calcEl = document.createElement("section");
+      calcEl.className = "win calcwin"; calcEl.id = "calcwin"; calcEl.setAttribute("aria-label", "Desk: calculator and notes");
+      document.body.appendChild(calcEl);
+      calcEl.addEventListener("click", (e) => {
+        const k = e.target.closest("[data-k]"), t = e.target.closest("[data-ctab]");
+        if (k) { calcPress(k.dataset.k); sfx("click"); }
+        if (t) { CALC.tab = t.dataset.ctab; renderCalc(); }
+        if (e.target.closest("#calc-close")) toggleCalc(false);
+      });
+      calcEl.addEventListener("input", (e) => { if (e.target.id === "notes-ta") notesSet(e.target.value); });
+      calcEl.addEventListener("pointerdown", calcDragStart);
+    }
+    calcEl.hidden = !CALC.open || !S || S.screen !== "game";
+    if (calcEl.hidden) return;
+    calcEl.innerHTML = calcHtml();
+    if (CALC.pos && window.innerWidth > 640) { calcEl.style.left = Math.min(CALC.pos.x, window.innerWidth - 120) + "px"; calcEl.style.top = Math.min(Math.max(0, CALC.pos.y), window.innerHeight - 60) + "px"; calcEl.style.right = "auto"; calcEl.style.bottom = "auto"; }
+    else { calcEl.style.left = calcEl.style.top = calcEl.style.right = calcEl.style.bottom = ""; }
+  }
+  function toggleCalc(open) {
+    CALC.open = open === undefined ? !CALC.open : open;
+    renderCalc();
+    const b = $("#btn-calc"); if (b) b.setAttribute("aria-pressed", String(CALC.open));
+  }
+  function calcDragStart(e) {
+    if (!e.target.closest("#calc-drag") || e.target.closest("button") || window.innerWidth <= 640) return;
+    const r = calcEl.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+    const move = (ev) => { CALC.pos = { x: Math.max(0, Math.min(window.innerWidth - 80, ev.clientX - dx)), y: Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - dy)) }; calcEl.style.left = CALC.pos.x + "px"; calcEl.style.top = CALC.pos.y + "px"; calcEl.style.right = "auto"; calcEl.style.bottom = "auto"; };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); try { localStorage.setItem("ft-calc-pos", JSON.stringify(CALC.pos)); } catch (er) {} };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+    e.preventDefault();
+  }
+  // Notes live with the game: in the save for single-player, per game code online.
+  function notesKey() { return S && S.mp && MP.gameId ? "ft-notes-" + MP.gameId : null; }
+  function notesGet() { const k = notesKey(); if (k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } } return (S && S.notes) || ""; }
+  let notesTimer = 0;
+  function notesSet(v) { const k = notesKey(); if (k) { try { localStorage.setItem(k, v); } catch (e) {} } else if (S) { S.notes = v; clearTimeout(notesTimer); notesTimer = setTimeout(saveGame, 600); } }
+  // Keyboard: digits and operators go to the calculator while it's open (not while typing in a field).
+  document.addEventListener("keydown", (e) => {
+    if (!CALC.open || CALC.tab !== "calc" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    const map = { "+": "+", "-": "−", "*": "×", x: "×", "/": "÷", Enter: "=", "=": "=", Backspace: "⌫", Delete: "C", Escape: "C", "%": "%", ",": ".", ".": "." };
+    const k = /^[0-9]$/.test(e.key) ? e.key : map[e.key];
+    if (!k) return;
+    e.preventDefault();
+    calcPress(k);
+  });
+  // Click a number anywhere (tables, key figures) to paste its exact value.
+  document.addEventListener("click", (e) => {
+    if (!CALC.open || CALC.tab !== "calc" || !e.target.closest) return;
+    if (e.target.closest("#calcwin, button, a, input, label, select, textarea")) return;
+    const el = e.target.closest("td.num, .kv > div, .kpi, .sumline, td[data-tip]");
+    if (!el) return;
+    const tip = el.getAttribute("data-tip") || (el.querySelector("[data-tip]") || {}).getAttribute?.("data-tip") || el.textContent;
+    const n = numberFrom(tip);
+    if (n == null) return;
+    calcPaste(n, (tip.split(/[:\n]/)[0] || "").trim().slice(0, 28));
+    el.classList.remove("pasted"); void el.offsetWidth; el.classList.add("pasted");
+  }, true);
+  // "Revenue, round 3: €1,234,567.89" → 1234567.89; "12.34%" → 12.34; "€1.2M" → 1200000.
+  function numberFrom(text) {
+    const t = String(text || "");
+    const part = t.includes(":") ? t.slice(t.lastIndexOf(":") + 1) : t;
+    const m = part.replace(/−/g, "-").match(/(-?)\s*€?\s*(-?)(\d[\d,]*(?:\.\d+)?)\s*([kKmM]\b)?/);
+    if (!m) return null;
+    let n = Number(m[3].replace(/,/g, ""));
+    if (m[4]) n *= /m/i.test(m[4]) ? 1e6 : 1e3;
+    return (m[1] || m[2]) ? -n : n;
+  }
+
   // ---------------- game flow ----------------
   function newGame(o, showTv) {
     const rng = new FT.Rng(Date.now() & 0x7fffffff);
@@ -1333,6 +1523,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (g.round === diff().takeoverUnlockRound) items.push(["takeovers", "new", "New: share trading is open"]);
     if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
     if (g.round === g.config.rounds) items.push(["finance", "gold", "Final round: the game ends after this one"]);
+    if (!me().bankrupt && !S.draft.guidance) items.push(["finance", "", "Investor call: give your forecast (optional)"]);
     const steps = `<span class="muted" style="font-size:12.5px;font-weight:800">Read the news, market and reports, go through the decision tabs, then press Submit.</span>`;
     return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}${missionChip()}</section>`;
   }
@@ -1473,6 +1664,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ---------------- render ----------------
   function render() {
     if (!S) return;
+    if (calcEl || CALC.open) renderCalc();
     if (S.screen === "lobby") {
       app.innerHTML = lobbyScreen();
       document.querySelectorAll("canvas[data-tavatar]").forEach((cv) => drawAvatar(cv, cv.dataset.tavatar, css(COLORS[Number(cv.dataset.color) % COLORS.length])));
@@ -1509,7 +1701,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="cashchip"${tipAttr("Cash: " + eurX(me().cash) + "\nDebt: " + eurX(me().debt))}><span>Cash</span><b class="num ${me().cash < 0 ? "neg" : ""}">${eur(me().cash)}</b></div>
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
-      <span class="tools"><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
+      <span class="tools"><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
       ${S.mp && !g.finished ? `<span class="mpchip" title="Online game ${esc(MP.game ? MP.game.code : "")}">ONLINE ${esc(MP.game ? MP.game.code : "")} · <b id="mp-timer"></b></span>` : ""}
       ${submitButton()}
     </header>`;
@@ -1599,14 +1791,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const last = c.history.at(-1);
     return `<div class="grid2">
       <div style="display:grid;gap:14px;min-width:0">
-        ${planningCard()}
+        ${factoryCard()}
         <div class="card"><h3>Prices this round</h3>${barChart(priceRows, { title: "Price per company", fmt: (v) => eur(v) })}<div class="hint">Your bar shows the price you're about to set; rivals show last round's price.</div></div>
         <div class="card"><h3>Your sales per round</h3>${barChart(salesRows, { title: "Units sold per round", fmt: units, line: { v: c.capacity, color: css("--gold"), label: "capacity" } })}
           <div class="hint">${last ? `Last round: sold ${units(last.sold)}${last.unmetDemand ? `, <span class="neg">missed ${units(last.unmetDemand)}</span>` : ""}, ${units(c.inventory)} left in stock.` : "No sales yet. Round 1 is a guess for everyone."}</div></div>
       </div>
       <div style="display:grid;gap:12px;min-width:0">
         ${stepper("f-price", "Price per " + i.labels.product, d.price, pMin, pMax, step, eur, `<div class="hint muted" style="font-size:12.5px">Cheap or premium is decided by the market: it depends on what your rivals charge and offer.</div>`)}
-        ${stepper("f-prod", "Production (" + i.labels.unit + ")", Math.min(d.production, c.capacity), 0, c.capacity, Math.max(1, Math.round(c.capacity / 100)), units, `<div class="hint muted" style="font-size:12.5px">Capacity ${units(c.capacity)}. Production costs are in Reports → Cost sheet.</div>`)}
+        ${stepper("f-prod", "Production (" + i.labels.unit + ")", Math.min(d.production, c.capacity), 0, c.capacity, Math.max(1, Math.round(c.capacity / 100)), units, `<div class="hint muted" style="font-size:12.5px">Capacity ${units(c.capacity)} · overtime above ${units(loadLines().over)} (+${Math.round(FT.COSTS.overtimePremium * 100)}% per unit) · idle machines below ${units(loadLines().idle)} cost money.</div>`)}
         <div class="ctl"><span class="lbl">${esc(i.labels.quality[0].toUpperCase() + i.labels.quality.slice(1))}</span><div class="qual" role="radiogroup" aria-label="Quality">${q}</div><div class="hint muted" style="font-size:12.5px">${qHint}</div></div>
         ${stepper("f-cap", "Build more " + i.labels.capacity, d.investCapacity, 0, 2000000, 20000, eur, `<div class="hint muted" style="font-size:12.5px" id="cap-note">${capNote()}</div>`)}
         ${S.game.config.difficulty === "tycoon" ? staffControl() : ""}
@@ -1621,25 +1813,19 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), i = ind(), out = FT.teamOutput(i), wage = FT.teamWage(i), T = FT.TYCOON, teams = c.workers + S.draft.hire;
     return `You have ${c.workers} teams. Each makes up to ${unitsX(out)} ${i.labels.unit} a round for ${eurX(wage)} in wages. Hiring costs ${eurX(wage * T.hireCostFactor)} per team, layoffs ${eurX(wage * T.severanceFactor)}. With ${teams} teams you can make ${unitsX(teams * out)}.`;
   }
-  // The numbers to plan production on (no forecast of your own sales: that's your job).
-  function planningCard() {
-    const c = me(), g = S.game, last = c.history.at(-1), mh = MH().filter((m) => m.round < S.game.round).at(-1), pot = FT.segmentPotential(g), u = ind().labels.unit;
-    if (!last || !mh) return "";
-    const rows = Object.keys(SEG).map((k) => {
-      const before = mh.potential[k], now = pot[k], ch = before ? now / before - 1 : 0, mine = last.segments[k];
-      return `<tr><td><b>${SEG[k]}</b></td>${td(units(before), unitsX(before) + " " + u)}${td(units(now), unitsX(now) + " " + u)}${td(Math.abs(ch) < 0.0005 ? "—" : signed(ch), "", ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted")}${td(units(mine.sold), unitsX(mine.sold) + " " + u + " sold to " + SEG[k].toLowerCase() + " buyers")}${td(pct(mine.share), (mine.share * 100).toFixed(2) + "% of all " + SEG[k].toLowerCase() + " sales")}</tr>`;
-    }).join("");
-    const demand = last.wholesaleSold + last.unmetDemand;
+  // Your factory's limits. How much will sell is the player's own forecast: the data is in Reports and Market.
+  function loadLines() { const c = me(), C = FT.COSTS; return { over: Math.floor(c.capacity * C.overtimeFrom), idle: Math.floor(c.capacity * C.idleBelow) }; }
+  function factoryCard() {
+    const c = me(), g = S.game, u = ind().labels.unit, L = loadLines(), C = FT.COSTS;
     const staffCap = g.config.difficulty === "tycoon" ? c.workers * FT.teamOutput(ind()) : Infinity;
-    return `<div class="card"><h3>Planning data</h3>
+    return `<div class="card"><h3>Your factory</h3>
       <div class="kv">
-        <div${tipAttr("Shops wanted " + unitsX(demand) + " " + u + " from you last round: " + unitsX(last.wholesaleSold) + " sold + " + unitsX(last.unmetDemand) + " missed")}><span>Shop demand last round</span><b>${units(demand)}</b></div>
-        ${g.round > diff().retailUnlockRound ? `<div${tipAttr(unitsX(last.retailDemand || 0) + " " + u + " wanted in your own stores")}><span>Store demand last round</span><b>${units(last.retailDemand || 0)}</b></div>` : ""}
         <div${tipAttr(unitsX(c.inventory) + " " + u + " in stock now")}><span>In stock now</span><b>${units(c.inventory)}</b></div>
         <div${tipAttr(unitsX(Math.min(c.capacity, staffCap)) + " " + u)}><span>Max you can make</span><b>${units(Math.min(c.capacity, staffCap))}</b></div>
+        <div${tipAttr("Every unit above " + unitsX(L.over) + " runs in overtime: " + Math.round(C.overtimePremium * 100) + "% more expensive")}><span>Overtime above</span><b>${units(L.over)}</b></div>
+        <div${tipAttr("Every unit of capacity you leave unused below " + unitsX(L.idle) + " costs " + eurX(C.idleCostRate * ind().baseUnitCost))}><span>Idle below</span><b>${units(L.idle)}</b></div>
       </div>
-      ${tbl(["Buyers", mh.round ? "Market R" + mh.round : "Market Y0", "Market R" + g.round, "Change", "You sold", "Your share"], rows)}
-      <div class="hint">Market = what each group would buy if every offer were average. This round's column includes growth and the news. Your price, quality and marketing decide how much of it you win.</div></div>`;
+      <div class="hint">How much will sell is your forecast to make. The numbers are in <button class="linkbtn" type="button" data-goto-report="groups">Reports</button> and the <button class="linkbtn" type="button" data-tab="market">Market</button> tab; a Market study gives each buyer group's outlook. The calculator is in the top bar.</div></div>`;
   }
 
   function capNote() { const i = ind(); return `Extra capacity costs ${eurX(FT.BALANCE.capacityCostPerUnit * i.baseUnitCost)} per ${i.labels.product} and is ready next round`; }
@@ -1683,18 +1869,61 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="kv"><div${tipAttr(eurX(v.you))}><span>Value</span><b>${eur(v.you)}</b></div><div${tipAttr(eurX(p.you))}><span>Share price</span><b>${eur(p.you)}</b></div><div${tipAttr(eurX(c.cash))}><span>Cash</span><b>${eur(c.cash)}</b></div><div${tipAttr(eurX(c.debt))}><span>Debt</span><b>${eur(c.debt)}</b></div></div>
       </div>
       <div style="display:grid;gap:12px;min-width:0">
-        ${stepper("f-loan", "Loan (borrow or repay)", d.loanChange, -Math.round(c.debt), Math.max(0, Math.round(creditLimitUI(c) - c.debt)), 50000, (x) => (x >= 0 ? "+" : "") + eur(x), `<div class="hint muted" style="font-size:12.5px"${tipAttr("Credit limit " + eurX(creditLimitUI(c)) + "\nDebt now " + eurX(c.debt))}>Interest ${((FT.BALANCE.baseInterest + fx.interest) * 100).toFixed(1).replace(".0", "")}% a round · the bank lends you up to ${eur(creditLimitUI(c))} in total</div>`)}
-        <div class="card"><h3>Cost rules</h3><div class="hint">Every cost rule (upkeep, interest, stores, capacity, credit limit) is in Reports → Cost sheet.</div><button class="btn small" type="button" data-goto-report="costs" style="justify-self:start">Open the cost sheet</button></div>
+        ${stepper("f-loan", "Loan (borrow or repay)", d.loanChange, -Math.round(c.debt), Math.max(0, Math.round(creditLimitUI(c) - c.debt)), 50000, (x) => (x >= 0 ? "+" : "") + eur(x), `<div class="hint muted" style="font-size:12.5px"${tipAttr("Credit limit " + eurX(creditLimitUI(c)) + "\nDebt now " + eurX(c.debt))}>Interest ${(rateNow() * 100).toFixed(1).replace(".0", "")}% a round · the bank lends you up to ${eur(creditLimitUI(c))} in total</div>`)}
+        ${investorCard()}
+        <div class="card"><h3>Cost rules</h3><div class="hint">Every cost rule (upkeep, interest, overtime, idle machines, materials, stores, capacity, credit limit) is in Reports → Cost sheet.</div><button class="btn small" type="button" data-goto-report="costs" style="justify-self:start">Open the cost sheet</button></div>
       </div></div>`;
+  }
+  const rateNow = () => Math.max(0.01, FT.BALANCE.baseInterest + fxNow().interest - FT.GUIDANCE.interestPerPoint * (me().credibility || 0));
+  // "750k", "1.2m", "-50 000", "€1,234" → number (NaN if it isn't one).
+  function parseAmount(str) {
+    const t = String(str || "").trim().toLowerCase().replace(/[€\s,_]/g, "").replace(/[−–]/g, "-");
+    const m = t.match(/^(-?\d*\.?\d+)([km]?)$/);
+    if (!m) return NaN;
+    return Number(m[1]) * (m[2] === "k" ? 1e3 : m[2] === "m" ? 1e6 : 1);
+  }
+  function trustText(cred) {
+    const G = FT.GUIDANCE;
+    return `Trust ${cred > 0 ? "+" : ""}${cred}: company value ${cred ? signed(G.valuePerPoint * cred) : "±0%"}, interest ${cred ? (cred > 0 ? "−" : "+") + (Math.abs(G.interestPerPoint * cred) * 100).toFixed(1) + " pt" : "normal"}`;
+  }
+  const RESULT_LABEL = { hit: "Spot on", close: "Close", miss: "Way off" };
+  function investorCard() {
+    const c = me(), d = S.draft, G = FT.GUIDANCE, cred = c.credibility || 0, open = !!(d.guidance || S.guidanceOpen);
+    const [lo, hi] = G.credibilityRange;
+    const pips = Array.from({ length: hi - lo + 1 }, (_, k) => lo + k).map((v) => `<span class="pip ${v === 0 ? "zero" : ""} ${(v > 0 && v <= cred) || (v < 0 && v >= cred) ? (v > 0 ? "on" : "bad") : ""}"${tipAttr(v === 0 ? "Neutral" : "Trust " + (v > 0 ? "+" : "") + v)}>${v > 0 ? "+" + v : v}</span>`).join("");
+    const last = c.history.at(-1), lg = last && last.guidance;
+    const inp = (id, label, val, ph) => `<div class="ctl"><label for="${id}">${label}</label><input type="text" inputmode="decimal" id="${id}" value="${val == null ? "" : val}" placeholder="${ph}" autocomplete="off"></div>`;
+    return `<div class="card invcall"><h3>Investor call</h3>
+      <div class="hint">Tell investors what you'll sell and earn this round. Within ${Math.round(G.hit[0] * 100)}% on ${esc(ind().labels.unit)} and ${Math.round(G.hit[1] * 100)}% on profit: <b class="pos">trust +1</b>. More than ${Math.round(G.miss[0] * 100)}% or ${Math.round(G.miss[1] * 100)}% off: <b class="neg">trust −1</b>. Skip it and nothing changes.</div>
+      <div class="trust" aria-label="Investor trust ${cred}">${pips}</div>
+      <div class="hint" style="font-weight:800">${trustText(cred)}</div>
+      <label class="choice gtoggle"><input type="checkbox" id="g-on" ${open ? "checked" : ""}><span><b>Give guidance this round</b><small>Profit counts every cost, interest and research included</small></span></label>
+      <div class="form" id="g-fields" ${open ? "" : "hidden"}>
+        ${inp("g-units", ind().labels.unit[0].toUpperCase() + ind().labels.unit.slice(1) + " you'll sell", d.guidance ? d.guidance.units : S.gDraft && S.gDraft.units, "e.g. 750k")}
+        ${inp("g-profit", "Profit this round (€)", d.guidance ? d.guidance.profit : S.gDraft && S.gDraft.profit, "e.g. 240k or -50k")}
+      </div>
+      <div class="hint" id="g-status">${guidanceStatus()}</div>
+      ${lg ? `<div class="sumline"><span class="muted">Last round you said</span><span class="num">${unitsX(lg.units)} · ${eurX(lg.profit)}</span></div><div class="sumline"><span class="muted">It was</span><span class="num">${unitsX(last.sold)} · ${eurX(last.profit)} <b class="gres ${lg.result}">${RESULT_LABEL[lg.result]}</b></span></div>` : ""}
+    </div>`;
+  }
+  function guidanceStatus() {
+    const d = S.draft;
+    if (d.guidance) return `Promising <b>${unitsX(d.guidance.units)}</b> ${esc(ind().labels.unit)} and <b>${eurX(d.guidance.profit)}</b> profit.`;
+    if (S.guidanceOpen) return `<span class="neg">Fill in both numbers (like 750k and 240k), or switch it off.</span>`;
+    return "No guidance this round.";
   }
   function costRules() {
     const i = ind(), B = FT.BALANCE, c = me(), fx = fxNow(), u = i.labels.product;
+    const C = FT.COSTS;
     const rules = [
-      ["Production cost", "See the cost sheet in Reports (depends on quality)"],
+      ["Production cost", "Standard cost per quality (left), then: raw material is " + Math.round(C.materialShare * 100) + "% of it and follows the material price index; news can move it; experience makes it cheaper over time"],
+      ["Experience", "The more you've made in total, the cheaper each unit gets. Compare your actual cost per unit (Production report) with the standard cost"],
+      ["Overtime", "Units above " + Math.round(C.overtimeFrom * 100) + "% of capacity cost " + Math.round(C.overtimePremium * 100) + "% more"],
+      ["Idle machines", eurX(C.idleCostRate * i.baseUnitCost) + " per unit of capacity left unused below " + Math.round(C.idleBelow * 100) + "% of capacity"],
       ["Factory upkeep", eurX(B.fixedCostPerCapacity * i.baseUnitCost) + " per " + u + " of capacity, every round"],
       ["Unsold stock", Math.round(B.holdingCostRate * 100) + "% of its production cost per round"],
       ["Extra capacity", eurX(B.capacityCostPerUnit * i.baseUnitCost) + " per " + u + ", ready next round; capacity wears " + Math.round(B.capacityDepreciation * 100) + "% a round"],
-      ["Interest", ((B.baseInterest + fx.interest) * 100).toFixed(1).replace(".0", "") + "% a round on debt at the start of the round"],
+      ["Interest", (rateNow() * 100).toFixed(1).replace(".0", "") + "% a round on debt at the start of the round (investor trust moves it)"],
       ["Emergency loan", "If cash ends below zero: automatic loan plus a " + Math.round(B.emergencyInterestPremium * 100) + "% fee"],
       ["Credit limit", "Half your company value, at least " + eurX(B.minCreditLimit) + " (yours now: " + eurX(creditLimitUI(me())) + ")"],
       ["Bankruptcy", "If emergency loans would push debt past " + eurX(B.maxDebt)],
@@ -2403,13 +2632,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const coCell = (id) => `<td><span class="dot" style="background:${colVar(id)}"></span>${esc(byId(id).companyName)}</td>`;
 
   function tabMarket() {
-    const i = ind(), g = S.game, pot = FT.segmentPotential(g), nm = newsMultipliers(), u = i.labels.unit;
-    const outlook = Object.keys(SEG).map((k) => {
-      const effect = nm.demand * nm.seg[k];
-      return `<tr><td><b>${SEG[k]}</b></td>${td(units(pot[k]), unitsX(pot[k]) + " " + u)}
-        ${td(effect > 1.001 || effect < 0.999 ? signed(effect - 1) : "—", "", effect > 1.001 ? "pos" : effect < 0.999 ? "neg" : "muted")}
-        <td class="muted">${{ budget: "Cheaper than the rest", mainstream: "Fair price, decent quality", premium: "Better quality and brand", hype: "More hype than the rest" }[k]}</td></tr>`;
-    }).join("");
+    const i = ind(), g = S.game, u = i.labels.unit;
     const played = g.companies.filter((c) => c.history.at(-1));
     const stacked = played.length ? Object.keys(SEG).map((k) => {
       const total = played.reduce((a, c) => a + c.history.at(-1).segments[k].sold, 0);
@@ -2417,42 +2640,90 @@ details.howto[open] summary::after { content: "▾ hide"; }
       return `<div class="segbar"><span>${SEG[k]}</span><div class="track stack">${parts}</div><span class="num"${tipAttr(unitsX(total) + " " + u + " sold")}>${units(total)}</span></div>`;
     }).join("") : "";
     const totalSold = played.reduce((a, c) => a + c.history.at(-1).sold, 0);
-    const v = CV(g), p = SP(g);
+    const p = SP(g);
     const rivals = g.companies.map((c) => {
       const h = c.history.at(-1);
-      return `<tr class="${c.id === "you" ? "me" : ""}">${coCell(c.id)}${td(h ? eur(h.price) : "—", h && eurX(h.price))}${td(h ? h.quality : "—")}${td(h ? units(h.sold) : "—", h && unitsX(h.sold) + " " + u)}${td(h && totalSold ? pct(h.sold / totalSold) : "—", h && totalSold && ((h.sold / totalSold) * 100).toFixed(2) + "% of all units")}${td(String(c.stores || 0))}${td(c.bankrupt ? "bankrupt" : eur(p[c.id]), eurX(p[c.id]))}</tr>`;
+      return `<tr class="${c.id === "you" ? "me" : ""}">${coCell(c.id)}${td(h ? eur(h.price) : "—", h && eurX(h.price))}${td(h ? h.quality : "—")}${td(h ? units(h.sold) : "—", h && unitsX(h.sold) + " " + u)}${td(h && totalSold ? pct(h.sold / totalSold) : "—", h && totalSold && ((h.sold / totalSold) * 100).toFixed(2) + "% of all units")}${td(String(c.stores || 0))}${h && h.guidance ? `<td class="r"><span class="gres ${h.guidance.result}"${tipAttr("Investor call last round: " + RESULT_LABEL[h.guidance.result].toLowerCase())}>${{ hit: "✓", close: "~", miss: "✗" }[h.guidance.result]}</span></td>` : td("—", "No guidance given", "muted")}${td(c.bankrupt ? "bankrupt" : eur(p[c.id]), eurX(p[c.id]))}</tr>`;
     }).join("");
     const research = Object.entries(FT.RESEARCH).map(([k, r]) => `<label class="choice"><input type="checkbox" name="research" value="${k}" ${S.draft.research.includes(k) ? "checked" : ""}><span><b>${r.name}<span class="num">${eur(r.cost)}</span></b><small>${r.description}</small></span></label>`).join("");
     return `<div class="grid2">
       <div style="display:grid;gap:14px;min-width:0">
-        <div class="card"><h3>Market outlook for round ${g.round}</h3>${tbl(["Segment", "Potential", "News", "Buyers look for"], outlook)}
-          <div class="hint">Potential = ${esc(u)} these buyers would take if every offer were average. Buyers compare companies with each other: what counts as cheap, good or hyped depends on what everyone else does. The market grows ${Math.round(i.growth * 100)}% a round.${nm.cost !== 1 ? " Production costs are " + signed(nm.cost - 1) + " this round." : ""}</div></div>
+        ${freeMarketReport()}
         ${stacked ? `<div class="card"><h3>Who sold to whom last round</h3>${stacked}</div>` : ""}
         ${marketHistoryCard()}
       </div>
       <div style="display:grid;gap:12px;min-width:0">
-        <div class="card"><h3>Competitors ${S.game.round === 1 ? "in year 0" : "last round"}</h3>${tbl(["Company", "Price", "Qual.", "Sold", "Share", "Stores", "Share price"], rivals)}<div class="hint">Their costs and plans stay secret unless you buy research.</div></div>
+        <div class="card"><h3>Competitors ${S.game.round === 1 ? "in year 0" : "last round"}</h3>${tbl(["Company", "Price", "Q", "Sold", "Share", "Stores", "Call", "€/share"], rivals).replace('class="tbl"', 'class="tbl compact"')}<div class="hint">Their costs and plans stay secret unless you buy research. Call = their last investor call: ✓ spot on, ~ close, ✗ way off.</div></div>
         <div class="card"><h3>Buy market research</h3><div class="research">${research}</div><div class="hint">Reports arrive with this round's results and show up below and in your round report.</div></div>
         ${researchResults()}
+        ${studiesCard()}
       </div></div>`;
+  }
+
+  // The free market report: totals only. Applying growth, trends and news is up to you.
+  function freeMarketReport() {
+    const g = S.game, H = MH(), last = H.filter((m) => m.round < g.round).at(-1), idx = (g.market && g.market.materialIndex) || 1, prevIdx = last && last.materialIndex;
+    const tot = (m) => Object.values(m.potential).reduce((a, b) => a + b, 0);
+    const nm = newsMultipliers(), u = ind().labels.unit;
+    const newsBits = [];
+    if (Math.abs(nm.demand - 1) > 0.0005) newsBits.push(["All buyers", nm.demand - 1]);
+    for (const k of Object.keys(SEG)) if (Math.abs(nm.seg[k] - 1) > 0.0005) newsBits.push([SEG[k] + " buyers", nm.seg[k] - 1]);
+    if (Math.abs(nm.cost - 1) > 0.0005) newsBits.push(["Production costs", nm.cost - 1]);
+    return `<div class="card"><h3>Market report for round ${g.round}</h3>
+      <div class="kv">
+        <div${tipAttr(last ? "Total market at average offers in " + (last.round ? "round " + last.round : "year 0") + ": " + unitsX(tot(last)) + " " + u : "")}><span>Market last round</span><b>${last ? units(tot(last)) : "—"}</b></div>
+        <div${tipAttr("The whole market grows about " + Math.round(ind().growth * 100) + "% a round. Single buyer groups can grow or shrink on top of that.")}><span>Normal growth</span><b>+${Math.round(ind().growth * 100)}%</b></div>
+        <div${tipAttr("Raw material price index this round: " + idx.toFixed(3) + (prevIdx ? " (last round " + prevIdx.toFixed(3) + ")" : "") + "\nMaterial is " + Math.round(FT.COSTS.materialShare * 100) + "% of your standard unit cost")}><span>Material index</span><b>${idx.toFixed(2)}${prevIdx ? ` <small class="${idx > prevIdx ? "neg" : idx < prevIdx ? "pos" : "muted"}">${idx > prevIdx ? "▲" : idx < prevIdx ? "▼" : "="}</small>` : ""}</b></div>
+      </div>
+      ${newsBits.length ? `<div class="fxrow" style="margin-top:4px">${newsBits.map(([k, x]) => `<span class="fx ${x > 0 === (k !== "Production costs") ? "up" : "down"}">${esc(k)} ${signed(x)}</span>`).join("")}</div>` : `<div class="hint">No news moves the market this round.</div>`}
+      <div class="hint">Nothing here is added up for you: take last round's numbers, apply growth, the news and the trends you spot in the history, and make your own forecast. A Market study gives the outlook per buyer group.</div></div>`;
   }
 
   function marketHistoryCard() {
     const H = MH(), u = ind().labels.unit;
     if (!H.length) return "";
     const head = ["", ...H.map((m) => (m.round ? "R" + m.round : "Y0"))];
-    const rows = Object.keys(SEG).map((k) => `<tr><td><b>${SEG[k]}</b> market</td>${H.map((m) => td(units(m.potential[k]), unitsX(m.potential[k]) + " " + u)).join("")}</tr><tr><td class="muted">${SEG[k]} sold</td>${H.map((m) => td(units(m.sold[k]), unitsX(m.sold[k]) + " " + u + " actually sold")).join("")}</tr>`).join("");
+    const tot = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+    const row = (label, f, fmt, tip, cls) => `<tr><td${cls ? ` class="${cls}"` : ""}>${label}</td>${H.map((m) => { const x = f(m); return x == null ? td("—") : td(fmt(x), tip(m, x)); }).join("")}</tr>`;
+    const rows = [
+      row("<b>Total market</b>", (m) => tot(m.potential), units, (m, x) => unitsX(x) + " " + u + " at average offers"),
+      row("Total sold", (m) => tot(m.sold), units, (m, x) => unitsX(x) + " " + u + " sold by everyone"),
+      row("Average price", (m) => m.avgPrice ?? null, (x) => eur(x), (m, x) => eurX(x)),
+      row("Material index", (m) => m.materialIndex ?? null, (x) => x.toFixed(2), (m, x) => "Raw material price index " + x.toFixed(3)),
+      ...Object.keys(SEG).map((k) => row(`<span class="muted">${SEG[k]} sold</span>`, (m) => m.sold[k], units, (m, x) => unitsX(x) + " " + u + " sold to " + SEG[k].toLowerCase() + " buyers")),
+    ].join("");
     const rivals = S.game.companies.map((c) => `<tr class="${c.id === "you" ? "me" : ""}">${coCell(c.id)}${H.map((m) => { const h = c.history.find((x) => x.round === m.round); return td(h ? eur(h.price) + " · " + units(h.sold) : "—", h ? (m.round ? "Round " + m.round : "Year 0") + ": price " + eurX(h.price) + ", quality " + h.quality + ", sold " + unitsX(h.sold) + " " + u : ""); }).join("")}</tr>`).join("");
-    return `<div class="card"><h3>Market history</h3>${tbl(head, rows)}<div class="hint">Market = potential at average offers. Sold = what all companies together actually sold.</div></div>
-      <div class="card"><h3>Rivals per round: price · sold</h3>${tbl(["Company", ...head.slice(1)], rivals)}</div>`;
+    return `<div class="card"><h3>Market history</h3>${tbl(head, rows)}<div class="hint">Total market = what everyone would buy at average offers. How it splits over the buyer groups is in your Market studies.</div></div>
+      <div class="card"><h3>Rivals per round: price · sold</h3>${tbl(["Company", ...head.slice(1)], rivals)}<div class="hint">Compare price changes with sales changes to see how price-sensitive buyers are in this game.</div></div>`;
+  }
+
+  // Every Market study you bought, side by side, plus the latest Buyer panel.
+  function studiesCard() {
+    const H = me().history, u = ind().labels.unit;
+    const studies = H.filter((h) => h.research && h.research.marketStudy).map((h) => h.research.marketStudy);
+    const panel = H.filter((h) => h.research && h.research.buyerPanel).at(-1);
+    if (!studies.length && !panel) return "";
+    let out = "";
+    if (studies.length) {
+      const latest = studies.at(-1), cols = studies.map((m) => "R" + m.round).concat(latest.next ? ["Outlook R" + latest.next.round] : []);
+      const rows = Object.keys(SEG).map((k) => `<tr><td><b>${SEG[k]}</b></td>${studies.map((m) => td(units(m.potential[k]), unitsX(m.potential[k]) + " " + u + " in round " + m.round)).join("")}${latest.next ? td(units(latest.next.potential[k]), unitsX(latest.next.potential[k]) + " " + u + " expected in round " + latest.next.round + ", news included", "gold") : ""}</tr>`).join("");
+      out += `<div class="card"><h3>Your market studies</h3>${tbl(["Buyer group", ...cols], rows)}<div class="hint">Potential per buyer group at average offers. Watch which groups grow and which shrink.</div></div>`;
+    }
+    if (panel) {
+      const b = panel.research.buyerPanel;
+      const rows = Object.keys(SEG).map((k) => { const x = b[k] - 1; return `<tr><td><b>${SEG[k]}</b></td>${td(Math.abs(x) < 0.005 ? "usual" : signed(x), "Price sensitivity " + (b[k] * 100).toFixed(1) + "% of usual", x > 0.005 ? "neg" : x < -0.005 ? "pos" : "muted")}<td class="muted">${x > 0.04 ? "React strongly to price" : x < -0.04 ? "Care less about price" : "About normal"}</td></tr>`; }).join("");
+      out += `<div class="card"><h3>Buyer panel (round ${panel.round})</h3>${tbl(["Buyer group", "Price sensitivity", ""], rows)}<div class="hint">Fixed for this game. More sensitive = a price cut wins more buyers, a price rise loses more.</div></div>`;
+    }
+    return out;
   }
   function researchResults() {
     const h = me().history.at(-1), r = h && h.research, u = ind().labels.unit;
-    if (r && r.boardSeats && !r.competitors && !r.survey && !r.forecast && !r.spy) return boardSeatCard(r.boardSeats, h.round);
+    if (r && r.boardSeats && !r.competitors && !r.survey && !r.forecast && !r.spy && !r.marketStudy && !r.buyerPanel) return boardSeatCard(r.boardSeats, h.round);
     if (!r) return `<div class="card"><h3>Your research</h3><div class="hint">${h ? "You didn't buy research last round." : "Buy research above; the reports arrive after this round."}</div></div>`;
     let out = `<div class="card"><h3>Your research from round ${h.round}</h3>`;
     if (r.competitors) out += `<h3 style="font-size:13px">Competitor spending</h3>` + tbl(["Company", "Made", "Qual.", "Marketing", "Campaign", "R&D", "Brand", "Factory", "Stores", "Store price"], r.competitors.map((x) => `<tr>${coCell(x.companyId)}${td(units(x.produced), unitsX(x.produced) + " " + u + " of " + unitsX(x.capacity) + " capacity")}${td(x.quality)}${td(eur(x.marketingBudget), eurX(x.marketingBudget))}<td class="r">${CAMPAIGNS[x.campaign][0]}</td>${td(eur(x.investRnd), eurX(x.investRnd))}${td(eur(x.investBrand), eurX(x.investBrand))}${td(eur(x.investCapacity), eurX(x.investCapacity))}${td(String(x.stores ?? 0))}${td(x.stores ? eur(x.retailPrice) : "—", x.stores ? eurX(x.retailPrice) : "")}</tr>`).join(""));
     if (r.survey) out += `<h3 style="font-size:13px">Customer survey</h3>` + tbl(["Company", "Brand", "Hype"], r.survey.map((x) => `<tr>${coCell(x.companyId)}${td(x.brand.toFixed(1), "Brand " + x.brand.toFixed(2) + " / 100")}${td(x.hype.toFixed(1), "Hype " + x.hype.toFixed(2) + " / 100")}</tr>`).join(""));
+    if (r.marketStudy || r.buyerPanel) out += `<div class="hint">${[r.marketStudy && "Market study", r.buyerPanel && "Buyer panel"].filter(Boolean).join(" and ")}: see the cards below.</div>`;
     if (r.forecast) out += `<h3 style="font-size:13px">Insider tip for round ${r.forecast.round}</h3>` + (r.forecast.round > S.game.config.rounds ? `<div class="hint">The game ends before then.</div>` : (r.forecast.news || []).map((n) => `<div class="sumline" style="align-items:center"><span${n.kind === "story" ? ' class="note" style="color:var(--ink)"' : ""}>${esc(n.headline)}</span><span class="fxrow" style="justify-content:flex-end">${effectChips(n.effect).map((x) => `<span class="fx ${x.good ? "up" : "down"}">${x.good ? "▲" : "▼"} ${esc(x.label)}</span>`).join("")}${n.duration > 1 ? `<span class="fx dur">${n.duration} rounds</span>` : ""}</span></div>`).join("") + ((r.forecast.news || []).some((n) => n.kind === "story") ? "" : `<div class="hint">No big story coming, just the market report.</div>`));
     return out + `</div>`;
   }
@@ -2464,12 +2735,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!H.length) return `<div class="hint">Fills in after round 1.</div>`;
     // Lines you never used (all zero) just add noise.
     if (hideZero) rows = rows.filter(([, f, , bold, keep]) => bold || keep || H.some((h) => Math.abs(f(h)) > 0.004));
-    return `<div class="tbl"><table><thead><tr><th></th>${H.map((h) => `<th class="r">${h.round ? "R" + h.round : "Y0"}</th>`).join("")}</tr></thead><tbody>${rows.map(([label, f, kind, bold]) => `<tr${bold ? ' class="total"' : ""}><td>${label}</td>${H.map((h) => {
-      const x = f(h);
-      const short = kind === "units" ? units(x) : kind === "pct" ? Math.round(x * 100) + "%" : kind === "plain" ? String(x) : eur(x);
-      const exact = kind === "units" ? unitsX(x) : kind === "pct" ? (x * 100).toFixed(2) + "%" : kind === "plain" ? String(x) : eurX(x);
-      return `<td class="r num ${bold && kind !== "units" ? (x >= 0 ? "pos" : "neg") : x < 0 ? "neg" : ""}"${tipAttr(label + ", " + (h.round ? "round " + h.round : "year 0") + ": " + exact)}>${short}</td>`;
-    }).join("")}</tr>`).join("")}</tbody></table></div>`;
+    // Last column: change from the round before to the latest round, for spotting trends.
+    const delta = H.length >= 2;
+    const fmtS = (x, kind) => kind === "units" ? units(x) : kind === "pct" ? Math.round(x * 100) + "%" : kind === "plain" ? String(x) : kind === "idx" ? x.toFixed(2) : kind === "eur3" ? "€" + x.toFixed(3) : eur(x);
+    const fmtX = (x, kind) => kind === "units" ? unitsX(x) : kind === "pct" ? (x * 100).toFixed(2) + "%" : kind === "plain" ? String(x) : kind === "idx" ? x.toFixed(3) : kind === "eur3" ? "€" + x.toFixed(4) : eurX(x);
+    return `<div class="tbl"><table><thead><tr><th></th>${H.map((h) => `<th class="r">${h.round ? "R" + h.round : "Y0"}</th>`).join("")}${delta ? `<th class="r"${tipAttr("Change from the round before to the latest round")}>Δ</th>` : ""}</tr></thead><tbody>${rows.map(([label, f, kind, bold]) => {
+      const a = delta ? f(H.at(-2)) : 0, b = delta ? f(H.at(-1)) : 0;
+      const dCell = !delta ? "" : kind === "pct" ? td(Math.abs(b - a) < 0.0005 ? "—" : (b > a ? "+" : "−") + Math.abs(Math.round((b - a) * 1000) / 10) + " pt", "", "muted") : Math.abs(a) < 1e-9 ? td("—", "", "muted") : td(signed((b - a) / Math.abs(a)), label + ": " + fmtX(a, kind) + " → " + fmtX(b, kind), "muted");
+      return `<tr${bold ? ' class="total"' : ""}><td>${label}</td>${H.map((h) => {
+        const x = f(h);
+        return `<td class="r num ${bold && kind !== "units" ? (x >= 0 ? "pos" : "neg") : x < 0 ? "neg" : ""}"${tipAttr(label + ", " + (h.round ? "round " + h.round : "year 0") + ": " + fmtX(x, kind))}>${fmtS(x, kind)}</td>`;
+      }).join("")}${dCell}</tr>`;
+    }).join("")}</tbody></table></div>`;
   }
 
   function tabReports() {
@@ -2479,22 +2756,24 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (rt === "income") body = `<div class="card"><h3>Income statement</h3>${roundTable([
       ["Sold to shops", (h) => h.wholesaleSold, "units"], ["Shop price", (h) => h.price], ["Sold in own stores", (h) => h.retailSold, "units"], ["Store price", (h) => (h.retailSold ? h.retailPrice : 0)],
       ["Revenue from shops", (h) => h.revenue - h.retailRevenue], ["Revenue from own stores", (h) => h.retailRevenue], ["Total revenue", (h) => h.revenue],
-      ["Cost of goods sold", (h) => -(h.revenue - h.profit - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost - h.brandCost - h.researchCost - h.storeUpkeep - h.interest - (h.wildcardCost || 0) - (h.legalCost || 0) - (h.staffCost || 0) - (h.auctionPaid || 0))],
-      ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
+      ["Cost of goods sold", (h) => -(h.revenue - h.profit - h.holdingCost - h.fixedCost - (h.idleCost || 0) - h.marketingCost - h.rndCost - h.brandCost - h.researchCost - h.storeUpkeep - h.interest - (h.wildcardCost || 0) - (h.legalCost || 0) - (h.staffCost || 0) - (h.auctionPaid || 0))],
+      ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
       ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Profit", (h) => h.profit, "eur", true],
     ], true)}<div class="hint">Cost of goods sold = production cost of the ${esc(i.labels.unit)} you actually sold.</div></div>`;
     if (rt === "cash") body = `<div class="card"><h3>Cash flow</h3>${roundTable([
       ["Cash at start", (h) => h.cashStart, "eur", false, true], ["Loans (net)", (h) => h.loanChange], ["Sales revenue", (h) => h.revenue], ["Production", (h) => -h.productionCost],
-      ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
+      ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
       ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Factory expansion", (h) => -h.capacityInvest], ["Store openings", (h) => -h.storeOpenCost],
       ["Shares in rivals", (h) => -h.sharePurchases], ["Shares sold", (h) => h.shareSales || 0], ["Showdown stakes", (h) => -(h.showdownPaid || 0)], ["Share buyback", (h) => -h.buybackCost], ["Dividends received", (h) => h.dividendsReceived], ["Dividends paid", (h) => -h.dividendsPaid],
       ["Emergency loan", (h) => h.emergencyLoan], ["Emergency loan fee", (h) => -h.emergencyFee], ["Cash at end", (h) => h.cashEnd, "eur", true],
     ], true)}<div class="hint">Production is paid when you make it, not when you sell it; that's why cash and profit differ.</div></div>`;
     if (rt === "production") body = `<div class="card"><h3>Production report</h3>${roundTable([
-      ["Capacity", (h) => h.capacity, "units"], ["Produced", (h) => h.produced, "units"], ["Utilisation", (h) => (h.capacity ? h.produced / h.capacity : 0), "pct"],
+      ["Capacity", (h) => h.capacity, "units"], ["Produced", (h) => h.produced, "units"], ["Utilisation", (h) => (h.utilization ?? (h.capacity ? h.produced / h.capacity : 0)), "pct"],
+      ["Made in overtime", (h) => h.overtimeUnits || 0, "units"], ["Idle capacity", (h) => h.idleUnits || 0, "units"],
       ["Stock at start", (h) => h.inventoryStart, "units"], ["Sold to shops", (h) => h.wholesaleSold, "units"], ["Sold in own stores", (h) => h.retailSold, "units"], ["Missed sales", (h) => h.unmetDemand, "units"], ["Stock at end", (h) => h.inventoryEnd, "units"],
-      ["Production cost", (h) => h.productionCost],
-    ])}</div>`;
+      ["Production cost", (h) => h.productionCost], ["of which overtime", (h) => h.overtimeCost || 0], ["Idle machines", (h) => h.idleCost || 0],
+      ["Cost per " + i.labels.product + " (before overtime)", (h) => h.unitCostBase || (h.produced ? h.productionCost / h.produced : 0), "eur3"], ["Quality made", (h) => h.quality, "plain"], ["Material index", (h) => h.materialIndex ?? 1, "idx"],
+    ])}<div class="hint">Cost per ${esc(i.labels.product)} = standard cost for that quality × materials × news × your experience. Work out how much cheaper experience has made you.</div></div>`;
     if (rt === "balance") {
       const v = CV(S.game).you, H = c.history;
       const last2 = H.slice(-2).map((h) => h.profit), avg = last2.length ? last2.reduce((a, b) => a + b, 0) / last2.length : 0;
@@ -2513,8 +2792,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     ]))}<div class="hint">Share = your part of everything sold to that group in that round.</div></div>`;
     if (rt === "costs") {
       const fx = fxNow();
-      const rows = [1, 2, 3, 4, 5].map((q) => { const cost = FT.unitCost(i, q, fx.cost, c.trait, S.game.config.difficulty === "tycoon"); return `<tr class="${q === S.draft.quality ? "me" : ""}${q > c.qualityCap ? " locked-row" : ""}"><td>Quality ${q}${q > c.qualityCap ? " (locked)" : ""}</td>${td(eurX(cost), eurX(cost) + " per " + i.labels.product)}</tr>`; }).join("");
-      body = `<div class="grid2"><div class="card"><h3>Production cost per ${esc(i.labels.product)}</h3>${tbl(["", "This round"], rows)}<div class="hint">Includes this round's news${c.trait === "pennyPincher" ? " and your Penny-Pincher discount" : ""}.</div></div>${costRules()}</div>`;
+      const idx = (S.game.market && S.game.market.materialIndex) || 1;
+      const rows = [1, 2, 3, 4, 5].map((q) => { const cost = FT.unitCost(i, q, 1, c.trait, S.game.config.difficulty === "tycoon"); return `<tr class="${q === S.draft.quality ? "me" : ""}${q > c.qualityCap ? " locked-row" : ""}"><td>Quality ${q}${q > c.qualityCap ? " (locked)" : ""}</td>${td("€" + cost.toFixed(3), "€" + cost.toFixed(4) + " per " + i.labels.product + " (standard)")}</tr>`; }).join("");
+      const factors = `<div class="kv" style="margin-top:8px"><div${tipAttr("Raw material price index this round: " + idx.toFixed(3))}><span>Material index now</span><b>${idx.toFixed(2)}</b></div><div${tipAttr("Material share of the standard cost")}><span>Material share</span><b>${Math.round(FT.COSTS.materialShare * 100)}%</b></div><div${tipAttr("Production cost change from this round's news")}><span>News on costs</span><b>${Math.abs(fx.cost - 1) < 0.0005 ? "none" : signed(fx.cost - 1)}</b></div></div>`;
+      body = `<div class="grid2"><div class="card"><h3>Standard cost per ${esc(i.labels.product)}</h3>${tbl(["", "Standard"], rows)}${factors}<div class="hint">Standard = material index 1.00, no news, no experience${c.trait === "pennyPincher" ? ", your Penny-Pincher discount included" : ""}. Your real cost this round is yours to work out.</div></div>${costRules()}</div>`;
     }
     return `<div style="display:grid;gap:14px;min-width:0">${tabs}${body}</div>`;
   }
@@ -2544,7 +2825,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const eco = S.game.news.filter((n) => n.event.kind === "economy");
     const chips = (e) => effectChips(e).map((x) => `<span class="fx ${x.good ? "up" : "down"}">${x.good ? "▲" : "▼"} ${esc(x.label)}</span>`).join("");
     return `<div class="card"><h3>Market report for round ${S.game.round}</h3>${eco.length ? eco.map((n) => `<div class="sumline" style="align-items:center"><span>${esc(n.event.headline)}</span><span class="fxrow" style="justify-content:flex-end">${chips(n.event.effect)}</span></div>`).join("") : `<div class="hint">No market report this round.</div>`}
-      <div class="hint">Small shifts that last one round. They're already counted in the Market outlook and Planning data.</div></div>`;
+      <div class="hint">Small shifts that last one round. Work them into your own forecast; the Market study includes them for you.</div></div>`;
   }
 
   function feed() {
@@ -2625,7 +2906,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       out.push(sec("production", "Production", [["Price per " + i.labels.product, eurX(d.price)], ["Production", unitsX(Math.min(d.production, c.capacity)) + " " + i.labels.unit], ["Quality", d.quality], ["Build more capacity", eurX(d.investCapacity)], ...(g.config.difficulty === "tycoon" ? [["Teams hired / laid off", (d.hire > 0 ? "+" : "") + d.hire]] : [])]));
       out.push(sec("marketing", "Marketing and R&D", [["Campaign", CAMPAIGNS[d.campaign][0]], ["Marketing budget", eurX(d.marketingBudget)], ["Brand building", eurX(d.investBrand)], ["R&D", eurX(d.investRnd)]]));
       if (g.round >= D.retailUnlockRound) out.push(sec("retail", "Own stores", [["Open", d.storesOpen], ["Close", d.storesClose], ["Store price", eurX(d.retailPrice)]]));
-      out.push(sec("finance", "Finance and research", [["Loan", (d.loanChange >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(d.loanChange))], ["Market research", d.research.length ? d.research.map((r) => FT.RESEARCH[r].name).join(", ") : "none"]]));
+      out.push(sec("finance", "Finance and research", [["Loan", (d.loanChange >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(d.loanChange))], ["Market research", d.research.length ? d.research.map((r) => FT.RESEARCH[r].name).join(", ") : "none"], ["Investor call", d.guidance ? unitsX(d.guidance.units) + " " + i.labels.unit + " · " + eurX(d.guidance.profit) + " profit" : "skipped"]]));
       if (g.round >= D.takeoverUnlockRound || Object.keys(d.sellShares || {}).length) out.push(sec("takeovers", "Shares", [["Buy", (Object.entries(d.buyShares).filter(([, n]) => n).map(([k, n]) => n + " of " + esc(byId(k).companyName)).join(", ") || "nothing") + (Object.keys(d.buyShares).length ? " (about " + eur(planShareCost()) + ")" : "")], ["Sell", Object.entries(d.sellShares || {}).filter(([, n]) => n).map(([k, n]) => n + " of " + esc(byId(k).companyName)).join(", ") || "nothing"], ["Buy back own", d.buyback], ["Attack stake", eurX(d.takeoverStake)], ["Defense fund", eurX(d.defenseStake)]]));
       const br = [["Wildcard", d.wildcard ? FT.WILDCARDS[d.wildcard.card].name + (d.wildcard.target ? " on " + esc(byId(d.wildcard.target).companyName) : "") : "none"]];
       if (auctionOpen()) br.push(["Auction bid", eurX(d.auctionBid || 0)]);
@@ -2645,7 +2926,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="intro">You run one company for ${S.game ? S.game.config.rounds : "a set number of"} rounds against your rivals. Whoever's company is worth the most at the end wins, unless someone takes control of every other company first: that's a monopoly, and it ends the game on the spot.</div>
       <ol class="steps">
         <li><span><b>Watch the news.</b> Each round starts with broadcasts: news that changes demand, costs or interest this round.</span></li>
-        <li><span><b>Read (left menu, part 1).</b> <b>Market</b> shows how big each customer group is and what rivals did. <b>Reports</b> has your profit, cash, balance and cost per unit. Like TOPSIM, the maths is up to you.</span></li>
+        <li><span><b>Read (left menu, part 1).</b> <b>Market</b> has the market report, the history and what rivals did; the split per buyer group comes from a paid Market study. <b>Reports</b> has your profit, cash, balance, production and cost per unit. Like TOPSIM, the maths is up to you: nobody tells you how much will sell.</span></li>
+        <li><span><b>Dig for what's hidden.</b> Buyer groups slowly grow or shrink, buyers are more or less price-sensitive each game, raw material prices move, experience makes you cheaper, and running your factory too full (overtime) or too empty (idle machines) costs money. It all shows in the numbers, never in a headline.</span></li>
+        <li><span><b>Use the Calc.</b> The top bar has a calculator (click any number in a table to paste it) and a notepad for your plan.</span></li>
+        <li><span><b>Investor call (Finance).</b> Forecast your sales and profit each round. Spot on raises investor trust (higher value, cheaper loans); way off lowers it.</span></li>
         <li><span><b>Decide (left menu, part 2).</b> Go top to bottom: Production (price, amount, quality), R&amp;D, Marketing, Retail (own stores, from round ${S.game ? diff().retailUnlockRound : 3}), Finance (loans), Takeovers (shares, from round ${S.game ? diff().takeoverUnlockRound : 3}) and the Boardroom (wildcards, auctions, votes). A ✓ shows which tabs you've visited this round.</span></li>
         <li><span><b>Watch the strip above the menu.</b> It shows what's special this round: a required vote, an open auction, something newly unlocked, or the final round.</span></li>
         <li><span><b>Submit.</b> You'll see your decision sheet first. Then everyone's decisions are resolved together and you get your results.</span></li>
@@ -2678,6 +2962,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${r.research && r.research.spy ? spyCard(r.research.spy) : ""}
         ${r.research && r.research.boardSeats ? boardSeatCard(r.research.boardSeats, r.round) : ""}
         ${c.mission && !c.bankrupt && !S.game.finished ? missionCard(false) : ""}
+        ${investorResultCard(r)}
         <div class="card"><h3>What happened</h3>${r.events.length || heads.length ? `<div class="feed" style="max-height:none">${r.events.map((e) => `<div class="msg"><span class="icon">YOU</span><div>${esc(e)}</div></div>`).join("")}${heads.map((t) => `<div class="msg"><span class="icon news">NEWS</span><div>${esc(t)}</div></div>`).join("")}</div>` : `<div class="hint">A quiet round. Suspiciously quiet.</div>`}</div>
       </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-continue" data-autofocus>Plan round ${S.game.round}</button></div>
@@ -2711,6 +2996,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
     requestAnimationFrame(tick);
   }
 
+  function investorResultCard(r) {
+    const calls = S.game.companies.filter((o) => !o.bankrupt).map((o) => ({ o, h: o.history.find((x) => x.round === r.round) })).filter((x) => x.h && x.h.guidance);
+    if (!r.guidance && !calls.length) return "";
+    const mine = r.guidance;
+    const errTxt = (e) => (e * 100 < 10 ? (e * 100).toFixed(1) : Math.round(e * 100)) + "% off";
+    const unit = esc(ind().labels.unit[0].toUpperCase() + ind().labels.unit.slice(1));
+    return `<div class="card"><h3>Investor call</h3>
+      ${mine ? tbl(["", "You said", "Actual", "Off by"], `<tr><td>${unit}</td>${td(units(mine.units), unitsX(mine.units))}${td(units(r.sold), unitsX(r.sold))}${td(errTxt(mine.unitsErr).replace(" off", ""), "", mine.unitsErr <= FT.GUIDANCE.hit[0] ? "pos" : mine.unitsErr > FT.GUIDANCE.miss[0] ? "neg" : "")}</tr><tr><td>Profit</td>${td(eur(mine.profit), eurX(mine.profit))}${td(eur(r.profit), eurX(r.profit))}${td(errTxt(mine.profitErr).replace(" off", ""), "", mine.profitErr <= FT.GUIDANCE.hit[1] ? "pos" : mine.profitErr > FT.GUIDANCE.miss[1] ? "neg" : "")}</tr>`)
+        + `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b class="gres ${mine.result}">${RESULT_LABEL[mine.result]}</b><span class="hint" style="font-weight:800">${trustText(r.credibility ?? me().credibility ?? 0)}</span></div>` : `<div class="hint">You skipped the investor call.</div>`}
+      ${calls.length ? `<div class="hint" style="margin-top:4px">Everyone's calls this round:</div><div class="fxrow">${calls.map(({ o, h }) => `<span class="gchip ${h.guidance.result}"><span class="dot" style="background:${colVar(o.id)}"></span>${esc(o.id === "you" ? "You" : o.companyName)}: ${RESULT_LABEL[h.guidance.result]}</span>`).join("")}</div>` : ""}
+    </div>`;
+  }
   function afterResults() {
     if (S.boardQueue && S.boardQueue.length) { S.boardIndex = 0; return "board"; }
     if (S.tvQueue && S.tvQueue.length) { S.tvIndex = 0; return "tv"; }
@@ -2904,6 +3201,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     add(pick((c) => sum(c, (h) => h.marketingCost)), "Mad Men", "Most spent on marketing");
     add(pick((c) => c.stores || 0, "max", (c) => (c.stores || 0) > 0), "High-street hero", "Most own stores");
     add(pick((c) => { const v = S.hist[c.id]; const lo = Math.min(...v); return v.at(-1) - lo; }), "Comeback kid", "Biggest climb from its lowest point");
+    const hits = (c) => H(c).filter((h) => h.guidance && h.guidance.result === "hit").length;
+    add(pick(hits, "max", (c) => hits(c) >= 2), "Crystal ball", "Most spot-on investor calls");
     const j = cs.filter((c) => c.bankrupt && (c.journalistPoints || 0) > 0).sort((a, b) => b.journalistPoints - a.journalistPoints)[0];
     if (j) add(j.id, "Pulitzer pending", "Best journalist after going bust");
     return out;
@@ -3155,6 +3454,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const sn = $("#staff-note"); if (sn) sn.textContent = staffNote();
   }
 
+  function readGuidance() {
+    const u = parseAmount(($("#g-units") || {}).value), p = parseAmount(($("#g-profit") || {}).value);
+    S.gDraft = { units: ($("#g-units") || {}).value, profit: ($("#g-profit") || {}).value };
+    S.draft.guidance = S.guidanceOpen && Number.isFinite(u) && u >= 0 && Number.isFinite(p) ? { units: Math.round(u), profit: Math.round(p) } : null;
+  }
+  function bindAgenda() {
+    document.querySelectorAll(".agenda [data-tab]").forEach((el) => el.addEventListener("click", (e) => { S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }));
+  }
   function bind() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
     on("[data-tab]", "click", (e) => { S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; });
@@ -3162,6 +3469,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#city", "pointerdown", cityTip);
     on("#city", "pointerleave", hideTip);
     on("#btn-menu", "click", goTitle);
+    on("#btn-calc", "click", () => { toggleCalc(); sfx("click"); });
     bindSubmit();
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
     on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
@@ -3182,6 +3490,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#wc-target", "change", (e) => { if (S.draft.wildcard) S.draft.wildcard.target = e.target.value; });
     on('input[name="vote"]', "change", (e) => { S.draft.vote = e.target.value; render(); });
     on('input[name="jtarget"]', "change", (e) => { S.draft.journalistTarget = e.target.value; });
+    on("#g-on", "change", (e) => {
+      S.guidanceOpen = e.target.checked;
+      const f = $("#g-fields"); if (f) f.hidden = !e.target.checked;
+      if (!e.target.checked) S.draft.guidance = null; else readGuidance();
+      const st = $("#g-status"); if (st) st.innerHTML = guidanceStatus();
+      const ag = document.querySelector(".agenda"); if (ag) ag.outerHTML = agenda(), bindAgenda();
+    });
+    on("#g-units, #g-profit", "input", () => { readGuidance(); const st = $("#g-status"); if (st) st.innerHTML = guidanceStatus(); });
     on('input[name="research"]', "change", () => { S.draft.research = [...document.querySelectorAll('input[name="research"]:checked')].map((x) => x.value); });
     on("[data-report]", "click", (e) => { S.reportTab = e.currentTarget.dataset.report; render(); });
     on("[data-news-step]", "click", (e) => { S.newsIdx = (S.newsIdx || 0) + Number(e.currentTarget.dataset.newsStep); render(); });

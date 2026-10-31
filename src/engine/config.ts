@@ -225,6 +225,51 @@ export const RESEARCH: Record<ResearchId, { name: string; cost: number; descript
   competitors: { name: "Competitor spending", cost: 60_000, description: "Each rival's production, quality, marketing, R&D, brand and factory spending this round" },
   survey: { name: "Customer survey", cost: 30_000, description: "How customers rate every company's brand and hype after this round" },
   forecast: { name: "Insider tip", cost: 50_000, description: "Learn the news that will hit the round after next, a full round before everyone else" },
+  marketStudy: { name: "Market study", cost: 40_000, description: "What each buyer group was worth this round, and next round's outlook with the news included" },
+  buyerPanel: { name: "Buyer panel", cost: 35_000, description: "How price-sensitive each buyer group is in this game compared with usual" },
+};
+
+/** Costs that move: the experience curve, factory load and raw material prices. */
+export const COSTS = {
+  /** Cost per unit falls this much every time total production doubles. */
+  learningRate: 0.08,
+  /** Experience you start with, in years of standard production (so the first rounds don't drop too fast). */
+  priorYears: 2,
+  /** The experience curve stops here. */
+  learningFloor: 0.75,
+  /** Above this share of capacity, extra units run in overtime. */
+  overtimeFrom: 0.9,
+  /** Overtime units cost this much more. */
+  overtimePremium: 0.25,
+  /** Below this share of capacity, idle machines cost money. */
+  idleBelow: 0.6,
+  /** Cost per idle unit of capacity below that line, as a fraction of the base unit cost. */
+  idleCostRate: 0.15,
+  /** Share of the unit cost that is raw material (follows the material price index). */
+  materialShare: 0.45,
+  /** Material index: random walk with a pull back to 1. */
+  materialVol: 0.04,
+  materialPull: 0.35,
+  materialRange: [0.8, 1.3] as [number, number],
+  /** Slow trends per buyer group, per round: one group grows, one shrinks, the others drift. */
+  trendGrow: [0.015, 0.03] as [number, number],
+  trendShrink: [-0.03, -0.015] as [number, number],
+  trendDrift: 0.008,
+  /** This game's price sensitivity per buyer group, as a multiple of usual. */
+  sensitivityRange: [0.85, 1.15] as [number, number],
+};
+
+/** Investor call: give guidance, hit it, and investors trust you more. */
+export const GUIDANCE = {
+  /** Hit: both errors within these (units, profit). */
+  hit: [0.1, 0.15] as [number, number],
+  /** Miss: either error above these. In between is "close" (no change). */
+  miss: [0.25, 0.4] as [number, number],
+  credibilityRange: [-2, 3] as [number, number],
+  /** Company value moves this much per credibility point. */
+  valuePerPoint: 0.03,
+  /** Interest rate moves this much per point (lower when trusted). */
+  interestPerPoint: 0.004,
 };
 
 export const CAMPAIGNS: Record<CampaignType, { segment: Record<SegmentId, number>; hypeGain: number; brandGain: number; flopChance: number }> = {

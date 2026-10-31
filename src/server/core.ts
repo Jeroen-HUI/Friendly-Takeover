@@ -80,6 +80,7 @@ const HIDDEN_REPORT: Partial<RoundReport> = {
   marketingCost: 0, rndCost: 0, brandCost: 0, researchCost: 0, capacityInvest: 0, interest: 0, storeOpenCost: 0, storeUpkeep: 0,
   wildcardCost: 0, legalCost: 0, staffCost: 0, workers: 0, auctionPaid: 0, sharePurchases: 0, buybackCost: 0, shareSales: 0,
   loanChange: 0, emergencyLoan: 0, emergencyFee: 0, retailDemand: 0, cashStart: 0, dividendsPaid: 0, dividendsReceived: 0,
+  experienceFactor: 0, unitCostBase: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
 };
 
 /** What one player may see: everything public, their own company in full, rivals without their secrets. */
@@ -93,6 +94,8 @@ export function viewFor(state: GameState, playerId: string): GameState {
   delete view.upcomingNews;
   view.specialEvents = (view.specialEvents ?? []).filter((e) => e.round <= state.round + 1);
   delete view.bots;
+  // Hidden market drivers: only the raw material index is public (it's in the market report).
+  if (view.market) view.market = { materialIndex: view.market.materialIndex };
   view.companies = view.companies.map((c: Company) => {
     if (c.id === playerId) return c;
     const last = c.lastDecisions;
@@ -104,12 +107,14 @@ export function viewFor(state: GameState, playerId: string): GameState {
       qualityCap: last.quality,
       inventory: 0,
       inventoryUnitCost: 0,
+      cumProduced: 0,
       capacity: c.bankrupt ? c.capacity : 0,
       workers: 0,
       wildcardsUsed: {},
       mission: { id: "volume" },
-      lastDecisions: { ...last, production: 0, marketingBudget: 0, investRnd: 0, investBrand: 0, investCapacity: 0, campaign: "tv", loanChange: 0, buyShares: {}, sellShares: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, defenseStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, journalistTarget: null, hire: 0, storesOpen: 0, storesClose: 0 },
-      history: c.history.map((h) => ({ ...h, ...HIDDEN_REPORT, events: [], research: undefined }) as RoundReport),
+      lastDecisions: { ...last, production: 0, marketingBudget: 0, investRnd: 0, investBrand: 0, investCapacity: 0, campaign: "tv", loanChange: 0, buyShares: {}, sellShares: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, defenseStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, journalistTarget: null, hire: 0, storesOpen: 0, storesClose: 0, guidance: null },
+      // Rivals' investor calls: everyone hears whether they hit, not what they promised.
+      history: c.history.map((h) => ({ ...h, ...HIDDEN_REPORT, events: [], research: undefined, guidance: h.guidance ? { units: 0, profit: 0, unitsErr: 0, profitErr: 0, result: h.guidance.result } : undefined }) as RoundReport),
     };
     (hidden as Company & { missionHidden?: boolean }).missionHidden = true;
     return hidden;

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
+import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
 import { runMatch } from "../src/sim/simulate";
 
 const players = [
@@ -166,7 +166,7 @@ test("every euro is accounted for: the cash flow adds up each round", () => {
     for (const c of res.state.companies) {
       for (const h of c.history) {
         const flow = h.cashStart + h.loanChange + h.revenue - h.productionCost - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost
-          - h.brandCost - h.researchCost - h.interest - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
+          - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
           + h.emergencyLoan - h.emergencyFee - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales;
         assert.ok(Math.abs(flow - h.cashEnd) < 0.01, `${industry} ${c.id} round ${h.round}: ${flow} vs ${h.cashEnd}`);
       }
@@ -411,4 +411,73 @@ test("only the controller can rename a company", () => {
   g = renameCompany(g, "a", "b", "ChocoLoco's Little Helper");
   assert.equal(g.companies[1].companyName, "ChocoLoco's Little Helper");
   assert.equal(g.companies[1].originalName, "Bar None");
+});
+
+test("experience curve: the more you have made, the cheaper each unit", () => {
+  const ind = INDUSTRIES.chocolate;
+  assert.ok(experienceFactor(ind, 0) === 1);
+  const a = experienceFactor(ind, 1_440_000), b = experienceFactor(ind, 4_320_000);
+  assert.ok(Math.abs(a - 0.92) < 1e-9, "one doubling = 8% cheaper");
+  assert.ok(b < a && b >= 0.75);
+  let g = newGame(5);
+  const before = g.companies[0].history.at(-1)!.unitCostBase!;
+  for (let r = 0; r < 3; r++) g = resolveRound(g, { a: { production: 850_000, price: 1.8 } });
+  assert.ok(g.companies[0].history.at(-1)!.experienceFactor! < g.companies[1].history.at(-1)!.experienceFactor! + 1e-9);
+  assert.ok(g.companies[0].history.at(-1)!.experienceFactor! < 0.95 && before > 0);
+});
+
+test("factory load: overtime above 90% of capacity, idle cost below 60%", () => {
+  let g = newGame(6);
+  const cap = g.companies[0].capacity;
+  g = resolveRound(g, { a: { production: cap }, b: { production: Math.round(cap * 0.4) } });
+  const a = g.companies[0].history.at(-1)!, b = g.companies[1].history.at(-1)!;
+  assert.equal(a.overtimeUnits, cap - Math.floor(cap * 0.9));
+  assert.ok(Math.abs(a.overtimeCost! - a.overtimeUnits! * a.unitCostBase! * 0.25) < 1e-6);
+  assert.ok(Math.abs(a.productionCost - (a.produced * a.unitCostBase! + a.overtimeCost!)) < 1e-6);
+  assert.equal(b.idleUnits, Math.floor(cap * 0.6) - Math.round(cap * 0.4));
+  assert.ok(b.idleCost! > 0 && a.idleCost === 0 && b.overtimeUnits === 0);
+});
+
+test("raw material index moves within its range and is logged; trends and price sensitivity are drawn per game", () => {
+  let g = newGame(7);
+  const seen = new Set<number>();
+  for (let r = 0; r < 7; r++) { g = resolveRound(g, {}); seen.add(g.market!.materialIndex); }
+  assert.ok(seen.size > 3, "index moves");
+  for (const v of seen) assert.ok(v >= 0.8 && v <= 1.3);
+  assert.ok(g.marketLog!.every((m) => typeof m.materialIndex === "number"));
+  const t = Object.values(g.market!.trend!);
+  assert.ok(t.some((x) => x >= 0.015) && t.some((x) => x <= -0.015), "one group grows, one shrinks");
+  assert.ok(Object.values(g.market!.sensitivity!).every((x) => x >= 0.85 && x <= 1.15));
+  assert.deepEqual(newGame(7).market, createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 7 }, players).market, "reproducible");
+});
+
+test("investor call: a spot-on forecast builds trust, a wild one costs it; trust lifts value and cuts interest", () => {
+  let g = newGame(8);
+  // Play one round to learn what this plan sells, then promise exactly that.
+  const plan = { production: 700_000, price: 2.2, marketingBudget: 150_000 };
+  const probe = resolveRound(g, { a: plan });
+  const p = probe.companies[0].history.at(-1)!;
+  g = resolveRound(g, { a: { ...plan, guidance: { units: p.sold, profit: p.profit } }, b: { guidance: { units: 10, profit: 99_000_000 } } });
+  const a = g.companies[0], b = g.companies[1];
+  assert.equal(a.history.at(-1)!.guidance!.result, "hit");
+  assert.equal(a.credibility, 1);
+  assert.equal(b.history.at(-1)!.guidance!.result, "miss");
+  assert.equal(b.credibility, -1);
+  assert.equal(g.companies[2].history.at(-1)!.guidance, undefined, "no guidance, no change");
+  assert.equal(g.companies[2].credibility, 0);
+  assert.equal(a.lastDecisions.guidance, null, "guidance is given fresh each round");
+  // Same company, more trust: higher value.
+  const v0 = companyValues(g)[a.id];
+  const trusted = structuredClone(g); trusted.companies[0].credibility = 3;
+  assert.ok(companyValues(trusted)[a.id] > v0 * 1.05);
+});
+
+test("market study and buyer panel research deliver their data", () => {
+  let g = newGame(9);
+  g = resolveRound(g, { a: { research: ["marketStudy", "buyerPanel"] } });
+  const r = g.companies[0].history.at(-1)!;
+  assert.equal(r.researchCost, 75_000);
+  assert.ok(r.research!.marketStudy!.next!.round === 2 && r.research!.marketStudy!.potential.budget > 0);
+  assert.deepEqual(r.research!.buyerPanel, g.market!.sensitivity);
+  assert.equal(g.companies[1].history.at(-1)!.research, undefined);
 });

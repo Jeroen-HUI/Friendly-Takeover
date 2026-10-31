@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, DIFFICULTIES, INDUSTRIES, RETAIL, SUMMIT, WILDCARDS,
-  activeNewsEffects, companyValues, creditLimit, retailRefPrice, segmentPotential, sharePrices, storeCapacity, teamOutput, unitCost,
+  COSTS, activeNewsEffects, companyValues, creditLimit, experienceFactor, materialFactor, retailRefPrice, segmentPotential, sharePrices, storeCapacity, teamOutput, unitCost,
   type Company, type Decisions, type GameState, type RegulationId, type SegmentId,
 } from "../engine";
 import { Rng } from "../engine/rng";
@@ -45,7 +45,8 @@ export function smartDecisions(pos: Position, state: GameState, c: Company, rng:
   const tycoon = state.config.difficulty === "tycoon";
   const fx = activeNewsEffects(state);
   const quality = plan.quality(c.qualityCap);
-  const uc = unitCost(ind, quality, fx.costMultiplier, c.trait, tycoon);
+  // Reads the cost sheet and market report: material prices and the experience curve.
+  const uc = unitCost(ind, quality, fx.costMultiplier * materialFactor(state.market?.materialIndex ?? 1), c.trait, tycoon) - (1 - experienceFactor(ind, c.cumProduced ?? 0)) * unitCost(ind, 1, 1, c.trait, tycoon);
   const ref = ind.segments[pos].refPrice;
 
   // --- Price: steer by last round's sell-through, never below a healthy margin.
@@ -107,9 +108,14 @@ export function smartDecisions(pos: Position, state: GameState, c: Company, rng:
   else if (c.debt > 0 && c.cash - spend > cushion * 3) loanChange = -Math.min(c.debt, c.cash - spend - cushion * 2);
   if (final && c.mission.id === "debtFree" && c.debt > 0) loanChange = -Math.min(c.debt, Math.max(0, c.cash - spend));
 
+  // --- Investor call: a back-of-the-envelope forecast (units it expects to sell, rough profit).
+  const units = Math.round(Math.min(expected, production + c.inventory));
+  const overtime = Math.max(0, production - c.capacity * COSTS.overtimeFrom) * uc * COSTS.overtimePremium;
+  const estProfit = units * price - units * uc - overtime - c.capacity * BALANCE.fixedCostPerCapacity * ind.baseUnitCost - marketingBudget - investBrand - investRnd - stores * RETAIL.upkeep - c.debt * BALANCE.baseInterest;
   const d: Partial<Decisions> = {
     price, quality, production, campaign: plan.campaign, marketingBudget, investBrand, investRnd, investCapacity, loanChange,
     research: [], storesOpen, storesClose, retailPrice,
+    guidance: state.round >= 1 ? { units, profit: Math.round(estProfit) } : null,
   };
 
   if (tycoon) {

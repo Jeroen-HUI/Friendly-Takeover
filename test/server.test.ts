@@ -39,3 +39,22 @@ test("missions stay secret in public results until the game ends", () => {
   s = resolveOnlineRound(s, {});
   assert.equal(publicData(s, 1).standings[0].mission, undefined);
 });
+
+test("views hide the hidden market drivers and rivals' cost details and promises", () => {
+  let s = startOnlineGame({ industry: "chocolate", difficulty: "standard", rounds: 8, botCount: 1, botSkill: "normal", seed: 11 }, players);
+  s = resolveOnlineRound(s, { u1: { guidance: { units: 600_000, profit: 123_456 } }, u2: { guidance: { units: 654_321, profit: 222_333 }, research: ["buyerPanel"] } });
+  const v = viewFor(s, "u1");
+  assert.equal(typeof v.market!.materialIndex, "number", "material index is public");
+  assert.equal(v.market!.trend, undefined, "trends are secret");
+  assert.equal(v.market!.sensitivity, undefined, "price sensitivity is secret");
+  const rival = v.companies.find((c) => c.id === "u2")!.history.at(-1)!, mine = v.companies.find((c) => c.id === "u1")!.history.at(-1)!;
+  assert.ok(rival.guidance && ["hit", "close", "miss"].includes(rival.guidance.result), "everyone sees whether a rival hit");
+  assert.equal(rival.guidance!.units, 0);
+  assert.equal(rival.unitCostBase, 0);
+  assert.equal(mine.guidance!.profit, 123_456, "my own promise stays");
+  assert.ok(mine.unitCostBase! > 0);
+  const json = JSON.stringify(v);
+  assert.ok(!json.includes("654321") && !json.includes("222333"), "the rival's guidance appears nowhere");
+  // The friend's own view does get their buyer panel.
+  assert.ok(viewFor(s, "u2").companies.find((c) => c.id === "u2")!.history.at(-1)!.research!.buyerPanel);
+});

@@ -3,7 +3,7 @@
 // result for the same input, so the server can re-run or audit any round.
 
 import {
-  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, CAMPAIGNS, ECONOMY, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
+  AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, CAMPAIGNS, COSTS, ECONOMY, GUIDANCE, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
   WILDCARD_EFFECTS, WILDCARDS, type IndustryConfig,
 } from "./config";
 import { Rng } from "./rng";
@@ -26,6 +26,7 @@ import {
   type SegmentId,
   type SegmentSales,
   type Standing,
+  type GuidanceResult,
 } from "./types";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -63,6 +64,7 @@ export function defaultDecisions(industry: IndustryConfig): Decisions {
     vote: null,
     journalistTarget: null,
     hire: 0,
+    guidance: null,
   };
 }
 
@@ -107,6 +109,8 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     mission: { id: "volume" },
     workers: config.difficulty === "tycoon" ? Math.ceil((industry.start.capacity * 0.8) / teamOutput(industry)) : 0,
     journalistPoints: 0,
+    cumProduced: 0,
+    credibility: 0,
     inventoryUnitCost: 0,
     shares: { founder: BALANCE.startShares.founder, float: BALANCE.startShares.float, treasury: 0, holders: {} },
     controlledBy: null,
@@ -131,6 +135,13 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
   let inv = pickRound(3);
   if (inv === bf) inv = bf > 3 ? bf - 1 : bf + 1;
   const specialEvents = [{ round: bf, id: "blackFriday" as const }, { round: inv, id: "investorDay" as const }].filter((e) => e.round <= config.rounds);
+  // Hidden market drivers: one buyer group slowly grows, one shrinks, the rest drift; price sensitivity differs per game.
+  const between = ([lo, hi]: [number, number]) => lo + mrng.next() * (hi - lo);
+  const order = mrng.shuffle([...SEGMENTS]);
+  const trend = {} as Record<SegmentId, number>;
+  order.forEach((sg, i) => (trend[sg] = i === 0 ? between(COSTS.trendGrow) : i === 1 ? between(COSTS.trendShrink) : (mrng.next() * 2 - 1) * COSTS.trendDrift));
+  const sensitivity = {} as Record<SegmentId, number>;
+  for (const sg of SEGMENTS) sensitivity[sg] = between(COSTS.sensitivityRange);
   const yearZero: GameState = {
     config,
     round: 0,
@@ -142,6 +153,7 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     auction: null,
     summit: null,
     specialEvents,
+    market: { materialIndex: 1, trend, sensitivity },
   };
   return resolveRound(yearZero, {});
 }
@@ -158,6 +170,17 @@ export function unitCost(industry: IndustryConfig, quality: number, costMultipli
   return industry.baseUnitCost * (1 + industry.qualityCostStep * q + industry.qualityCostCurve * q * q - labor) * costMultiplier * traitFactor;
 }
 
+/** Experience curve: cost multiplier after producing `cum` units in total (8% cheaper per doubling). */
+export function experienceFactor(industry: IndustryConfig, cum: number): number {
+  const prior = industry.start.capacity * 0.8 * COSTS.priorYears;
+  return Math.max(COSTS.learningFloor, Math.pow((prior + Math.max(0, cum)) / prior, Math.log2(1 - COSTS.learningRate)));
+}
+
+/** Raw material price index → cost multiplier (only the material part of a unit follows it). */
+export function materialFactor(index: number): number {
+  return 1 + COSTS.materialShare * (index - 1);
+}
+
 /** Company value excluding stakes in other companies. */
 function baseValue(c: Company, industry: IndustryConfig): number {
   if (c.bankrupt) return 0;
@@ -172,8 +195,8 @@ function baseValue(c: Company, industry: IndustryConfig): number {
     c.brand * BALANCE.brandValuePerPoint +
     Math.max(0, avgProfit) * BALANCE.earningsMultiple
   );
-  // Investor panic after someone dumped shares.
-  return value > 0 ? value * (1 - (c.sentiment ?? 0)) : value;
+  // Investor panic after someone dumped shares; investor trust from the investor call.
+  return value > 0 ? value * (1 - (c.sentiment ?? 0)) * (1 + GUIDANCE.valuePerPoint * (c.credibility ?? 0)) : value;
 }
 
 /** Full company values including stakes held in others (one level of cross-holdings). */
@@ -283,7 +306,14 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     storesOpen: clamp(Math.floor(num(d.storesOpen, 0)), 0, RETAIL.maxOpenPerRound),
     storesClose: Math.max(0, Math.floor(num(d.storesClose, 0))),
     retailPrice: clamp(num(d.retailPrice, prev.retailPrice ?? retailRefPrice(industry)), industry.priceRange[0], industry.priceRange[1]),
+    guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(d.guidance.units)), profit: Math.round(d.guidance.profit) } : null,
   };
+}
+
+/** Slow trend of a buyer group: multiplier on its size in a given round. */
+function trendFactor(state: GameState, s: SegmentId, round: number): number {
+  const t = state.market?.trend?.[s] ?? 0;
+  return Math.pow(1 + t, Math.max(0, round - 1));
 }
 
 /** Market potential per segment for the state's current round, including active news. */
@@ -292,7 +322,7 @@ export function segmentPotential(state: GameState): Record<SegmentId, number> {
   const fx = activeNewsEffects(state);
   const size = industry.potentialPerCompany * state.companies.length * Math.pow(1 + industry.growth, state.round - 1) * fx.demandMultiplier;
   const out = {} as Record<SegmentId, number>;
-  for (const s of SEGMENTS) out[s] = Math.round(size * industry.segments[s].weight * fx.segmentMultiplier[s]);
+  for (const s of SEGMENTS) out[s] = Math.round(size * industry.segments[s].weight * fx.segmentMultiplier[s] * trendFactor(state, s, state.round));
   return out;
 }
 
@@ -422,6 +452,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     cashStart: number;
     inventoryStart: number;
     capacityStart: number;
+    ucBase: number;
+    expF: number;
+    overtimeUnits: number;
+    overtimeCost: number;
+    idleUnits: number;
+    idleCost: number;
     retailDemand: number;
     retailSold: number;
     storesOpened: number;
@@ -582,15 +618,27 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const cashStart = cashAtStart[c.id];
     const inventoryStart = c.inventory;
     const capacityStart = c.capacity;
-    const interest = debtStart * (BALANCE.baseInterest + (shield ? Math.min(0, fx.interestDelta) : fx.interestDelta));
+    const rate = BALANCE.baseInterest + (shield ? Math.min(0, fx.interestDelta) : fx.interestDelta) - GUIDANCE.interestPerPoint * (c.credibility ?? 0);
+    const interest = debtStart * Math.max(0.01, rate);
     // Loans first, so a new loan can pay for this round.
     c.debt += d.loanChange;
     c.cash += d.loanChange;
     const capMult = shield ? Math.max(1, fx.capacityMultiplier) : fx.capacityMultiplier;
     const staffCap = tycoon ? c.workers * teamOutput(industry) : Infinity;
-    const cap = Math.floor(Math.min(c.capacity * capMult, staffCap));
+    const factoryCap = Math.floor(c.capacity * capMult);
+    const cap = Math.floor(Math.min(factoryCap, staffCap));
     const produced = Math.min(d.production, cap);
-    const uc = unitCost(industry, d.quality, shield ? Math.min(1, fx.costMultiplier) : fx.costMultiplier, c.trait, tycoon);
+    // Unit cost: quality, news, raw material prices and the experience curve.
+    const expF = experienceFactor(industry, c.cumProduced ?? 0);
+    // Experience makes the process cheaper, not the materials: it saves the same amount per unit at every quality.
+    const ucBase = unitCost(industry, d.quality, (shield ? Math.min(1, fx.costMultiplier) : fx.costMultiplier) * materialFactor(state.market?.materialIndex ?? 1), c.trait, tycoon)
+      - (1 - expF) * unitCost(industry, 1, 1, c.trait, tycoon);
+    // Factory load: overtime above 90% of capacity, idle machines below 60%.
+    const overtimeUnits = Math.max(0, produced - Math.floor(factoryCap * COSTS.overtimeFrom));
+    const overtimeCost = overtimeUnits * ucBase * COSTS.overtimePremium;
+    const idleUnits = Math.max(0, Math.floor(factoryCap * COSTS.idleBelow) - produced);
+    const idleCost = idleUnits * COSTS.idleCostRate * industry.baseUnitCost;
+    const uc = produced > 0 ? (produced * ucBase + overtimeCost) / produced : ucBase;
     const available = c.inventory + produced;
     const avgCost = available > 0 ? (c.inventory * c.inventoryUnitCost + produced * uc) / available : uc;
     const viralFlop = d.campaign === "viral" && d.marketingBudget > 0 && rng.chance(CAMPAIGNS.viral.flopChance);
@@ -618,6 +666,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       cashStart,
       inventoryStart,
       capacityStart,
+      ucBase,
+      expF,
+      overtimeUnits,
+      overtimeCost,
+      idleUnits,
+      idleCost,
       retailDemand: 0,
       retailSold: 0,
       storesOpened,
@@ -642,12 +696,13 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   for (const s of SEGMENTS) {
     const seg = industry.segments[s];
     const ref = seg.refPrice * drift;
-    const potential = marketSize * seg.weight * fx.segmentMultiplier[s];
+    const potential = marketSize * seg.weight * fx.segmentMultiplier[s] * trendFactor(state, s, round);
+    const sensitivity = seg.priceSensitivity * (state.market?.sensitivity?.[s] ?? 1);
     potentials[s] = Math.round(potential);
     const attraction = work.map((w) => {
       if (w.available <= 0) return 0;
       const { c, d } = w;
-      let u = -seg.priceSensitivity * (d.price / ref - 1);
+      let u = -sensitivity * (d.price / ref - 1);
       u += seg.qualityWeight * (d.quality - avgQ);
       u += seg.brandWeight * ((c.brand - avgBrand) / 25);
       u += seg.hypeWeight * ((c.hype - avgHype) / 25);
@@ -711,7 +766,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const segSold: Record<SegmentId, number> = { budget: 0, mainstream: 0, premium: 0, hype: 0 };
   const segOf = (w: Work, s: SegmentId) => (w.demand > 0 ? (w.sold * w.demandBySeg[s]) / w.demand : 0);
   for (const w of work) for (const s of SEGMENTS) segSold[s] += segOf(w, s);
-  state.marketLog = [...(state.marketLog ?? []), { round, potential: potentials, sold: Object.fromEntries(SEGMENTS.map((s) => [s, Math.round(segSold[s])])) as Record<SegmentId, number> }];
+  state.marketLog = [...(state.marketLog ?? []), { round, potential: potentials, sold: Object.fromEntries(SEGMENTS.map((s) => [s, Math.round(segSold[s])])) as Record<SegmentId, number>, materialIndex: state.market?.materialIndex ?? 1, avgPrice: Math.round(avgPrice * 100) / 100 }];
 
   // 3. Accounting ---------------------------------------------------------------
   const profitById: Record<string, number> = {};
@@ -727,13 +782,27 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const storeUpkeep = c.stores * RETAIL.upkeep;
     const holdingCost = inventoryEnd * w.avgCost * BALANCE.holdingCostRate;
     const fixedCost = c.capacity * BALANCE.fixedCostPerCapacity * industry.baseUnitCost;
-    const productionCost = w.produced * w.unitCost;
+    const productionCost = w.produced * w.ucBase + w.overtimeCost;
     const researchCost = d.research.reduce((a, r) => a + RESEARCH[r].cost, 0);
     const sp = special[c.id];
     // Same array as w.events, so share trades and takeovers added later still show up in the report.
     w.events.unshift(...sp.events);
-    const profit = revenue - cogs - holdingCost - fixedCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction;
-    c.cash += revenue - productionCost - holdingCost - fixedCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
+    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction;
+    c.cash += revenue - productionCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
+    c.cumProduced = (c.cumProduced ?? 0) + w.produced;
+    // Investor call: compare the guidance with what actually happened.
+    let guidance: RoundReport["guidance"];
+    if (d.guidance && round >= 1) {
+      const unitsErr = Math.abs(d.guidance.units - totalSold) / Math.max(1, totalSold);
+      const profitErr = Math.abs(d.guidance.profit - profit) / Math.max(1, Math.abs(profit), 0.1 * revenue);
+      const result: GuidanceResult = unitsErr <= GUIDANCE.hit[0] && profitErr <= GUIDANCE.hit[1] ? "hit" : unitsErr > GUIDANCE.miss[0] || profitErr > GUIDANCE.miss[1] ? "miss" : "close";
+      const [lo, hi] = GUIDANCE.credibilityRange;
+      c.credibility = clamp((c.credibility ?? 0) + (result === "hit" ? 1 : result === "miss" ? -1 : 0), lo, hi);
+      guidance = { ...d.guidance, result, unitsErr, profitErr };
+      w.events.push(result === "hit" ? "Investor call: spot on. Investors trust you more" : result === "miss" ? "Investor call: way off. Investors trust you less" : "Investor call: close, but not close enough to impress");
+      if (result === "hit" && c.credibility === hi) state.feed.push({ round, headline: `Analysts call ${c.companyName} "boringly accurate". The share price loves it` });
+      else if (result === "miss" && Math.abs(profit - d.guidance.profit) > 0.5 * Math.max(Math.abs(profit), 0.1 * revenue)) state.feed.push({ round, headline: `${c.companyName} misses its own forecast by a mile. Investors ask if anyone owns a calculator` });
+    }
     c.inventory = inventoryEnd;
     c.inventoryUnitCost = inventoryEnd > 0 ? w.avgCost : 0;
     profitById[c.id] = profit;
@@ -794,6 +863,16 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       sharePrice: 0,
       segments,
       events: w.events,
+      materialIndex: state.market?.materialIndex ?? 1,
+      experienceFactor: w.expF,
+      unitCostBase: w.ucBase,
+      utilization: w.capacityStart > 0 ? w.produced / Math.max(1, Math.floor(w.capacityStart * (shielded.has(c.id) ? Math.max(1, fx.capacityMultiplier) : fx.capacityMultiplier))) : 0,
+      overtimeUnits: w.overtimeUnits,
+      overtimeCost: w.overtimeCost,
+      idleUnits: w.idleUnits,
+      idleCost: w.idleCost,
+      guidance,
+      credibility: c.credibility ?? 0,
     };
   }
 
@@ -825,7 +904,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     if (cap > c.qualityCap) w.events.push(`R&D breakthrough: quality ${cap} unlocked`);
     c.qualityCap = Math.max(c.qualityCap, cap);
     c.capacity = Math.round(c.capacity * (1 - BALANCE.capacityDepreciation) + d.investCapacity / (BALANCE.capacityCostPerUnit * industry.baseUnitCost));
-    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0 };
+    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null };
   }
 
   // 5. Share trading: sales first, then buybacks (defense), then purchases in random order. ------
@@ -1019,6 +1098,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   if (state.monopolyBy || state.round > state.config.rounds || state.companies.filter((c) => !c.bankrupt).length <= 1) {
     state.finished = true;
   } else {
+    // Raw material prices move a little every round (pulled back toward normal). It shows in the market report.
+    if (state.market) {
+      const shock = (rng.next() + rng.next() + rng.next() - 1.5) * 2 * COSTS.materialVol;
+      const idx = state.market.materialIndex;
+      state.market.materialIndex = Math.round(clamp(idx + COSTS.materialPull * (1 - idx) + shock, COSTS.materialRange[0], COSTS.materialRange[1]) * 1000) / 1000;
+    }
     drawNews(state, rng, industry);
     if (AUCTION.rounds.includes(state.round)) {
       const item = rng.pick(Object.keys(AUCTION.items) as AuctionItemId[]);
@@ -1058,6 +1143,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     }
     if (bought.includes("survey")) {
       result.survey = state.companies.filter((c) => !c.bankrupt).map((c) => ({ companyId: c.id, companyName: c.companyName, brand: c.brand, hype: c.hype }));
+    }
+    if (bought.includes("marketStudy")) {
+      result.marketStudy = { round, potential: potentials, next: state.finished ? null : { round: state.round, potential: segmentPotential(state) } };
+    }
+    if (bought.includes("buyerPanel") && state.market?.sensitivity) {
+      result.buyerPanel = { ...state.market.sensitivity };
     }
     if (bought.includes("forecast") && !state.finished) {
       result.forecast = { round: state.round + 1, news: tip.map((t) => ({ headline: newsHeadline(state, t), effect: t.event.effect, duration: t.event.duration, kind: t.event.kind ?? "story" })) };
