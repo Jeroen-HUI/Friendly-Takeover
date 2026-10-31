@@ -196,3 +196,6 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 revoke execute on function public.tick_secret_ok(text) from public, anon, authenticated;
 grant execute on function public.tick_secret_ok(text) to service_role;
+
+-- in_league is only used inside the other functions.
+revoke execute on function public.in_league(uuid) from authenticated, anon, public;

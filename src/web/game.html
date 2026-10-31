@@ -359,13 +359,13 @@ button[data-tip] { cursor: pointer; }
 .ctl input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .optwin { width: min(620px, 100%) !important; }
 .lobby { max-width: 1000px; width: 100%; margin: 0 auto; }
-.coach { position: fixed; left: 16px; bottom: 16px; z-index: 19; width: min(340px, calc(100vw - 32px)); padding: 12px 14px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-weight: 800; font-size: 14px; line-height: 1.4; display: grid; gap: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px #8a6420; }
+.coach { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; z-index: 19; width: min(340px, calc(100vw - 32px)); padding: 12px 14px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-weight: 800; font-size: 14px; line-height: 1.4; display: grid; gap: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px #8a6420; }
 .coach[hidden] { display: none; }
 .coach .coach-k { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
 .coach .linkbtn { color: #7a5716; justify-self: start; font-size: 12.5px; }
 .coach-hl { outline: 3px solid var(--gold) !important; outline-offset: 2px; animation: coachpulse 1.1s ease-in-out infinite; position: relative; z-index: 2; }
 @keyframes coachpulse { 50% { outline-color: rgba(255, 207, 74, 0.25); } }
-@media (max-width: 640px) { .coach { bottom: auto; top: 8px; left: 8px; } }
+@media (max-width: 640px) { .coach { bottom: auto; top: 8px; } }
 .talkwin { position: fixed; right: 16px; top: 16px; bottom: 16px; width: 380px; z-index: 31; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .talkwin[hidden] { display: none; }
 .talkwin .win-title { gap: 8px; }
@@ -1587,7 +1587,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const th = TALK.thread, list = partners();
     if (th !== "all" && !list.includes(th)) TALK.thread = "all";
     const chip = (id, label, color) => { const u = unread(id); return `<button type="button" class="tchip ${TALK.thread === id ? "on" : ""}" data-thread="${id}">${color ? `<span class="dot" style="background:${color}"></span>` : ""}${esc(label)}${u ? `<span class="badge">${u}</span>` : ""}</button>`; };
-    const chips = chip("all", "Everyone") + list.map((id) => chip(id, short(byId(id).companyName), colVar(id))).join("");
+    const chips = chip("all", "Everyone") + list.map((id) => chip(id, byId(id).playerName.replace(/ \(bot\)$/, ""), colVar(id))).join("");
     const items = [
       ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}</b><span>${esc(m.text)}</span></div>` })),
       ...(TALK.thread === "all" ? [] : dealList().filter((d) => (d.from === TALK.thread && d.to === "you") || (d.to === TALK.thread && d.from === "you")).map((d) => ({ t: d.t, html: dealCard(d) }))),
@@ -1666,7 +1666,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       talkEl.className = "win talkwin"; talkEl.id = "talkwin"; talkEl.setAttribute("aria-label", "Talk and deals");
       document.body.appendChild(talkEl);
       talkEl.addEventListener("click", onTalkClick);
-      talkEl.addEventListener("submit", (e) => { e.preventDefault(); const i = $("#t-input"); if (i && i.value.trim()) { sendTalk(i.value.trim()); i.value = ""; } });
+      talkEl.addEventListener("submit", (e) => { e.preventDefault(); const i = $("#t-input"); if (i && i.value.trim()) { const text = i.value.trim(); i.value = ""; sendTalk(text); } });
       talkEl.addEventListener("change", (e) => { if (TALK.form && e.target.id === "d-company") { readDealForm(); renderTalk(); } });
       talkEl.addEventListener("input", (e) => { if (TALK.form && /^d-(qty|price)$/.test(e.target.id)) { readDealForm(); const h = talkEl.querySelector(".dealform .hint"); if (h && TALK.form.company) { const fair = SP(S.game)[TALK.form.company] * (Number(TALK.form.qty) || 0); h.firstChild && (h.firstChild.textContent = h.firstChild.textContent.replace(/that's €[\d,.]+/, "that's " + eurX(fair))); } } });
     }

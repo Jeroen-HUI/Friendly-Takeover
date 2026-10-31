@@ -10,7 +10,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // Bundle of src/server/core.ts (supabase/functions/game/engine.js), pinned to a commit so a deploy is reproducible.
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@fbf6174c65efbe64dfc8646bfbd2c86a7db0b1cd/supabase/functions/game/engine.js";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, renameCompany, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@f2877e41aafe9f13958beb06fadf6625cf91addf/supabase/functions/game/engine.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
