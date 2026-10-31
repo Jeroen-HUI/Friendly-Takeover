@@ -1307,7 +1307,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     if (AUCTION.rounds.includes(state.round)) {
       const item = rng.pick(Object.keys(AUCTION.items) as AuctionItemId[]);
       state.auction = { round: state.round, item };
-      state.feed.push({ round: state.round, headline: `Auction this round: ${AUCTION.items[item].name}. Sealed bids only.` });
+      state.feed.push({ round: state.round, headline: `Auction this round: ${AUCTION.items[item].name}. Live bidding in the Boardroom.` });
     }
     if (SUMMIT.rounds.includes(state.round)) {
       const regs = rng.shuffle(Object.keys(SUMMIT.regulations) as RegulationId[]);

@@ -136,6 +136,12 @@ for (const k of ["1", "2", "+", "3", "0", "="]) window.document.dispatchEvent(ne
 if (doc.querySelector(".lcd-num").textContent !== "42") throw new Error("calculator maths: " + doc.querySelector(".lcd-num").textContent);
 click('#calcwin [data-k="×"]'); click('#calcwin [data-k="2"]'); click('#calcwin [data-k="="]');
 if (doc.querySelector(".lcd-num").textContent !== "84") throw new Error("calculator keys: " + doc.querySelector(".lcd-num").textContent);
+// Huge results stay readable (no "e+19"), and 1 ÷ 3 doesn't spill out of the display.
+for (const k of ["C", "C", ..."987654321987".split(""), "×", ..."99999999".split(""), "="]) click(`#calcwin [data-k="${k}"]`);
+if (/e\+|NaN/.test(doc.querySelector(".lcd-num").textContent) || !doc.querySelector(".lcd-num sup")) throw new Error("big calculator result: " + doc.querySelector(".lcd-num").textContent);
+for (const k of ["C", "C", "1", "÷", "3", "="]) click(`#calcwin [data-k="${k}"]`);
+if (doc.querySelector(".lcd-num").textContent.replace(/[^0-9]/g, "").length > 12) throw new Error("1/3 too long: " + doc.querySelector(".lcd-num").textContent);
+click('#calcwin [data-k="C"]'); click('#calcwin [data-k="C"]');
 click('[data-tab="reports"]');
 doc.querySelector(".tbl td.num[data-tip]").click();
 if (!/pasted/.test(doc.querySelector(".lcd-top").textContent)) throw new Error("click-to-paste did not work");
