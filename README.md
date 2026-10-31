@@ -31,6 +31,14 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **Daily challenge:** the same market, rivals (4 hard bots) and starting news for everyone each day (chocolate or AI, 6 rounds). One scored try per day; practice runs after that don't count. **Leaderboards:** today's daily (everyone or friends) and all-time (wins, achievements, best daily).
 
+**Live market (from round 3):** a stock exchange is open during the round. Buy or sell rivals' shares right away (up to 30 a round and 50% of a company; every share moves the price 0.5%, 2% fee); everyone sees the trades on the ticker. Taking control past 50% still goes through an end-of-round takeover bid. **Live auctions:** the boardroom auction and bankruptcy sales are open bidding: every bid restarts a 45-second hammer ("going once… going twice… sold!"), and the winner pays when the round closes. In single-player the bots trade and bid too.
+
+**Raw materials, bought a round ahead:** you buy materials now at today's price index for next round's production. The news carries an outlook ("analysts expect prices to RISE/FALL…", right about 3 times out of 4). Stocked up before a rise: you're safe. Stocked up before a fall: you paid too much. Anything you run short of is bought on the spot market at the price then +15%; leftover materials cost 2% a round to hold.
+
+**Bulk buyer:** a discount chain takes your leftover stock after the market at 40–55% of the average price (up to half your capacity). Cheap, but it empties the warehouse.
+
+**Party mode (TV screen):** in the lobby, the Party mode card gives a secret TV link (`…/?tv=…`). Put it on the TV: it shows the join code, a skyline of company values, the round timer, who's ready, the live auction and exchange ticker, headlines, table talk and reactions, and a results show after every round, while everyone plays on their phone.
+
 **Rounds close on their own:** a scheduled job checks every minute and closes any round whose time is up, even if nobody has the game open.
 
 ## Quick start
@@ -76,7 +84,7 @@ Like TOPSIM, the game doesn't forecast for you. The Production tab shows your fa
 
 - **Experience curve:** every doubling of your total production saves about 8% of the basic process cost per unit (the same euro amount at every quality, so it rewards volume rather than premium).
 - **Factory load:** units above 90% of capacity run in overtime (+25%); capacity left idle below 60% costs money.
-- **Raw material price index:** a random walk around 1.00 (0.80–1.30). Material is 45% of the standard unit cost. Shown in the market report each round.
+- **Raw material price index:** moves around 1.00 (0.70–1.45) with a trend the news hints at a round ahead. Material is 45% of the standard unit cost; you buy it a round ahead (spot purchases +15%).
 - **Buyer-group trends:** each game one group slowly grows (+1.5–3% a round), one shrinks, the others drift. Never announced; visible in market studies and sales history.
 - **Price sensitivity per game:** each buyer group is 85–115% as price-sensitive as usual. Inferable from price and sales changes, or bought via the Buyer panel.
 - **Investor call:** optional guidance on units sold and profit. Within 10% (units) and 15% (profit) = trust +1; more than 25% / 40% off = trust −1 (range −2..+3). Each trust point moves company value 3% and interest 0.4 points.
@@ -110,7 +118,7 @@ Three kinds of bots test the balance. **Pro** bots try out candidate plans with 
 
 Quick per-industry balance check: `npm run balance` (all-pro field). Try rule changes without editing code: `npx tsx src/sim/experiment.ts 24 ai '{"COSTS":{"overtimePremium":0}}'`.
 
-All-pro win rates (60 matches per industry): chocolate 22–27%, AI 17–32%, weed 17–30% for every positioning; average scores within 9% (chocolate), 8% (AI) and 4% (weed). AI and weed use a slightly smaller premium group and bigger hype group, because their faster growth and their news favoured premium. Before the hidden mechanics, budget won only 2–5% and premium 38–50%.
+All-pro win rates (60 matches per industry, with materials and the bulk buyer): chocolate 23–28%, AI 20–32%, weed 18–30% for every positioning; average scores within 10% (chocolate), 9% (AI) and 12% (weed). AI and weed use slightly different buyer-group sizes (AI: premium 14%, hype 17%; weed: premium 14.5%, hype 16%), because their faster growth and their news favoured premium or hype. Before the hidden mechanics, budget won only 2–5% and premium 38–50%.
 
 ## Database (Supabase)
 
@@ -133,9 +141,11 @@ Server function `game` (`supabase/functions/game`, deployed):
 - `{ "action": "start", "game_id" }`: host only, in the lobby. Builds the engine state, opens round 1 with a deadline, and writes round-0 results and each player's starting report.
 - `{ "action": "resolve", "game_id" }`: resolves the open round when everyone has submitted and the host skips the timer, or when the deadline has passed (any player may call it then). A claim on `games.current_round` makes sure two calls can never both resolve the same round. Players who did not submit repeat last round's decisions.
 - `{ "action": "rename", "game_id", "target_id", "name" }`: whoever controls a company renames it.
+- `{ "action": "trade", "game_id", "target_id", "qty" }`: live stock exchange, buy (qty > 0) or sell (qty < 0) right now.
+- `{ "action": "bid", "game_id", "lot", "amount" }`: live auction bid (`"auction"` or a bankrupt company's id). Trades and bids use an optimistic update on `game_states.updated_at` so simultaneous ones never overwrite each other, and write the public live market to `market_live`.
 - `{ "action": "tick" }` with header `x-tick-secret`: closes every overdue round. Called every minute by the `ft-close-overdue-rounds` pg_cron job; the secret lives in Vault (`ft_tick_secret`) and is checked with `tick_secret_ok`.
 
-Accepted deals (`deals` table, offered by insert, answered with `respond_deal`, withdrawn with `cancel_deal`) are passed to the engine when the round resolves and marked done or failed with the reason. Chat is in `messages` (to everyone when `to_player_id` is null; `kind` = chat or reaction). Seasons: `games.league_id`, `league_table`, `league_lobby`. Playtest ratings go to `feedback` (insert-only).
+Accepted deals (`deals` table, offered by insert, answered with `respond_deal`, withdrawn with `cancel_deal`) are passed to the engine when the round resolves and marked done or failed with the reason. Chat is in `messages` (to everyone when `to_player_id` is null; `kind` = chat or reaction). Seasons: `games.league_id`, `league_table`, `league_lobby`. Playtest ratings go to `feedback` (insert-only). Live market: `market_live` (members read). Party mode: `games.tv_code` and `tv_snapshot(game_id, tv_code)`, readable without logging in, only with the secret code.
 
 Accounts: `profiles` (name, friend code, stats), `friendships`, `game_invites`, `achievements`, `daily_scores`, all behind functions (`ensure_profile`, `add_friend`, `respond_friend`, `remove_friend`, `my_friends`, `invite_friend`, `my_invites`, `answer_invite`, `lobby_invites`, `record_result`, `grant_achievements`, `submit_daily`, `daily_board`, `alltime_board`). Email login uses Supabase Auth: a guest account is upgraded with `PUT /auth/v1/user {email}`, other devices log in with `POST /auth/v1/otp`. For the email links to come back to the game, set Authentication → URL Configuration → Site URL to the GitHub Pages address and add it under Redirect URLs.
 
@@ -143,7 +153,7 @@ The edge function loads `engine.js` from jsDelivr pinned to a commit (see the im
 
 The web page talks to Supabase with plain `fetch` (anonymous sign-in, REST, the `game` function) and polls every 2.5 seconds; no client library needed.
 
-Tested end to end against the live project: create → join → settings → start → submit (spoofed submit refused) → early resolve refused → resolve with private views per player.
+Tested end to end against the live project: create → join → settings → start → submit (spoofed submit refused) → early resolve refused → resolve with private views per player; live trade and bid sent at the same moment (both kept), TV snapshot (wrong code gets nothing), and the round report with exchange cash and materials.
 
 `engine.js` in that folder is generated: rebuild it with `npx esbuild supabase/functions/game/entry.ts --bundle --format=esm --target=es2022 --legal-comments=none --outfile=supabase/functions/game/engine.js` after changing the engine, then redeploy.
 
