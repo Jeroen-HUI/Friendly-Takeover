@@ -3,13 +3,13 @@
 
 import {
   createGame, resolveRound, standings, publicInfo, companyValues, sharePrices, renameCompany,
-  type CeoTrait, type Company, type DealOrder, type Decisions, type DifficultyId, type GameState, type IndustryId, type RoundReport,
+  type CeoTrait, type Company, type DealOrder, type Decisions, type DifficultyId, type GameState, type HouseRules, type IndustryId, type RoundReport,
 } from "../engine";
 import { Rng } from "../engine/rng";
 import { botDecisions, type BotStrategy } from "../sim/bots";
 
 export interface LobbyPlayer { id: string; name: string; company: string; trait: CeoTrait }
-export interface OnlineSettings { industry: IndustryId; difficulty: DifficultyId; rounds: number; botCount: number; botSkill: "normal" | "hard"; seed: number }
+export interface OnlineSettings { industry: IndustryId; difficulty: DifficultyId; rounds: number; botCount: number; botSkill: "normal" | "hard"; seed: number; rules?: HouseRules | null }
 
 const BOT_NAMES = ["Barbara", "Kees", "Ingrid", "Mo", "Fenna", "Sem"];
 const BOT_COMPANIES: Record<IndustryId, string[]> = {
@@ -39,7 +39,8 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
     bots[id] = kinds[k] === "raider" ? "smart-raider" : lvl + kinds[k];
     setup.push({ id, playerName: names[k] + " (bot)", companyName: companies[k], trait: rng.pick(TRAITS) });
   }
-  const state = createGame({ industry: settings.industry, difficulty: settings.difficulty, rounds: settings.rounds, seed: settings.seed }, setup);
+  const rules = settings.rules && typeof settings.rules === "object" ? settings.rules : undefined;
+  const state = createGame({ industry: settings.industry, difficulty: settings.difficulty, rounds: settings.rounds, seed: settings.seed, ...(rules ? { rules } : {}) }, setup);
   state.bots = bots;
   return state;
 }
@@ -51,7 +52,7 @@ export function resolveOnlineRound(state: GameState, human: Record<string, Parti
   const values = companyValues(state);
   for (const [id, strategy] of Object.entries(state.bots ?? {})) {
     const c = state.companies.find((x) => x.id === id);
-    if (!c) continue;
+    if (!c || c.merged) continue;
     if (c.bankrupt) {
       const leader = state.companies.filter((o) => !o.bankrupt).sort((a, b) => values[b.id] - values[a.id])[0];
       if (leader) decisions[id] = { journalistTarget: leader.id };

@@ -5,6 +5,7 @@
 // POST { action: "rename", game_id, target_id, name }   the controller of a company renames it.
 // POST { action: "tick" } + header x-tick-secret        the scheduler (pg_cron, every minute) closes every overdue round.
 // POST { action: "trade", game_id, target_id, qty }      live stock exchange: buy (qty > 0) or sell (qty < 0) right now.
+//                                                       A hostile bid (passing 40%) in the last 90 seconds extends the round by 90 seconds.
 // POST { action: "bid", game_id, lot, amount }          live auction bid ("auction", or a bankrupt company's id).
 // The full engine state never leaves the server: each player gets their own view (rivals' secrets removed).
 // Accepted deals between players are carried out when the round resolves.
@@ -52,7 +53,7 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   const { data: rows } = await admin.from("decisions").select("player_id, decisions").eq("game_id", gameId).eq("round", round);
   const decisions: Record<string, unknown> = {};
   for (const r of rows ?? []) decisions[r.player_id] = r.decisions;
-  const aliveHumans = state.companies.filter((c: State) => !c.bankrupt && humanIds.includes(c.id));
+  const aliveHumans = state.companies.filter((c: State) => !c.bankrupt && !c.merged && humanIds.includes(c.id));
   const allReady = aliveHumans.every((c: State) => decisions[c.id]);
   const deadlinePassed = !game.round_deadline || Date.now() >= new Date(game.round_deadline).getTime();
   const isHost = !!who && game.host_user_id === who.userId;
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
 
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] | 0;
     const state = startOnlineGame(
-      { industry: game.industry, difficulty: game.difficulty, rounds: game.rounds, botCount: game.bot_count ?? 0, botSkill: game.bot_skill ?? "normal", seed },
+      { industry: game.industry, difficulty: game.difficulty, rounds: game.rounds, botCount: game.bot_count ?? 0, botSkill: game.bot_skill ?? "normal", seed, rules: game.rules ?? null },
       players!.map((p: State) => ({ id: p.id, name: p.player_name, company: p.company_name, trait: p.trait })),
     );
     const deadline = new Date(Date.now() + game.round_seconds * 1000).toISOString();
@@ -168,7 +169,18 @@ Deno.serve(async (req) => {
       const { data: saved } = await admin.from("game_states").update({ state: next, updated_at: stamp }).eq("game_id", gameId).eq("updated_at", row!.updated_at).select("game_id");
       if (!saved?.length) continue;
       await admin.from("market_live").upsert({ game_id: gameId, round: next.round, data: publicLive(next), updated_at: stamp });
-      return json({ ok: true, trade, live: publicLive(next) });
+      // Hostile bid in the closing seconds: the target gets 90 seconds to respond.
+      let extended = null;
+      if (body.action === "trade" && trade && game.round_deadline) {
+        const t = trade as State, target = next.companies.find((c: State) => c.id === t.target);
+        const heldNow = target?.shares?.holders?.[mePlayer.id] ?? 0;
+        const left = new Date(game.round_deadline).getTime() - Date.now();
+        if (t.qty > 0 && heldNow >= 40 && heldNow - t.qty < 40 && left < 90_000) {
+          extended = new Date(Date.now() + 90_000).toISOString();
+          await admin.from("games").update({ round_deadline: extended }).eq("id", gameId).eq("current_round", game.current_round).eq("status", "playing");
+        }
+      }
+      return json({ ok: true, trade, live: publicLive(next), extended });
     }
     return json({ error: "The market is busy, try again" }, 409);
   }

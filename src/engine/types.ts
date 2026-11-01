@@ -67,6 +67,10 @@ export interface Decisions {
   materialOrder: number;
   /** Leftover stock to sell to the bulk buyer after the market, at the bulk price (max units). */
   bulkSell: number;
+  /** Name of your product line (shown in reviews and to everyone). Optional; empty keeps the current name. */
+  productName?: string;
+  /** Building style in the skyline (cosmetic, unlocked by CEO level). */
+  style?: number;
 }
 
 export type GuidanceResult = "hit" | "close" | "miss";
@@ -84,11 +88,13 @@ export interface LiveState {
 }
 
 /** Private deals between players, agreed outside the decisions and carried out when the round resolves. */
-export type DealKind = "shares" | "loan" | "pact";
+export type DealKind = "shares" | "loan" | "pact" | "merger";
 export interface ShareDealTerms { company: string; qty: number; price: number; direction: "sell" | "buy" }
 export interface LoanDealTerms { amount: number; repay: number; rounds: number; direction: "lend" | "borrow" }
 export interface PactDealTerms { rounds: number; penalty: number }
-export interface DealOrder { id: string; from: string; to: string; kind: DealKind; terms: ShareDealTerms | LoanDealTerms | PactDealTerms }
+/** Friendly merger: the two companies become one. `survivor` (one of the two) keeps running; the other becomes a holding company with shares in it, split by value. */
+export interface MergerDealTerms { survivor: string }
+export interface DealOrder { id: string; from: string; to: string; kind: DealKind; terms: ShareDealTerms | LoanDealTerms | PactDealTerms | MergerDealTerms }
 
 /** What a bought research report reveals, delivered with the round report. */
 export interface ResearchResult {
@@ -180,6 +186,11 @@ export interface Company {
   /** Rounds left before this company may buy shares in others again (set after a takeover). */
   takeoverCooldown: number;
   bankrupt: boolean;
+  /** Merged into another company: this one no longer operates and only holds shares (its player is an investor now). */
+  merged?: { into: string; round: number } | null;
+  /** Product line name (cosmetic) and skyline building style (cosmetic). */
+  productName?: string;
+  style?: number;
   /** Last decisions, used as defaults. */
   lastDecisions: Decisions;
   history: RoundReport[];
@@ -275,6 +286,8 @@ export interface RoundReport {
   /** Investor call: what was promised, how it went, and the trust level after. */
   guidance?: { units: number; profit: number; result: GuidanceResult; unitsErr: number; profitErr: number };
   credibility?: number;
+  /** What critics and customers said about the product this round (public). */
+  reviews?: { stars: number; quotes: string[] };
 }
 
 export interface NewsEffect {
@@ -311,11 +324,24 @@ export interface ActiveNews {
   targetCompanyId?: string;
 }
 
+/** House rules a group can pick in the lobby. Missing = the normal rules. */
+export interface HouseRules {
+  /** Starting cash per company (euros). */
+  startCash?: number;
+  /** false = no share buying, takeovers, mergers or live exchange. */
+  takeovers?: boolean;
+  /** false = no wildcards. */
+  wildcards?: boolean;
+  /** How much news happens and how hard it hits. */
+  news?: "calm" | "normal" | "wild";
+}
+
 export interface GameConfig {
   industry: IndustryId;
   difficulty: DifficultyId;
   rounds: number;
   seed: number;
+  rules?: HouseRules;
 }
 
 export interface GameState {
@@ -392,4 +418,6 @@ export interface Standing {
   missionDone: boolean;
   missionBonus: number;
   journalistPoints: number;
+  /** Merged into another company (now a holding company). */
+  merged?: string | null;
 }

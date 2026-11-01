@@ -306,6 +306,9 @@ await wait(50);
 const earned = JSON.parse(window.localStorage.getItem("ft-ach") || "[]");
 if (!earned.includes("first_game")) throw new Error("first_game achievement not earned: " + JSON.stringify(earned));
 if (!(JSON.parse(window.localStorage.getItem("ft-stats") || "{}").games >= 1)) throw new Error("stats not recorded");
+// CEO career: the game earned XP, shown on the final screen.
+if (!(JSON.parse(window.localStorage.getItem("ft-stats") || "{}").xp >= 140)) throw new Error("XP not recorded");
+if (!/\+\d+ XP/.test(doc.querySelector(".overlay").textContent) || !doc.querySelector(".xpcard .car-title")) throw new Error("XP card missing on the final screen");
 click('[data-star="4"]');
 if (doc.getElementById("fb-send").disabled) throw new Error("feedback send should enable after a rating");
 // Bankruptcy sale and monopoly, driven through the test hook on a fresh game.
@@ -363,8 +366,61 @@ if (!/Mission:/.test(doc.querySelector(".overlay").textContent)) throw new Error
 if (!auctionSeen || !summitSeen) throw new Error("auction or summit never appeared");
 if (votePopups < 2) throw new Error("vote should pop up at the start of both summit rounds, got " + votePopups);
 if (!tvTags.has("Auction") || !tvTags.has("Summit")) throw new Error("special broadcasts missing: " + [...tvTags].join(","));
+// House rules, a merger with a bot, product names and reviews, on a short Cutthroat game.
+{
+  click("#btn-again");
+  click('input[name="difficulty"][value="cutthroat"]'); click('input[name="rounds"][value="6"]');
+  click(`[data-srule="news"][data-val='"wild"']`);
+  if (!/wild news/.test(doc.querySelector(".rules-box summary").textContent)) throw new Error("rules summary should update");
+  click("#btn-start");
+  while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
+  if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
+  const D = window.__ftDebug;
+  if (D.S.game.config.rules.news !== "wild") throw new Error("house rules not applied: " + JSON.stringify(D.S.game.config.rules));
+  // Name the product; after the round it has a review in the News tab.
+  click('[data-tab="marketing"]');
+  const pn = doc.getElementById("f-pname"); pn.value = "Midnight Crunch"; pn.dispatchEvent(new window.Event("input", { bubbles: true }));
+  click("#btn-submit"); if (doc.querySelector("[data-vote]")) click('[data-vote="a"]'); click("#btn-confirm");
+  if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  if (doc.querySelector("#btn-continue")) click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  if (D.S.game.companies[0].productName !== "Midnight Crunch") throw new Error("product name not saved");
+  click('[data-tab="news"]');
+  if (!/What people say/.test(doc.body.textContent) || !/Midnight Crunch/.test(doc.querySelector(".reviews").textContent) || !doc.querySelector(".rv-stars")) throw new Error("reviews card missing");
+  // Merge into a bot that runs the combined company: you become an investor.
+  const bot = D.S.game.companies.find((c) => c.id !== "you" && !String(D.S.strat[c.id]).includes("raider"));
+  bot.cash += 3_000_000; // a big partner, so the bot says yes to running it
+  click("#btn-chat"); click(`[data-thread="${bot.id}"]`); click("#t-newdeal"); click('[data-dkind="merger"]'); click('[data-dlead="them"]');
+  if (!/They run it/.test(doc.querySelector(".dealform").textContent) || !/Your part/.test(doc.querySelector(".dealform").textContent)) throw new Error("merger form missing");
+  click("#d-send");
+  await wait(1000);
+  const md = D.S.deals.find((x) => x.kind === "merger");
+  if (!md || md.status !== "accepted") throw new Error("bot should accept running a merger: " + JSON.stringify(md));
+  click("#talk-close");
+  click("#btn-submit"); if (doc.querySelector("[data-vote]")) click('[data-vote="a"]'); click("#btn-confirm");
+  if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  if (doc.querySelector("#btn-continue")) click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  const meNow = D.S.game.companies.find((c) => c.id === "you");
+  if (!meNow.merged || meNow.merged.into !== bot.id) throw new Error("merger did not happen: " + JSON.stringify(D.S.game.dealLog));
+  click('[data-tab="production"]');
+  if (!/You merged into/.test(doc.body.textContent)) throw new Error("investor panel missing after merging");
+  // An investor can still play rounds.
+  click("#btn-submit"); click("#btn-confirm");
+  if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  if (!doc.querySelector("#btn-continue")) throw new Error("round as an investor did not resolve");
+  click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+  while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
+  click("#btn-menu"); window.localStorage.removeItem("ft-save");
+  // Takeovers off: the tab says so.
+  click("#t-new"); click('[data-srule="takeovers"][data-val="false"]'); click("#btn-start");
+  while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
+  click('[data-tab="takeovers"]');
+  if (!/Takeovers are off/.test(doc.body.textContent)) throw new Error("takeovers-off house rule not shown");
+  click("#btn-menu"); window.localStorage.removeItem("ft-save");
+  click("#t-new"); click('[data-srule="takeovers"][data-val="true"]'); click(`[data-srule="news"][data-val='"normal"']`);
+}
 // Weed is 18+: the game asks once; "No" goes back to the menu, "Yes" is remembered.
-click("#btn-again");
 click('input[name="industry"][value="weed"]'); click("#btn-start");
 if (!doc.getElementById("age-yes")) throw new Error("weed game should ask for 18+");
 click("#age-no");

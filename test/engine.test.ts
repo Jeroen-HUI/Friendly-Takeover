@@ -605,3 +605,73 @@ test("live auction: the highest live bid wins and pays; the lot closes after the
   assert.ok(g.feed.some((f) => f.headline.startsWith(g.companies[1].companyName + " wins")), "b wins");
   assert.ok(g.companies[1].history.at(-1)!.auctionPaid > 0 && cash > 0);
 });
+
+// ---------------------------------------------------------------- house rules, mergers, hostile bids, reviews
+test("house rules: start cash, no takeovers, no wildcards, calm or wild news", () => {
+  const rich = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 6, seed: 3, rules: { startCash: 2_000_000 } }, players);
+  const normal = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 6, seed: 3 }, players);
+  assert.ok(rich.companies[0].cash > normal.companies[0].cash + 900_000, "more starting cash");
+  let g = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 6, seed: 3, rules: { takeovers: false, wildcards: false } }, players);
+  g.companies[0].cash = 50_000_000;
+  assert.throws(() => exchangeTrade(g, "a", "b", 5, 1), /off in this game/);
+  const cashBefore = g.companies[0].cash;
+  g = resolveRound(g, { a: { buyShares: { b: 20 }, wildcard: { card: "lawsuit", target: "b" } } }, [{ id: "1", from: "a", to: "b", kind: "merger", terms: { survivor: "a" } }]);
+  assert.equal(g.companies[1].shares.holders.a ?? 0, 0, "no share buying");
+  assert.equal(g.companies[0].wildcardsUsed.lawsuit ?? 0, 0, "no wildcards");
+  assert.ok(!g.companies[1].merged && g.dealLog![0].ok === false, "no mergers");
+  assert.ok(g.companies[0].cash > cashBefore - 2_000_000);
+  // Wild news: a story every round and more market-report items than calm.
+  const count = (news: "calm" | "wild") => { let s = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 11, rules: { news } }, players); let k = 0; for (let r = 0; r < 5; r++) { k += s.news.length; s = resolveRound(s, {}); } return k; };
+  assert.ok(count("wild") > count("calm") + 5, "wild news is busier than calm");
+});
+
+test("friendly merger: one company runs on, shares split by value, the other becomes a holding company", () => {
+  let g = newGame(21, "cutthroat");
+  g = resolveRound(g, {});
+  const v0 = companyValues(g);
+  const capA = g.companies[0].capacity, capB = g.companies[1].capacity;
+  g = resolveRound(g, {}, [{ id: "m1", from: "b", to: "a", kind: "merger", terms: { survivor: "a" } }]);
+  const a = g.companies[0], b = g.companies[1];
+  assert.equal(g.dealLog![0].ok, true, g.dealLog![0].reason);
+  assert.ok(b.merged && b.merged.into === "a");
+  assert.ok(a.capacity > capA * 1.5 && b.capacity === 0, "factories combined");
+  assert.equal(shareTotal(g, "a"), 100);
+  const bStake = a.shares.holders.b ?? 0;
+  assert.ok(bStake >= 10 && bStake <= 20, "b holds its value share of the founder stake: " + bStake);
+  assert.ok(a.shares.founder >= 10 && a.shares.founder <= 20);
+  assert.equal(b.history.length, g.companies[2].history.length - 1, "the merged company didn't play this round");
+  assert.ok(g.feed.some((f) => f.headline.startsWith("MERGER!")));
+  // The holding company is worth its stake in the combined company.
+  const v = companyValues(g);
+  assert.ok(Math.abs(v.b - (bStake / 100) * (v.a - 0)) < v.a * 0.2, "holding value follows the stake");
+  assert.ok(v.a > v0.a, "the survivor is bigger");
+  assert.throws(() => exchangeTrade(g, "c", "b", 1, 5), /merged/);
+  // The game goes on; the merged company keeps its score and never goes bankrupt.
+  for (let r = 0; r < 3 && !g.finished; r++) g = resolveRound(g, {});
+  const row = standings(g).find((s) => s.companyId === "b")!;
+  assert.equal(row.merged, "a");
+  assert.ok(row.score > 0 && !row.bankrupt);
+});
+
+test("hostile bid: passing 40% of a company makes headlines and warns the target", () => {
+  let g = newGame(31, "cutthroat");
+  g.companies[0].cash = 50_000_000;
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  assert.equal(g.companies[1].shares.holders.a, 40);
+  assert.ok(g.feed.some((f) => f.headline.startsWith("Hostile bid!") && f.headline.includes("40%")));
+  assert.ok(g.companies[1].history.at(-1)!.events.some((e) => e.startsWith("HOSTILE BID")));
+});
+
+test("reviews: every product gets 1-5 stars and quotes with its name; cheap good products score higher", () => {
+  let g = newGame(41);
+  g = resolveRound(g, { a: { productName: "Midnight Crunch", price: 1.6, quality: 3 }, b: { price: 3.5, quality: 1 } });
+  const ra = g.companies[0].history.at(-1)!.reviews!, rb = g.companies[1].history.at(-1)!.reviews!;
+  assert.equal(g.companies[0].productName, "Midnight Crunch");
+  assert.ok(ra.stars >= 1 && ra.stars <= 5 && ra.quotes.length >= 1);
+  assert.ok(ra.stars > rb.stars, `cheap and decent (${ra.stars}) beats pricey and poor (${rb.stars})`);
+  assert.ok(ra.quotes.join(" ").includes("Midnight Crunch") || ra.quotes.join(" ").includes("ChocoLoco"));
+  // Same game, same reviews.
+  const again = resolveRound(newGame(41), { a: { productName: "Midnight Crunch", price: 1.6, quality: 3 }, b: { price: 3.5, quality: 1 } });
+  assert.deepEqual(again.companies[0].history.at(-1)!.reviews, ra);
+});

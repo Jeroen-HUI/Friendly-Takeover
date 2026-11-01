@@ -224,6 +224,24 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .choice input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 2px; }
 .choice input:disabled + span { opacity: 0.35; cursor: not-allowed; }
 .choices.traits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.career .car-top { display: flex; gap: 12px; align-items: center; }
+.car-lvl { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); font-family: var(--font-display); font-size: 22px; box-shadow: 0 0 0 3px var(--frame-dark); }
+.car-title { font-family: var(--font-display); font-size: 18px; }
+.career .mbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; margin: 4px 0 2px; } .career .mbar i { display: block; height: 100%; background: var(--gold); }
+.roofs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.roofpick { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 0; border-radius: 8px; background: var(--panel-3); color: var(--ink); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; text-align: left; }
+.roofpick canvas { width: 32px; height: 24px; image-rendering: pixelated; flex: none; }
+.roofpick.on { box-shadow: 0 0 0 2px var(--gold); } .roofpick:disabled { opacity: 0.45; cursor: not-allowed; }
+.xp-parts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; font-weight: 800; color: var(--muted); } .xp-parts b { color: var(--good); }
+.reviews { display: grid; gap: 8px; }
+.review { padding: 8px 10px; border-radius: 8px; background: var(--panel-2); display: grid; gap: 3px; }
+.review.me { box-shadow: inset 3px 0 0 var(--frame); }
+.rv-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .rv-head .muted { font-size: 12px; font-weight: 800; }
+.rv-stars { margin-left: auto; color: var(--gold); letter-spacing: 1px; font-size: 15px; }
+.rv-q { font-size: 13px; font-weight: 700; color: var(--muted); font-style: italic; }
+.rules-box { padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
+.rules-box summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.rules-box .orow { margin-top: 8px; }
 .choices.row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; }
 @media (max-width: 520px) { .choices.traits { grid-template-columns: 1fr; } }
 :root[data-theme="light"] .trait-card em { color: #8a5a00; }
@@ -817,6 +835,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   // ---------------- helpers ----------------
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  // Still running a business: not bankrupt and not merged into another company.
+  const live = (c) => !!c && !c.bankrupt && !c.merged;
   const colVar = (id) => "var(" + COLORS[S.color[id] % COLORS.length] + ")";
   const colRaw = (id) => css(COLORS[S.color[id] % COLORS.length]);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -841,7 +861,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   // A company's style comes from how it compares to the rest of the market, not from fixed price points.
   function positionOf(c) {
-    const alive = S.game.companies.filter((o) => !o.bankrupt);
+    const alive = S.game.companies.filter((o) => live(o));
     const priceOf = (o) => o.history.at(-1)?.price ?? o.lastDecisions.price;
     const qualOf = (o) => o.history.at(-1)?.quality ?? o.lastDecisions.quality;
     const avgP = alive.reduce((a, o) => a + priceOf(o), 0) / Math.max(1, alive.length);
@@ -977,7 +997,24 @@ details.howto[open] summary::after { content: "▾ hide"; }
     g.fillStyle = "#ffd43b";
     for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + (f % 40) / 40 * 0.4, d = 13 + (k % 2); g.fillRect(Math.round(x + Math.cos(a) * d), Math.round(y + Math.sin(a) * d), 2, 2); }
   }
-  const DEFAULT_OPTS = { name: "You", company: "Cocoa Loco", industry: "chocolate", bots: 4, difficulty: "standard", trait: "visionary", botSkill: "normal", rounds: 8 };
+  const DEFAULT_OPTS = { name: "You", company: "Cocoa Loco", industry: "chocolate", bots: 4, difficulty: "standard", trait: "visionary", botSkill: "normal", rounds: 8, rules: {} };
+  // ----- House rules (lobby and new-game screen). Missing = the normal rules.
+  const RULES_UI = [
+    ["startCash", "Starting cash", "How much every company starts with", [[500000, "€500k"], [1000000, "€1M"], [2000000, "€2M"]], 1000000],
+    ["takeovers", "Takeovers", "Share buying, takeovers, mergers and the stock exchange", [[true, "On"], [false, "Off"]], true],
+    ["wildcards", "Wildcards", "Spies, scandals, lawsuits and crazy launches", [[true, "On"], [false, "Off"]], true],
+    ["news", "News", "Calm: little news. Wild: a big story every round, hitting harder", [["calm", "Calm"], ["normal", "Normal"], ["wild", "Wild"]], "normal"],
+  ];
+  const ruleVal = (rules, k) => { const def = RULES_UI.find((r) => r[0] === k)[4]; return rules && rules[k] !== undefined ? rules[k] : def; };
+  const rulesNow = () => (S && S.game && S.game.config ? FT.rulesOf(S.game) : { startCash: 0, takeovers: true, wildcards: true, news: "normal" });
+  function rulesSummary(rules) {
+    const out = [];
+    if (ruleVal(rules, "startCash") !== 1000000) out.push("start " + eur(ruleVal(rules, "startCash")));
+    if (ruleVal(rules, "takeovers") === false) out.push("no takeovers");
+    if (ruleVal(rules, "wildcards") === false) out.push("no wildcards");
+    if (ruleVal(rules, "news") !== "normal") out.push(ruleVal(rules, "news") + " news");
+    return out.length ? "House rules: " + out.join(", ") : "";
+  }
   function loadSave() {
     try {
       const d = JSON.parse(localStorage.getItem("ft-save") || "null");
@@ -1016,7 +1053,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="name">${esc(r.name)}</div><div class="co">${esc(r.co)}</div><div class="val">${eur(r.value, 2)}</div></div>`).join("");
     const signs = rows.map((r) => `<div class="sign ${r.id === "you" ? "me" : ""}" data-tsign="${r.id}" style="--pc:var(${COLORS[r.color % COLORS.length]})">${esc(r.co)}</div>`).join("");
     const dSt = localGet("ft-daily", null), dNew = !(dSt && dSt.day === todayUTC());
-    const side = [["help", "help", "How to play", ""], ["friends", "friends", "Friends", ACC.friends.some((f) => f.status === "incoming") ? "NEW" : ""], ["trophy", "achievements", "Achievements", ""], ["calendar", "daily", "Daily game", dNew ? "NEW" : ""], ["podium", "leaderboard", "Leaderboards", ""]]
+    const side = [["help", "help", "How to play", ""], ["friends", "friends", "Friends", ACC.friends.some((f) => f.status === "incoming") ? "NEW" : ""], ["trophy", "achievements", "Career", ""], ["calendar", "daily", "Daily game", dNew ? "NEW" : ""], ["podium", "leaderboard", "Leaderboards", ""]]
       .map(([icon, act, label, tag]) => `<button class="tside" type="button" data-title="${act}"><canvas data-ticon="${icon}" width="12" height="12" aria-hidden="true"></canvas>${label}${tag ? `<span class="soon new">${tag}</span>` : ""}</button>`).join("");
     const cont = save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game";
     return `<section class="title-screen" aria-label="Main menu">
@@ -1574,7 +1611,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     } catch (e) { MP.error = e.message; S.modal = "wait"; render(); }
   }
   function readyInfo() {
-    const r = S.game.round, alive = new Set(S.game.companies.filter((c) => !c.bankrupt).map((c) => c.id));
+    const r = S.game.round, alive = new Set(S.game.companies.filter((c) => live(c)).map((c) => c.id));
     const humans = MP.players.map((p) => ({ p, cid: cid(p.id) })).filter((x) => alive.has(x.cid));
     const ready = humans.filter((x) => x.p.submitted_round >= r).length;
     return { humans, ready, total: humans.length, all: ready === humans.length };
@@ -1596,7 +1633,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function waitModal() {
     const ri = readyInfo(), host = mpIsHost(), canSkip = host && ri.all;
     const list = ri.humans.map(({ p, cid: id }) => `<div class="sumline"><span><span class="dot" style="background:${colVar(id)}"></span>${esc(id === "you" ? "You" : p.player_name)} <span class="muted">· ${esc(byId(id) ? byId(id).companyName : p.company_name)}</span>${p.is_host ? ' <span class="title-chip">host</span>' : ""}</span><b class="${p.submitted_round >= S.game.round ? "pos" : "muted"}">${p.submitted_round >= S.game.round ? "✓ ready" : "deciding…"}</b></div>`).join("");
-    const botCount = S.game.companies.filter((c) => /^bot-/.test(c.id) && !c.bankrupt).length;
+    const botCount = S.game.companies.filter((c) => /^bot-/.test(c.id) && live(c)).length;
     return `<div class="win"><div class="win-title">Round ${S.game.round}: waiting for the others<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       ${MP.error ? `<div class="note neg">${esc(MP.error)}</div>` : ""}
       <div class="kv"><div><span>Ready</span><b>${ri.ready} / ${ri.total}</b></div><div><span>Time left</span><b id="wait-timer">…</b></div></div>
@@ -1634,6 +1671,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
           <div class="orow"><div class="otext"><b>Time per round</b><small>The host can skip it once everyone is ready</small></div><div class="octl">${sel("round_seconds", ROUND_TIMES, g.round_seconds)}</div></div>
           <div class="orow"><div class="otext"><b>Bots</b><small>Fill the table with computer players</small></div><div class="octl">${sel("bot_count", [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4"]], g.bot_count || 0)}</div></div>
           <div class="orow"><div class="otext"><b>Bot skill</b></div><div class="octl">${sel("bot_skill", [["normal", "Normal"], ["hard", "Hard"]], g.bot_skill || "normal")}</div></div>
+          <h3 style="margin-top:8px">House rules</h3>
+          ${RULES_UI.map(([k, label, desc, opts]) => `<div class="orow"><div class="otext"><b>${label}</b><small>${desc}</small></div><div class="octl"><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${ruleVal(g.rules, k) === v}" data-rule="${k}" data-val="${JSON.stringify(v).replace(/"/g, "&quot;")}" ${dis}>${n}</button>`).join("")}</div></div></div>`).join("")}
         </div>
       </div>
       ${MP.error ? `<div class="note neg">${esc(MP.error)}</div>` : ""}
@@ -1651,6 +1690,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
         MP.error = "";
       } catch (er) { MP.error = er.message; }
       sfx("click"); MP.sig = ""; mpRefresh();
+    });
+    on("[data-rule]", "click", async (e) => {
+      if (!mpIsHost()) return;
+      const rules = { ...(MP.game.rules || {}), [e.currentTarget.dataset.rule]: JSON.parse(e.currentTarget.dataset.val) };
+      try { const r = await api().rpc("set_house_rules", { p_game_id: MP.game.id, p_rules: rules }); MP.game = { ...MP.game, rules: r || rules }; MP.error = ""; }
+      catch (er) { MP.error = er.message; }
+      sfx("click"); MP.sig = ""; mpRefresh(); render();
     });
     on("#btn-copy-tv", "click", () => { const i = $("#tv-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); } $("#btn-copy-tv").textContent = "Copied!"; });
     on("#btn-copy", "click", () => { const i = $("#invite-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); document.execCommand && document.execCommand("copy"); } $("#btn-copy").textContent = "Copied!"; });
@@ -1889,7 +1935,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const unreadTotal = () => ["all", ...partners()].reduce((a, k) => a + unread(k), 0);
   // Who you can talk to privately: online only people (bots can't read DMs there).
   function partners() {
-    return S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt && (!S.mp || !/^bot-/.test(c.id))).map((c) => c.id);
+    return S.game.companies.filter((c) => c.id !== "you" && live(c) && (!S.mp || !/^bot-/.test(c.id))).map((c) => c.id);
   }
   function dealText(d, mine) {
     const t = d.terms, other = byId(d.from === "you" ? d.to : d.from), oName = esc(other ? other.companyName : "?");
@@ -1903,13 +1949,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const proposerLends = t.direction === "lend", youLend = youFirst ? proposerLends : !proposerLends;
       return youLend ? `You lend ${oName} <b>${eurX(t.amount)}</b>; they repay <b>${eurX(t.repay)}</b> in ${t.rounds} round${t.rounds > 1 ? "s" : ""}` : `${oName} lends you <b>${eurX(t.amount)}</b>; you repay <b>${eurX(t.repay)}</b> in ${t.rounds} round${t.rounds > 1 ? "s" : ""}`;
     }
+    if (d.kind === "merger") {
+      const lead = byId(t.survivor);
+      return t.survivor === "you" ? `<b>Merger:</b> ${oName} joins your company. <b>You run</b> the combined company; they become an investor with shares in it, split by value`
+        : `<b>Merger:</b> your company joins ${esc(lead ? lead.companyName : "theirs")}. <b>They run it</b>; you become an investor holding your part of the shares`;
+    }
     return `Non-attack pact with ${oName} for <b>${t.rounds}</b> round${t.rounds > 1 ? "s" : ""}: no share buying or targeted wildcards. Breaking it costs <b>${eurX(t.penalty)}</b>`;
   }
   const DEAL_STATUS = { offered: "Waiting", accepted: "Agreed: happens when the round resolves", declined: "Declined", cancelled: "Withdrawn", done: "Done", failed: "Fell through" };
   function dealCard(d) {
     const open = d.status === "offered" && d.round === S.game.round && !S.game.finished;
     const actions = open ? (d.to === "you" ? `<button class="btn small go" type="button" data-deal-accept="${d.id}">Accept</button><button class="btn small" type="button" data-deal-decline="${d.id}">Decline</button>` : `<button class="btn small" type="button" data-deal-cancel="${d.id}">Withdraw</button>`) : "";
-    return `<div class="dealcard ${d.status}"><div class="dc-k">${{ shares: "Share deal", loan: "Loan", pact: "Pact" }[d.kind]} · round ${d.round} · ${d.from === "you" ? "your offer" : "offer to you"}</div><div>${dealText(d)}</div>
+    return `<div class="dealcard ${d.status}"><div class="dc-k">${{ shares: "Share deal", loan: "Loan", pact: "Pact", merger: "Merger" }[d.kind]} · round ${d.round} · ${d.from === "you" ? "your offer" : "offer to you"}</div><div>${dealText(d)}</div>
       <div class="dc-foot"><span class="dstat ${d.status}">${DEAL_STATUS[d.status] || d.status}${d.note ? ": " + esc(d.note) : ""}</span>${actions}</div></div>`;
   }
   function talkHtml() {
@@ -1957,7 +2008,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   // Which shares each side can sell: your own founder shares, or stakes held in other companies.
   function sellable(id) {
-    return S.game.companies.filter((c) => !c.bankrupt).map((c) => ({ c, n: c.id === id ? c.shares.founder : c.shares.holders[id] || 0 })).filter((x) => x.n > 0);
+    return S.game.companies.filter((c) => live(c)).map((c) => ({ c, n: c.id === id ? c.shares.founder : c.shares.holders[id] || 0 })).filter((x) => x.n > 0);
   }
   function dealForm() {
     const f = TALK.form, other = byId(TALK.thread), P = SP(S.game);
@@ -1978,11 +2029,19 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="form"><div class="ctl"><label for="d-amount">Amount now (€)</label><input type="text" inputmode="decimal" id="d-amount" value="${esc(f.amount)}" placeholder="e.g. 500k"></div><div class="ctl"><label for="d-repay">Paid back (€)</label><input type="text" inputmode="decimal" id="d-repay" value="${esc(f.repay)}" placeholder="e.g. 550k"></div></div>
         <div class="ctl"><label for="d-rounds">Paid back after</label><select id="d-rounds" class="sel">${[1, 2, 3].map((n) => `<option value="${n}" ${Number(f.rounds) === n ? "selected" : ""}>${n} round${n > 1 ? "s" : ""}</option>`).join("")}</select></div>
         <div class="hint">Repayment happens automatically at the start of that round. The bank charges ${Math.round(FT.BALANCE.baseInterest * 100)}% a round, for comparison.</div>`;
+    } else if (f.kind === "merger") {
+      const v = CV(S.game), mine = Math.max(1, v.you || 0), theirs = Math.max(1, v[other.id] || 0), myPart = mine / (mine + theirs);
+      const lead = f.lead === "them" ? other : me();
+      body = `<div class="seg" role="radiogroup">${[["me", "I run it"], ["them", "They run it"]].map(([k, n]) => `<button type="button" role="radio" aria-checked="${(f.lead || "me") === k}" data-dlead="${k}">${n}</button>`).join("")}</div>
+        <div class="kv"><div><span>Combined value</span><b>${eur(mine + theirs)}</b></div><div><span>Your part</span><b>${Math.round(myPart * 100)}%</b></div><div><span>Boss</span><b>${esc(lead.id === "you" ? "You" : lead.playerName)}</b></div></div>
+        <div class="hint">The two companies become one: factories, cash, debt, stock, stores and brand are added together and <b>${esc(lead.companyName)}</b> keeps running. Its shares are split by value, so the other side becomes an investor holding its part (about ${Math.round((f.lead === "them" ? myPart : 1 - myPart) * 30)}% of the combined company's shares). ${f.lead === "them" ? "You'd stop running a company and play on as an investor: trade shares, make deals, collect value." : ""}${diff().takeoverUnlockRound > S.game.round ? ` <span class="neg">Mergers only go through from round ${diff().takeoverUnlockRound}.</span>` : ""}</div>`;
     } else {
       body = `<div class="form"><div class="ctl"><label for="d-prounds">Rounds</label><select id="d-prounds" class="sel">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${Number(f.rounds) === n ? "selected" : ""}>${n} (through round ${S.game.round + n - 1})</option>`).join("")}</select></div><div class="ctl"><label for="d-penalty">Penalty for breaking it (€)</label><input type="text" inputmode="decimal" id="d-penalty" value="${esc(f.penalty)}" placeholder="e.g. 300k"></div></div>
         <div class="hint">Neither of you may buy the other's shares or aim a wildcard at them. Whoever does pays the penalty to the other, and the whole table hears about it.</div>`;
     }
-    return `<div class="dealform"><div class="seg" role="radiogroup" aria-label="Deal type">${tab("shares", "Shares")}${tab("loan", "Loan")}${tab("pact", "Pact")}</div>${body}
+    const kinds = me().merged ? [["shares", "Shares"]] : rulesNow().takeovers ? [["shares", "Shares"], ["loan", "Loan"], ["pact", "Pact"], ["merger", "Merger"]] : [["loan", "Loan"], ["pact", "Pact"]];
+    if (!kinds.some(([k]) => k === f.kind)) { f.kind = kinds[0][0]; return dealForm(); }
+    return `<div class="dealform"><div class="seg" role="radiogroup" aria-label="Deal type">${kinds.map(([k, n]) => tab(k, n)).join("")}</div>${body}
       <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn small" type="button" id="d-cancel">Cancel</button><button class="btn small go" type="button" id="d-send" ${TALK.busy ? "disabled" : ""}>Send offer</button></div></div>`;
   }
   function readDealForm() {
@@ -2005,6 +2064,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (!(amount > 0) || !Number.isFinite(repay) || repay < 0) return "Fill in the amount and what gets paid back.";
       return { amount: Math.round(amount), repay: Math.round(repay), rounds: Number(f.rounds) || 1, direction: f.direction };
     }
+    if (f.kind === "merger") return { survivor: f.lead === "them" ? TALK.thread : "you" };
     const penalty = parseAmount(f.penalty);
     if (!Number.isFinite(penalty) || penalty < 0) return "Type a penalty, like 300k (0 is allowed).";
     return { rounds: Number(f.rounds) || 2, penalty: Math.round(penalty) };
@@ -2045,6 +2105,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (q("[data-thread]")) { TALK.thread = q("[data-thread]").dataset.thread; TALK.form = null; TALK.err = ""; renderTalk(); return; }
     if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); return; }
     if (q("[data-dkind]")) { readDealForm(); TALK.form.kind = q("[data-dkind]").dataset.dkind; renderTalk(); return; }
+    if (q("[data-dlead]")) { readDealForm(); TALK.form.lead = q("[data-dlead]").dataset.dlead; renderTalk(); return; }
     if (q("[data-ddir]")) { readDealForm(); TALK.form.direction = q("[data-ddir]").dataset.ddir; TALK.form.company = ""; renderTalk(); return; }
     if (q("#d-cancel")) { TALK.form = null; TALK.err = ""; renderTalk(); return; }
     if (q("#d-send")) { readDealForm(); const terms = buildTerms(); if (typeof terms === "string") { TALK.err = terms; renderTalk(); return; } sendDeal(TALK.form.kind, terms); return; }
@@ -2135,7 +2196,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function react(e) {
     floatEmoji(e, "You");
     if (S.mp) { api().sendMessage(MP.gameId, S.game.round, MP.playerId, null, e, "reaction").catch(() => {}); return; }
-    const rng = new FT.Rng((S.seed + Date.now()) | 0), bots = S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt);
+    const rng = new FT.Rng((S.seed + Date.now()) | 0), bots = S.game.companies.filter((c) => c.id !== "you" && live(c));
     for (let k = 0; k < rng.int(3); k++) { const b = rng.pick(bots); if (b) setTimeout(() => floatEmoji(rng.pick(EMOJI), b.playerName), 300 + rng.int(900)); }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest && e.target.closest("[data-react]"); if (b) { react(b.dataset.react); sfx("click"); } });
@@ -2152,6 +2213,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!g || !m) return;
     try {
       const res = await api().rpc("create_game", { p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait, p_industry: g.industry, p_difficulty: g.difficulty, p_mode: g.mode, p_rounds: g.rounds, p_league_id: g.league_id || g.id, p_round_seconds: g.round_seconds, p_bot_count: g.bot_count || 0, p_bot_skill: g.bot_skill || "normal" });
+      if (g.rules && Object.keys(g.rules).length) { try { await api().rpc("set_house_rules", { p_game_id: res.game_id, p_rules: g.rules }); } catch (e) {} }
       S.modal = null; await mpEnter(res.game_id, res.player_id);
     } catch (e) { MP.error = e.message; alertModal(e.message); }
   }
@@ -2300,7 +2362,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const localGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? d; } catch (e) { return d; } };
   const localSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   for (const id of localGet("ft-ach", [])) ACC.ach.add(id);
-  const rpcSafe = async (name, args) => { try { return await api().rpc(name, args); } catch (e) { return undefined; } };
+  // Background calls never create an account by themselves (see hasAccount below).
+  const rpcSafe = async (name, args) => { if (!ACC.wanted && !hasAccount()) return undefined; try { return await api().rpc(name, args); } catch (e) { return undefined; } };
   // No account is created just by opening the page: only once someone uses an online feature
   // (multiplayer, profile, friends, leaderboards) or already has an account on this device.
   const hasAccount = () => !!window.__ftApi || !!loadAuth();
@@ -2506,13 +2569,69 @@ details.howto[open] summary::after { content: "▾ hide"; }
   ];
   const ACH_BY_ID = Object.fromEntries(ACH.map((a) => [a.id, a]));
   function statVal(st, key) { const v = (st || {})[key]; return Array.isArray(v) ? v.length : Number(v) || 0; }
+  // ----- CEO career: XP from every finished game, a title per level, rooftop decorations to unlock (cosmetic only).
+  const LEVELS = [[0, "Intern"], [200, "Trainee"], [500, "Junior Analyst"], [900, "Manager"], [1400, "Director"], [2000, "Vice President"], [2800, "CEO"], [3800, "Chairman"], [5000, "Tycoon"], [6500, "Shark"], [8500, "Mogul"], [11000, "Legend"]];
+  const ROOFTOPS = ["Plain roof", "Antenna", "Satellite dish", "Helipad", "Rooftop garden", "Golden dome", "Giant logo", "Rooftop pool", "Statue of you", "Rocket", "Diamond spire", "Money vault"];
+  const xpNow = () => Math.max(localGet("ft-stats", {}).xp || 0, (ACC.profile && ACC.profile.stats && ACC.profile.stats.xp) || 0);
+  function levelOf(xp) {
+    let i = 0;
+    while (i + 1 < LEVELS.length && xp >= LEVELS[i + 1][0]) i++;
+    return { i, title: LEVELS[i][1], from: LEVELS[i][0], next: LEVELS[i + 1] ? LEVELS[i + 1][0] : null, nextTitle: LEVELS[i + 1] ? LEVELS[i + 1][1] : null };
+  }
+  // Rooftop k unlocks at level k (level 1 = Trainee gets the antenna).
+  const myRoof = () => { const r = Number(localGet("ft-roof", 0)) || 0; return r <= levelOf(xpNow()).i ? r : 0; };
+  /** XP for a finished game: playing, placing, missions, takeovers, new achievements, playing online or the daily. */
+  function gameXp(place, players, missionDone, controls, freshAch, mode) {
+    const placeXp = place === 1 ? 200 : place === 2 ? 120 : place === 3 ? 80 : 40;
+    const parts = [["Finished a game", 100], ["Finished #" + place + " of " + players, placeXp]];
+    if (missionDone) parts.push(["Secret mission", 100]);
+    if (controls) parts.push(["Companies you control", 50 * controls]);
+    if (freshAch) parts.push(["New achievements", 25 * freshAch]);
+    if (mode === "online") parts.push(["Played with friends", 50]);
+    if (mode === "daily") parts.push(["Daily challenge", 50]);
+    const total = Math.min(600, parts.reduce((a, p) => a + p[1], 0));
+    return { total, parts };
+  }
+  function careerCard(compact) {
+    const xp = xpNow(), L = levelOf(xp), pct = L.next ? Math.round(((xp - L.from) / (L.next - L.from)) * 100) : 100;
+    const roof = myRoof();
+    const roofs = ROOFTOPS.map((n, k) => `<button type="button" class="roofpick ${k === roof ? "on" : ""}" data-roof="${k}" ${k > L.i ? "disabled" : ""}${tipAttr(k > L.i ? "Unlocks at " + LEVELS[k][1] + " (" + LEVELS[k][0].toLocaleString("en") + " XP)" : n)}><canvas data-roofico="${k}" width="16" height="12" aria-hidden="true"></canvas><span>${k > L.i ? "🔒 " : ""}${esc(n)}</span></button>`).join("");
+    return `<div class="card career"><h3>CEO career</h3>
+      <div class="car-top"><span class="car-lvl">${L.i + 1}</span><div style="flex:1;min-width:0"><b class="car-title">${esc(L.title)}</b><div class="mbar"><i style="width:${pct}%"></i></div><small class="muted">${xp.toLocaleString("en")} XP${L.next ? ` · ${(L.next - xp).toLocaleString("en")} to ${esc(L.nextTitle)}` : " · top level"}</small></div></div>
+      ${compact ? "" : `<div class="hint">Every finished game earns XP: placing, missions, takeovers, achievements and playing with friends. Each level unlocks a rooftop for your building in the skyline (looks only, everyone sees it).</div><div class="roofs">${roofs}</div>`}</div>`;
+  }
+  // Rooftop decorations, drawn on top of a building in the skyline (and as small icons in the picker).
+  function drawRoof(g, k, cx, top, color, light) {
+    const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(cx + x), Math.round(top + y), w, h); };
+    switch (k) {
+      case 1: px(0, -14, 1, 14, "#cfd6e6"); px(-2, -10, 5, 1, "#cfd6e6"); px(0, -15, 1, 1, cityFrame % 12 < 6 ? "#ff4d4d" : "#6a1f1f"); break;
+      case 2: px(-5, -7, 10, 2, "#e6e9f2"); px(-4, -9, 8, 2, "#e6e9f2"); px(-1, -5, 2, 5, "#9aa3b5"); px(3, -12, 1, 4, "#9aa3b5"); break;
+      case 3: px(-8, -3, 16, 3, "#3a4160"); px(-6, -2, 12, 1, "#f0b429"); px(-1, -3, 1, 2, "#ffffff"); px(1, -3, 1, 2, "#ffffff"); px(-1, -2, 3, 1, "#ffffff"); break;
+      case 4: px(-9, -4, 18, 4, "#3e8f3e"); for (let x = -8; x < 8; x += 4) px(x, -7, 3, 3, "#58c158"); px(-6, -9, 2, 2, "#ff7ab8"); px(4, -9, 2, 2, "#ffd166"); break;
+      case 5: px(-6, -3, 12, 3, "#c99a2e"); px(-5, -6, 10, 3, "#f0c040"); px(-3, -8, 6, 2, "#ffd166"); px(0, -12, 1, 4, "#ffd166"); break;
+      case 6: px(-1, -12, 1, 12, "#9aa3b5"); px(-10, -20, 20, 9, color); px(-9, -19, 18, 7, light); px(-6, -17, 3, 3, color); px(-1, -17, 3, 3, color); px(4, -17, 3, 3, color); break;
+      case 7: px(-9, -3, 18, 3, "#e6e9f2"); px(-8, -2, 16, 2, "#4fc3f7"); px(-6, -2, 3, 1, "#b3e5fc"); px(7, -7, 1, 4, "#e6e9f2"); break;
+      case 8: px(-3, -3, 6, 3, "#8a8f99"); px(-2, -10, 4, 7, "#c9b27a"); px(-1, -13, 2, 3, "#c9b27a"); px(2, -12, 1, 4, "#c9b27a"); break;
+      case 9: px(-2, -16, 4, 13, "#e6e9f2"); px(-1, -19, 2, 3, "#ff4d4d"); px(-4, -6, 2, 4, "#ff4d4d"); px(2, -6, 2, 4, "#ff4d4d"); px(-1, -3, 2, 3 + (cityFrame % 6 < 3 ? 1 : 0), "#ffb43a"); break;
+      case 10: px(-3, -6, 6, 6, "#7ad7ff"); px(-2, -11, 4, 5, "#b9ecff"); px(-1, -16, 2, 5, "#e6f8ff"); px(0, -19, 1, 3, "#ffffff"); break;
+      case 11: px(-7, -8, 14, 8, "#6b6f7a"); px(-6, -7, 12, 6, "#9aa0ad"); px(-2, -6, 4, 4, "#3a3f4a"); px(-1, -5, 2, 2, "#f0b429"); px(5, -10, 2, 2, "#f0b429"); px(-7, -11, 2, 2, "#f0b429"); break;
+    }
+  }
+  function drawRoofIcons(root) {
+    (root || document).querySelectorAll("canvas[data-roofico]").forEach((cv) => {
+      const g = cv.getContext && cv.getContext("2d"); if (!g) return;
+      g.clearRect(0, 0, 16, 12); g.fillStyle = "#5a6f9e"; g.fillRect(2, 10, 12, 2);
+      g.save(); g.translate(0, 0); drawRoof(g, Number(cv.dataset.roofico), 8, 10, css(COLORS[0]), shade(css(COLORS[0]), 0.45)); g.restore();
+    });
+  }
   function achievementsModal() {
     const st = (ACC.profile && ACC.profile.stats) || localGet("ft-stats", {});
     const cards = ACH.map((a) => {
       const got = ACC.ach.has(a.id), prog = a.goal ? Math.min(a.goal, statVal(st, a.stat)) : null;
       return `<div class="achcard ${got ? "got" : ""}"><span class="ach-ico" aria-hidden="true">${got ? a.icon : "🔒"}</span><div><b>${esc(a.name)}</b><small>${esc(a.desc)}</small>${prog !== null && !got ? `<div class="mbar"><i style="width:${Math.round((prog / a.goal) * 100)}%"></i></div><small>${prog} / ${a.goal}</small>` : ""}</div></div>`;
     }).join("");
-    return `<div class="win achwin"><div class="win-title">Achievements · ${ACC.ach.size} of ${ACH.length}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+    return `<div class="win achwin"><div class="win-title">Career and achievements · ${ACC.ach.size} of ${ACH.length}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${careerCard(false)}
       <div class="achgrid">${cards}</div>
       <div class="hint">${ACC.profile && !ACC.profile.anonymous ? "Saved to your account." : "Saved on this device. Save your account with email (Profile) to keep them everywhere."}</div>
       <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Close</button></div></div></div>`;
@@ -2573,9 +2692,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (H.reduce((a, h) => a + (h.researchCost > 0 ? Object.keys(h.research || {}).filter((k) => k !== "boardSeats" && k !== "spy").length : 0), 0) >= 5) ids.push("nerd");
     if (mode === "daily") ids.push("daily1");
     const fresh = earn(ids);
+    // CEO career XP.
+    const beforeXp = xpNow(), xp = gameXp(place, t.length, !!mine.missionDone, g.companies.filter((o) => o.controlledBy === "you").length, fresh.length, mode);
+    const st2 = localGet("ft-stats", {}); st2.xp = Math.max(st2.xp || 0, beforeXp) + xp.total; localSet("ft-stats", st2);
+    S.xpGain = { ...xp, before: beforeXp, after: xpNow() };
+    const lvBefore = levelOf(beforeXp), lvAfter = levelOf(S.xpGain.after);
+    if (lvAfter.i > lvBefore.i) { S.xpGain.levelUp = lvAfter.title; toast(`<span class="ach-ico">⭐</span><div><small>Promoted!</small><b>${esc(lvAfter.title)}</b></div>`); }
+    if (S.modal === "final") { renderModal(); bindModal(); }
+    if (mode === "daily") ACC.wanted = true; // daily scores live on the leaderboard
     try {
+      if (!ACC.wanted && !hasAccount()) throw new Error("offline: no account");
       await accountSync(false);
-      const stats = await api().rpc("record_result", { p_mode: mode, p_won: won, p_industry: g.config.industry, p_difficulty: g.config.difficulty, p_mission: !!mine.missionDone, p_achievements: [...ACC.ach] });
+      const stats = await api().rpc("record_result", { p_mode: mode, p_won: won, p_industry: g.config.industry, p_difficulty: g.config.difficulty, p_mission: !!mine.missionDone, p_achievements: [...ACC.ach], p_xp: xp.total });
       if (stats && ACC.profile) ACC.profile.stats = stats;
       const counters = ACH.filter((a) => a.goal && statVal(stats || st, a.stat) >= a.goal).map((a) => a.id);
       earn(counters);
@@ -2661,7 +2789,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ======================================================================
   const liveOf = () => (S.game && S.game.live && S.game.live.round === S.game.round ? S.game.live : null);
   const liveNow = () => Date.now() + (S.serverSkew || 0);
-  const exchangeOpen = () => !!(S.game && !S.game.finished && S.game.round >= diff().takeoverUnlockRound && !me().bankrupt);
+  const exchangeOpen = () => !!(S.game && !S.game.finished && S.game.round >= diff().takeoverUnlockRound && !me().bankrupt && rulesNow().takeovers);
   function startPriceOf(id) { return SP(S.game)[id] || 0; }
   function liveMsg(text, bad) { const el = $("#ex-msg"); if (el) { el.textContent = text; el.className = "hint " + (bad ? "neg" : "pos"); } }
   async function doTrade(target, qty) {
@@ -2703,7 +2831,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const items = [];
     for (const t of (L ? L.trades : []).slice(-8).reverse()) items.push(`<span class="tk ${t.qty > 0 ? "up" : "down"}">${t.qty > 0 ? "▲" : "▼"} ${esc(tradeLine(t))}</span>`);
     for (const lot of liveLots()) { const l = L && L.lots[lot.key]; if (l && l.high) items.push(`<span class="tk gold">🔨 ${esc(lot.short)}: ${eur(l.high.amount)} by ${esc(short2(l.high.bidder))}</span>`); }
-    const prices = S.game.companies.filter((c) => !c.bankrupt).map((c) => { const p = FT.livePrice(S.game, c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0; return `<span class="tk ${ch > 0.0005 ? "up" : ch < -0.0005 ? "down" : ""}"><b>${esc(c.companyName)}</b> ${eur(p)}${Math.abs(ch) > 0.0005 ? ` ${ch > 0 ? "▲" : "▼"}${Math.abs(ch * 100).toFixed(1)}%` : ""}</span>`; });
+    const prices = S.game.companies.filter((c) => live(c)).map((c) => { const p = FT.livePrice(S.game, c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0; return `<span class="tk ${ch > 0.0005 ? "up" : ch < -0.0005 ? "down" : ""}"><b>${esc(c.companyName)}</b> ${eur(p)}${Math.abs(ch) > 0.0005 ? ` ${ch > 0 ? "▲" : "▼"}${Math.abs(ch * 100).toFixed(1)}%` : ""}</span>`; });
     return `<section class="ticker" id="ticker" aria-label="Live market"><span class="tk-live">LIVE</span><div class="tk-roll">${[...items, ...prices].join("")}</div></section>`;
   }
   // The lots open this round: the auction and any bankruptcy sales.
@@ -2779,7 +2907,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function exchangeCard() {
     const c = me();
     if (!exchangeOpen()) return `<div class="card"><h3>Stock exchange</h3><div class="locked">The live stock exchange opens in round ${diff().takeoverUnlockRound}.</div></div>`;
-    const cards = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
+    const cards = S.game.companies.filter((o) => o.id !== "you" && live(o)).map((o) => {
       const p = FT.livePrice(S.game, o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
       const h = (S.hist[o.id] || []).filter((v) => v > 0), pStart = h.length ? h[0] / 100 : p, chAll = pStart ? p / pStart - 1 : 0;
       const blocked = o.controlledBy && o.controlledBy !== "you", room = Math.min(diff().maxSharesPerRound - FT.liveBought(S.game, "you", o.id), o.shares.float, FT.EXCHANGE.maxHolding - held), canBuy = !blocked && c.takeoverCooldown <= 0 && room > 0;
@@ -2802,7 +2930,22 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // Refresh just the live parts of the screen (ticker, exchange, lots), not the whole page.
+  // Live hostile-bid alerts: someone just passed 40% of a company during the round.
+  const hostileSeen = new Set();
+  function checkHostile() {
+    if (!S || !S.game || S.game.finished) return;
+    for (const t of S.game.companies) for (const [holder, n] of Object.entries(t.shares.holders || {})) {
+      if (n < FT.HOSTILE_BID_SHARES || n > FT.BALANCE.controlThreshold || t.controlledBy) continue;
+      const key = holder + ":" + t.id;
+      if (hostileSeen.has(key)) continue;
+      hostileSeen.add(key);
+      const h = byId(holder); if (!h) continue;
+      if (t.id === "you") { toast(`<small>⚠ Hostile bid</small><b>${esc(h.companyName)} owns ${n}% of you!</b>`); sfx("takeover"); }
+      else if (holder !== "you") toast(`<small>Hostile bid</small><b>${esc(h.companyName)} owns ${n}% of ${esc(t.companyName)}</b>`);
+    }
+  }
   function updateLiveUI() {
+    checkHostile();
     if (!S || S.screen !== "game") return;
     const t = $("#ticker"), th = tickerHtml();
     if (t) { if (th) t.outerHTML = th; else t.remove(); } else if (th) { const ag = document.querySelector(".agenda"); if (ag) ag.insertAdjacentHTML("afterend", th); }
@@ -2834,7 +2977,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!S || S.mp || S.screen !== "game" || !S.game || S.game.finished || S.modal) return;
     liveTicks++;
     const rng = new FT.Rng((S.seed + liveTicks * 7919 + S.game.round) | 0);
-    const bots = S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt);
+    const bots = S.game.companies.filter((c) => c.id !== "you" && live(c));
     let changed = false;
     // Auctions: a bot that values the lot more than the next bid raises (not every tick).
     for (const lot of liveLots()) {
@@ -2848,7 +2991,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     // Exchange: every third tick, maybe one trade.
     if (exchangeOpen() && liveTicks % 3 === 0 && rng.chance(0.4) && bots.length) {
       const b = rng.pick(bots), st = S.strat[b.id] || "", v = CV(S.game);
-      const targets = S.game.companies.filter((o) => o.id !== b.id && !o.bankrupt && (!o.controlledBy || o.controlledBy === b.id));
+      const targets = S.game.companies.filter((o) => o.id !== b.id && live(o) && (!o.controlledBy || o.controlledBy === b.id));
       const held = targets.filter((o) => (o.shares.holders[b.id] || 0) > 0);
       try {
         if (held.length && rng.chance(st.includes("raider") ? 0.15 : 0.35)) { const o = rng.pick(held); S.game = FT.exchangeTrade(S.game, b.id, o.id, -Math.min(o.shares.holders[b.id], 1 + rng.int(3))).state; changed = true; }
@@ -2980,7 +3123,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const players = [{ id: "you", playerName: o.name, companyName: o.company, trait: o.trait }];
     const strat = {};
     strategies.forEach((st, i) => { strat["bot" + i] = st; players.push({ id: "bot" + i, playerName: bots[i], companyName: names[i], trait: rng.pick(traits) }); });
-    const game = FT.createGame({ industry: o.industry, difficulty: o.difficulty, rounds: o.rounds || 8, seed: seed0 }, players);
+    const rules = o.rules && Object.keys(o.rules).length ? { ...o.rules } : undefined;
+    const game = FT.createGame({ industry: o.industry, difficulty: o.difficulty, rounds: o.rounds || 8, seed: seed0, ...(rules ? { rules } : {}) }, players);
     const color = {}; players.forEach((p, i) => (color[p.id] = i));
     const v = CV(game);
     const hist = {}; players.forEach((p) => (hist[p.id] = [v[p.id]]));
@@ -3004,9 +3148,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     render();
   }
 
-  const needsVote = () => !!(S.game.summit && S.game.summit.round === S.game.round && !me().bankrupt && !S.draft.vote && !S.game.finished);
-  const salesOpen = () => (S.game.bankruptcySales || []).filter((l) => l.round === S.game.round && !me().bankrupt && !S.game.finished);
-  const auctionOpen = () => !!(S.game.auction && S.game.auction.round === S.game.round && !me().bankrupt && !S.game.finished);
+  const needsVote = () => !!(S.game.summit && S.game.summit.round === S.game.round && live(me()) && !S.draft.vote && !S.game.finished);
+  const salesOpen = () => (S.game.bankruptcySales || []).filter((l) => l.round === S.game.round && live(me()) && !S.game.finished);
+  const auctionOpen = () => !!(S.game.auction && S.game.auction.round === S.game.round && live(me()) && !S.game.finished);
   function tabStatus(k) {
     const g = S.game;
     if (k === "boardroom" && needsVote()) return { text: "VOTE", cls: "req" };
@@ -3030,10 +3174,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (ev.round === g.round + 1) items.push([tab, "new", "Next round: " + def.name]);
     }
     if (g.round === diff().retailUnlockRound) items.push(["retail", "new", "New: open your own stores"]);
-    if (g.round === diff().takeoverUnlockRound) items.push(["takeovers", "new", "New: share trading is open"]);
-    if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
+    if (g.round === diff().takeoverUnlockRound && rulesNow().takeovers) items.push(["takeovers", "new", "New: share trading is open"]);
+    if (me().merged) items.push(["takeovers", "", "You merged: you're an investor now"]);
+    else if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
+    { const attacker = S.game.companies.find((o) => o.id !== "you" && (me().shares.holders[o.id] || 0) >= FT.HOSTILE_BID_SHARES && !me().controlledBy);
+      if (attacker && live(me()) && !g.finished) items.push(["takeovers", "req", `Hostile bid: ${attacker.companyName} owns ${me().shares.holders[attacker.id]}% of you. Defend!`]); }
     if (g.round === g.config.rounds) items.push(["finance", "gold", "Final round: the game ends after this one"]);
-    if (!me().bankrupt && !S.draft.guidance) items.push(["finance", "", "Investor call: give your forecast (optional)"]);
+    if (live(me()) && !S.draft.guidance) items.push(["finance", "", "Investor call: give your forecast (optional)"]);
     const offers = dealList().filter((d) => d.to === "you" && d.status === "offered" && d.round === g.round).length;
     if (offers) items.push(["chat", "gold", offers === 1 ? "A deal offer is waiting in Chat" : offers + " deal offers are waiting in Chat"]);
     const steps = `<span class="muted" style="font-size:12.5px;font-weight:800">Read the news, market and reports, go through the decision tabs, then press Submit.</span>`;
@@ -3060,7 +3207,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
       else if (t.startsWith("Auction this round")) add("auction", "", "AUCTION THIS ROUND", "Auction");
       else if (t.startsWith("Bankruptcy sale this round")) add("auction", "", "BANKRUPTCY SALE!", "Auction");
       else if (t.includes("buys what's left of")) add("auction", "sold", (c ? c.companyName : "") + " BUYS THE RUINS", "Auction", { a: c && c.id });
-      else if (t.startsWith("MONOPOLY!")) add("deal", "", "MONOPOLY! GAME OVER", "Monopoly", { a: S.game.monopolyBy, b: S.game.companies.find((x) => x.id !== S.game.monopolyBy && !x.bankrupt)?.id });
+      else if (t.startsWith("Hostile bid!")) { const tg = S.game.companies.find((x) => t.includes("of " + x.companyName + ".")); add("chart", "down", "HOSTILE BID ON " + (tg ? tg.companyName : "A RIVAL"), "Hostile bid", { a: c && c.id, b: tg && tg.id }); }
+      else if (t.startsWith("MERGER!")) add("deal", "", "MERGER: TWO BECOME ONE", "Merger", { a: c && c.id });
+      else if (t.startsWith("MONOPOLY!")) add("deal", "", "MONOPOLY! GAME OVER", "Monopoly", { a: S.game.monopolyBy, b: S.game.companies.find((x) => x.id !== S.game.monopolyBy && live(x))?.id });
       else if (t.startsWith("Industry summit:")) add("press", "minister", "SUMMIT: TIME TO VOTE", "Summit");
       else if (t.startsWith("Industry summit votes")) add("press", "minister", "NEW RULE PASSED", "Summit");
       else if (t.startsWith("Scandal!") || t.startsWith("Leaked memo")) add("chart", "down", "SCANDAL AT " + (c ? c.companyName : "HQ"), "Scandal");
@@ -3079,6 +3228,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.visited = {};
     // Everything starts as last round's plan: forecasting how much to make is the player's job.
     S.draft.production = Math.max(0, Math.min(c.capacity, Math.round(d.production || 0)));
+    // Your unlocked rooftop travels with your decisions, so everyone sees it (also online).
+    const roof = myRoof(); if (roof !== (c.style ?? 0)) S.draft.style = roof;
   }
 
   function endRound(silent) {
@@ -3091,7 +3242,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (c.id === "you") continue;
       if (c.bankrupt) {
         // Bankrupt bots turn journalist and go after the leader.
-        const v = CV(g), alive = g.companies.filter((o) => !o.bankrupt);
+        const v = CV(g), alive = g.companies.filter((o) => live(o));
         if (alive.length) decisions[c.id] = { journalistTarget: alive.sort((a, b) => v[b.id] - v[a.id])[0].id };
         continue;
       }
@@ -3159,7 +3310,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   function banter(round, rng, before, after) {
-    const bots = S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt);
+    const bots = S.game.companies.filter((c) => c.id !== "you" && live(c));
     const said = new Set();
     for (const c of bots) {
       const ev = c.history.at(-1)?.events || [];
@@ -3305,9 +3456,17 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   const short = (name) => name.replace(/[^A-Za-z0-9 ]/g, "").split(" ").map((w) => w.slice(0, 3)).join("").slice(0, 4).toUpperCase();
 
+  // After merging into another company you play on as an investor: no operations, just your stakes.
+  function mergedPanel() {
+    const c = me(), into = byId(c.merged.into), v = CV(S.game), stakes = S.game.companies.filter((o) => (o.shares.holders.you || 0) > 0);
+    return `<div class="card reqbox" style="box-shadow: inset 0 0 0 2px var(--gold)"><h3>You merged into ${esc(into ? into.companyName : "another company")}</h3>
+      <div class="hint">Your company is a holding company now. ${esc(into ? into.playerName : "The other side")} runs the business; you own your part of it and play on as an investor. Your score is the value of your stakes plus your cash.</div>
+      <div class="kv"><div><span>Your value</span><b>${eur(v.you || 0)}</b></div><div><span>Cash</span><b>${eur(c.cash)}</b></div>${stakes.map((o) => `<div><span>${esc(o.companyName)}</span><b>${o.shares.holders.you}%</b></div>`).join("")}</div>
+      <div class="hint">What you can still do: sell (or buy) shares on the live stock exchange in Takeovers, make share deals in the chat, and talk your partner into running the company well.</div></div>`;
+  }
   function windowFor(tab) {
     const title = { production: "Production & pricing", rnd: "Research & development", marketing: "Marketing", finance: "Finance", takeovers: "Takeovers", boardroom: "Boardroom: missions, wildcards, auctions, votes", retail: "Retail: your own stores", market: "Market research", reports: "Reports", news: "News" }[tab];
-    const body = { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
+    const body = me().merged && ["production", "rnd", "marketing", "finance", "retail"].includes(tab) ? mergedPanel() : { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
     return `<section class="win" aria-label="${title}"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body ${S.tabEnter ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
   }
 
@@ -3315,7 +3474,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), d = S.draft, i = ind(), seg = i.segments, fx = fxNow();
     const pMin = i.priceRange[0], pMax = Math.round(seg.premium.refPrice * 2 * 100) / 100;
     const step = Math.max(0.01, Math.round(seg.budget.refPrice / 40 * 100) / 100);
-    const priceRows = S.game.companies.filter((o) => !o.bankrupt).map((o) => { const v = o.id === "you" ? d.price : (o.history.at(-1)?.price ?? o.lastDecisions.price); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + (o.id === "you" ? " (your plan)" : " (last round)") + ": " + eurX(v) }; });
+    const priceRows = S.game.companies.filter((o) => live(o)).map((o) => { const v = o.id === "you" ? d.price : (o.history.at(-1)?.price ?? o.lastDecisions.price); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + (o.id === "you" ? " (your plan)" : " (last round)") + ": " + eurX(v) }; });
     const salesRows = c.history.map((h) => ({ label: h.round ? "R" + h.round : "Y0", v: h.sold, color: colRaw("you"), tip: "Round " + h.round + ": sold " + unitsX(h.sold) + ", produced " + unitsX(h.produced) + (h.unmetDemand ? ", missed " + unitsX(h.unmetDemand) : "") }));
     if (!salesRows.length) salesRows.push({ label: "R1", v: 0, color: colRaw("you") });
     const qFloor = S.game.round > 1 ? Math.min(c.qualityCap, (c.history.at(-1) || {}).quality || 1) : 1;
@@ -3370,7 +3529,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), d = S.draft;
     const next = c.qualityCap < 5 ? c.qualityCap + 1 : null;
     const need = next ? FT.BALANCE.rndThresholds[next] : 1;
-    const rows = S.game.companies.filter((o) => !o.bankrupt).map((o) => { const v = o.id === "you" ? d.quality : (o.history.at(-1)?.quality ?? o.lastDecisions.quality); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + ": quality " + v }; });
+    const rows = S.game.companies.filter((o) => live(o)).map((o) => { const v = o.id === "you" ? d.quality : (o.history.at(-1)?.quality ?? o.lastDecisions.quality); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + ": quality " + v }; });
     return `<div class="grid2">
       <div class="card"><h3>Quality on the shelf</h3>${barChart(rows, { title: "Quality per company", fmt: (v) => String(Math.round(v)) })}<div class="hint">Premium buyers pay for quality. Each level costs more to make.</div></div>
       <div style="display:grid;gap:12px;min-width:0">
@@ -3386,6 +3545,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const camps = Object.entries(CAMPAIGNS).map(([k, [n, t]]) => `<label class="choice"><input type="radio" name="campaign" value="${k}" ${d.campaign === k ? "checked" : ""}><span><b>${n}</b><small>${t}</small></span></label>`).join("");
     return `<div class="grid2">
       <div style="display:grid;gap:14px;min-width:0">
+        <div class="card"><h3>Your product</h3>
+          <div style="display:flex;gap:8px;align-items:center"><input type="text" id="f-pname" maxlength="28" placeholder="Name your product line, e.g. Midnight Crunch" value="${esc(d.productName ?? c.productName ?? "")}" style="flex:1"></div>
+          <div class="hint">Everyone sees the name, and critics review it after every round in the News tab.${last && last.reviews ? ` Last round: <b>${starText(last.reviews.stars)}</b>` : ""}</div></div>
         <div class="card"><h3>Reputation</h3>
           <div class="meter"><div class="row"><span>Brand (lasts)</span><span class="num">${Math.round(c.brand)}</span></div><div class="track"><div style="width:${c.brand}%;background:var(--c4)"></div></div></div>
           <div class="meter"><div class="row"><span>Hype (fades fast)</span><span class="num">${Math.round(c.hype)}</span></div><div class="track"><div style="width:${c.hype}%;background:var(--c5)"></div></div></div></div>
@@ -3505,6 +3667,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return Object.entries(S.draft.buyShares || {}).reduce((a, [id, n]) => a + n * p[id] * (1 + premiumFor(byId(id))), 0);
   }
   function tabTakeovers() {
+    if (!rulesNow().takeovers) return `<div class="card"><h3>Takeovers are off</h3><div class="hint">This game is played with the house rule "no takeovers": no share buying, no stock exchange, no takeovers or mergers. Win by running the best company.</div></div>`;
+    if (me().merged) return mergedPanel() + exchangeCard();
     const c = me(), d = S.draft, p = SP(S.game), B = FT.BALANCE, D = diff();
     const unlocked = S.game.round >= D.takeoverUnlockRound;
     let seenHow = false;
@@ -3523,7 +3687,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!unlocked) status = `<div class="locked">Share trading opens in round ${D.takeoverUnlockRound}. Build a war chest until then, or save for your defense.</div>`;
     else if (c.takeoverCooldown > 0) status = `<div class="locked">Your board wants a breather after that takeover: ${c.takeoverCooldown} more round${c.takeoverCooldown > 1 ? "s" : ""} before you can buy again.</div>`;
     const canBuy = unlocked && c.takeoverCooldown <= 0;
-    const list = S.game.companies.filter((o) => o.id !== "you" && !o.bankrupt).map((o) => {
+    const list = S.game.companies.filter((o) => o.id !== "you" && live(o)).map((o) => {
       const held = o.shares.holders.you || 0, blocked = o.controlledBy && o.controlledBy !== "you", mine = o.controlledBy === "you";
       const max = !canBuy || blocked ? 0 : Math.max(0, Math.min(o.shares.float, D.maxSharesPerRound - FT.liveBought(S.game, "you", o.id)));
       const pay = p[o.id] * (1 + premiumFor(o)), need = Math.max(0, 51 - held);
@@ -3558,7 +3722,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ---------------- boardroom tab ----------------
   // How far along your secret mission is: a 0–1 bar, a short chip label, a full line and a state.
   function missionStatus(c) {
-    const g = S.game, B = FT.BALANCE, alive = g.companies.filter((o) => !o.bankrupt);
+    const g = S.game, B = FT.BALANCE, alive = g.companies.filter((o) => live(o));
     const rankBy = (f) => {
       const mine = f(c), better = alive.filter((o) => o.id !== c.id && f(o) > mine).length, tied = alive.some((o) => o.id !== c.id && f(o) === mine);
       return { rank: better + 1, n: alive.length, mine, top: Math.max(...alive.map(f), 1), tied, label: "#" + (better + 1) + (tied ? " (tied)" : "") + " of " + alive.length };
@@ -3646,8 +3810,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function tabBoardroom() {
     const c = me(), d = S.draft, g = S.game, W = FT.WILDCARDS, mt = missionText(c);
-    const rivals = g.companies.filter((o) => o.id !== "you" && !o.bankrupt);
+    const rivals = g.companies.filter((o) => o.id !== "you" && live(o));
     const mission = missionCard(true);
+    if (c.merged) return mergedPanel() + mission;
     if (c.bankrupt) {
       const opts = rivals.map((o) => `<label class="choice"><input type="radio" name="jtarget" value="${o.id}" ${d.journalistTarget === o.id ? "checked" : ""}><span><b>${esc(o.companyName)}</b><small>${esc(o.playerName)}</small></span></label>`).join("");
       return `<div class="grid2"><div class="card"><h3>You're a journalist now</h3><div class="hint">Your company went bust, but you have a press badge. Each round, pick a company to investigate: it loses ${FT.JOURNALIST.brand} brand and ${FT.JOURNALIST.hype} hype. You score a point every time the company you exposed loses value that round.</div>
@@ -3679,8 +3844,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="grid2">
       <div style="display:grid;gap:12px;min-width:0">${sales}${g.summit && g.summit.round === g.round ? summit + mission + auction : mission + auction + summit}<div class="hint">Everyone has a secret mission. They're revealed on the final screen.</div></div>
       <div style="display:grid;gap:12px;min-width:0">
+        ${rulesNow().wildcards ? "" : `<div class="card"><h3>Wildcards are off</h3><div class="hint">House rule for this game: no spies, scandals or lawsuits.</div></div><div hidden>`}
         <div class="ctl"><span class="lbl">Wildcard (one per round)</span><div class="choices"><label class="choice"><input type="radio" name="wildcard" value="" ${d.wildcard ? "" : "checked"}><span><b>No wildcard</b><small>Keep your cards for later.</small></span></label>${cards}</div></div>
-        ${target}
+        ${target}${rulesNow().wildcards ? "" : "</div>"}
       </div></div>`;
   }
 
@@ -4351,8 +4517,17 @@ details.howto[open] summary::after { content: "▾ hide"; }
       : `<div class="hint">No news is moving the market right now. Enjoy the quiet.</div>`;
     const feedItems = feedHtml(S.chat.slice().reverse());
     return `<div class="grid2">
-      <div style="display:grid;gap:10px;min-width:0">${marketReport()}<div class="card"><h3>On air this round</h3>${tv}</div></div>
+      <div style="display:grid;gap:10px;min-width:0">${marketReport()}<div class="card"><h3>On air this round</h3>${tv}</div>${reviewsCard()}</div>
       <div class="card"><h3>Live feed</h3><div class="feed" style="max-height:520px">${feedItems}</div></div></div>`;
+  }
+
+  // ----- Product reviews: what critics and customers said about every product last round (public).
+  const starText = (n) => "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
+  function reviewsCard() {
+    const rows = S.game.companies.filter((o) => live(o) || o.history.at(-1)?.reviews).map((o) => ({ o, r: o.history.at(-1)?.reviews })).filter((x) => x.r && x.o.history.at(-1).round >= 1).sort((a, b) => b.r.stars - a.r.stars);
+    if (!rows.length) return "";
+    return `<div class="card"><h3>What people say</h3><div class="reviews">${rows.map(({ o, r }) => `<div class="review ${o.id === "you" ? "me" : ""}"><div class="rv-head"><span class="dot" style="background:${colVar(o.id)}"></span><b>${esc(o.productName || o.companyName)}</b>${o.productName ? `<span class="muted">${esc(o.companyName)}</span>` : ""}<span class="rv-stars" aria-label="${r.stars} stars">${starText(r.stars)}</span></div>${r.quotes.map((q) => `<div class="rv-q">${esc(q)}</div>`).join("")}</div>`).join("")}</div>
+      <div class="hint">Stars follow value for money (quality and brand against price, compared with the rest of the market). Just for fun: reviews don't change your sales.</div></div>`;
   }
 
   // TOPSIM-style market report: a few small indicators every round.
@@ -4451,7 +4626,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), d = S.draft, g = S.game, i = ind(), D = diff();
     const sec = (tab, title, rows) => `<div class="card"><div class="sheet-h"><h3>${title}</h3><button class="btn small" type="button" data-edit="${tab}">Change</button></div>${rows.map(([k, v]) => `<div class="sumline"><span class="muted">${k}</span><span class="num" style="text-align:right">${v}</span></div>`).join("")}</div>`;
     const out = [];
-    if (c.bankrupt) {
+    if (c.merged) {
+      out.push(sec("takeovers", "Investor", [["Merged into", esc((byId(c.merged.into) || {}).companyName || "")], ["Your stake", ((byId(c.merged.into) || { shares: { holders: {} } }).shares.holders.you || 0) + "%"]]));
+    } else if (c.bankrupt) {
       out.push(sec("boardroom", "Journalist", [["Investigating", d.journalistTarget ? esc(byId(d.journalistTarget).companyName) : "nobody"]]));
     } else {
       out.push(sec("production", "Production", [["Price per " + i.labels.product, eurX(d.price)], ["Production", unitsX(Math.min(d.production, c.capacity)) + " " + i.labels.unit], ["Quality", d.quality], ["Materials for next round", unitsX(d.materialOrder) + " " + i.labels.unit + " (" + eurX(d.materialOrder * FT.materialList(i, d.quality, c.trait) * ((g.market && g.market.materialIndex) || 1)) + ")"], ["Bulk buyer, up to", unitsX(d.bulkSell) + " " + i.labels.unit], ["Build more capacity", eurX(d.investCapacity)], ...(g.config.difficulty === "tycoon" ? [["Teams hired / laid off", (d.hire > 0 ? "+" : "") + d.hire]] : [])]));
@@ -4547,7 +4724,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   function investorResultCard(r) {
-    const calls = S.game.companies.filter((o) => !o.bankrupt).map((o) => ({ o, h: o.history.find((x) => x.round === r.round) })).filter((x) => x.h && x.h.guidance);
+    const calls = S.game.companies.filter((o) => live(o)).map((o) => ({ o, h: o.history.find((x) => x.round === r.round) })).filter((x) => x.h && x.h.guidance);
     if (!r.guidance && !calls.length) return "";
     const mine = r.guidance;
     const errTxt = (e) => (e * 100 < 10 ? (e * 100).toFixed(1) : Math.round(e * 100)) + "% off";
@@ -4740,7 +4917,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const cs = S.game.companies, H = (c) => c.history.filter((h) => h.round >= 1);
     const avg = (c, f) => { const h = H(c); return h.length ? h.reduce((a, x) => a + f(x), 0) / h.length : 0; };
     const sum = (c, f) => H(c).reduce((a, x) => a + f(x), 0);
-    const pick = (f, best = "max", ok = () => true) => { const list = cs.filter((c) => !c.bankrupt && ok(c)); if (!list.length) return null; return list.sort((a, b) => (best === "max" ? f(b) - f(a) : f(a) - f(b)))[0].id; };
+    const pick = (f, best = "max", ok = () => true) => { const list = cs.filter((c) => live(c) && ok(c)); if (!list.length) return null; return list.sort((a, b) => (best === "max" ? f(b) - f(a) : f(a) - f(b)))[0].id; };
     const out = [];
     const add = (id, label, why) => { if (id) out.push({ id, label, why }); };
     add(pick((c) => avg(c, (h) => h.price), "min"), "Price-war criminal", "Lowest average price");
@@ -4781,6 +4958,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <h2 style="margin:0;font-family:var(--font-display);font-weight:400;font-size:24px">${S.game.monopolyBy ? (w.id === "you" ? "MONOPOLY! You own the whole industry." : "MONOPOLY! " + esc(w.playerName) + " owns the whole industry.") : w.id === "you" ? "You win. Champagne for the board!" : esc(w.playerName) + " wins with " + esc(w.companyName) + "."}</h2>
       <div class="muted">You finished #${myRank} of ${t.length}.${S.daily ? ` Daily challenge ${esc(S.daily)}: ${S.dailyRank ? `<b>#${S.dailyRank}</b> on today's leaderboard so far.` : "score saved on this device."} <button class="linkbtn" type="button" data-open-board>Leaderboard</button>` : ""}</div>
       <div class="podium pop">${rows}</div>
+      ${S.xpGain ? `<div class="card xpcard"><h3>+${S.xpGain.total} XP${S.xpGain.levelUp ? ` · Promoted to <span class="pos">${esc(S.xpGain.levelUp)}</span>!` : ""}</h3><div class="xp-parts">${S.xpGain.parts.map(([n, v]) => `<span>${esc(n)} <b>+${v}</b></span>`).join("")}</div>${careerCard(true)}</div>` : ""}
       ${emojiBar()}
       <div class="card"><h3>Company value per round</h3>${valueChart(640, 210)}</div>
       ${recapCard()}
@@ -4805,6 +4983,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
       </div>
       <div class="ctl"><span class="lbl">Rounds</span><div class="choices">${pick("rounds", [[6, "6", "Quick game"], [8, "8", "Standard"], [10, "10", "Longer"], [12, "12", "Long game"]], o.rounds || 8)}</div></div>
       <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
+      <details class="rules-box" ${Object.keys(o.rules || {}).length ? "open" : ""}><summary><b>House rules</b> <span class="muted">${esc(rulesSummary(o.rules) || "normal rules")}</span></summary>
+        ${RULES_UI.map(([k, label, desc, opts]) => `<div class="orow"><div class="otext"><b>${label}</b><small>${desc}</small></div><div class="octl"><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${ruleVal(o.rules, k) === v}" data-srule="${k}" data-val="${JSON.stringify(v).replace(/"/g, "&quot;")}">${n}</button>`).join("")}</div></div></div>`).join("")}
+      </details>
       <div class="ctl"><span class="lbl">CEO trait</span>${traitPicker("trait", o.trait)}</div>
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="btn-start" data-autofocus>Start game</button></div>
     </div></div>`;
@@ -4909,7 +5090,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const zone = positionOf(c);
       const r = seeded("win" + c.id);
       cityRects.push({ id: c.id, x0, bw, top, zone });
-      if (c.bankrupt) {
+      if (c.merged) {
+        // A holding company: a slim grey office flying the flag of the company it merged into.
+        g.fillStyle = "#5b6178"; g.fillRect(x0 + 8, top, bw - 16, h);
+        g.fillStyle = "#7d849d"; for (let y = top + 4; y < gy - 3; y += 6) g.fillRect(x0 + 11, y, bw - 22, 3);
+        const into = c.merged.into; g.fillStyle = "#e9e9e9"; g.fillRect(cx, top - 14, 1, 14); g.fillStyle = colRaw(into); g.fillRect(cx + 1, top - 14, 9, 6);
+      } else if (c.bankrupt) {
         g.fillStyle = "#4d3f30"; g.fillRect(x0, top, bw, h);
         g.fillStyle = "#7b6146"; for (let y = top + 3; y < gy - 2; y += 5) g.fillRect(x0 + 2, y, bw - 4, 3);
         g.fillStyle = "#3a2f24"; g.fillRect(x0 + 4, top + 4, 2, h - 6); g.fillRect(x0 + bw - 6, top + 4, 2, h - 6);
@@ -4965,6 +5151,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         g.fillStyle = LIT; g.fillRect(sx + 1, sy + 2, 3, 3); g.fillStyle = "#5a3417"; g.fillRect(sx + 5, sy + 2, 2, 5);
       }
       if ((c.stores || 0) > 4) { g.fillStyle = "#fff"; g.fillRect(x0 + 34, gy - 4, 1, 1); g.fillRect(x0 + 36, gy - 4, 1, 1); g.fillRect(x0 + 38, gy - 4, 1, 1); }
+      if (live(c) && c.style) drawRoof(g, c.style, cx, top - (zone === "premium" ? 11 : zone === "hype" ? 8 : zone === "budget" ? 0 : 2), color, light);
       if (c.controlledBy) { g.fillStyle = "#e9e9e9"; g.fillRect(x0 + bw - 5, top - 16, 1, 16); g.fillStyle = colRaw(c.controlledBy); g.fillRect(x0 + bw - 4, top - 16, 9, 6); }
       if (c.id === "you") { g.fillStyle = LIT; g.fillRect(cx - 3, gy + 4, 7, 2); g.fillRect(cx - 2, gy + 3, 5, 1); g.fillRect(cx, gy + 2, 1, 1); }
       // Street lamps between buildings.
@@ -4972,7 +5159,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       // Move this company's name sign above its roof.
       const sign = document.querySelector(`[data-sign="${c.id}"]`);
       if (sign) {
-        const roof = zone === "premium" && !c.bankrupt ? top - 12 : zone === "hype" && !c.bankrupt ? top - 10 : top - 7;
+        const roof = (zone === "premium" && !c.bankrupt ? top - 12 : zone === "hype" && !c.bankrupt ? top - 10 : top - 7) - (live(c) && c.style ? [0, 14, 10, 4, 8, 12, 20, 6, 12, 18, 18, 10][c.style] || 10 : 0);
         sign.style.left = (cx / W) * 100 + "%";
         sign.style.top = Math.max(14, roof) / H * 100 + "%";
       }
@@ -5032,6 +5219,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
     on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
     for (const id of Object.keys(RANGES)) on("#" + id, "input", (e) => setRange(id, Number(e.target.value)));
+    on("#f-pname", "input", (e) => { S.draft.productName = e.target.value.replace(/[<>]/g, "").slice(0, 28); });
     on('input[id^="f-bk-"]', "input", (e) => setRange(e.target.id, Number(e.target.value)));
     on("[data-step]", "click", (e) => {
       const id = e.currentTarget.dataset.step, el = document.getElementById(id);
@@ -5082,6 +5270,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function bindModal() {
     const on = (sel, ev, fn) => modal.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
     if (["privacy", "terms", "credits", "age"].includes(S.modal)) bindLegal();
+    drawRoofIcons(modal);
+    on("[data-roof]", "click", (e) => { localSet("ft-roof", Number(e.currentTarget.dataset.roof)); if (S.draft) S.draft.style = myRoof(); renderModal(); bindModal(); });
     on("#btn-continue", "click", () => { S.modal = afterResults(); render(); });
     on("#btn-show-done", "click", () => { S.modal = S.game.finished ? (S.boardQueue && S.boardQueue.length ? "board" : "final") : "results"; S.boardIndex = 0; render(); });
     on("#btn-board-next", "click", () => {
@@ -5168,7 +5358,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
         trait: val("trait") || "visionary",
         botSkill: val("botSkill") || "normal",
         rounds: Number(val("rounds") || 8),
+        rules: { ...(S.setupRules || (S.opts && S.opts.rules) || {}) },
       }, true);
+    });
+    on("[data-srule]", "click", (e) => {
+      const b = e.currentTarget, k = b.dataset.srule, v = JSON.parse(b.dataset.val);
+      S.setupRules = { ...(S.setupRules || (S.opts && S.opts.rules) || {}), [k]: v };
+      b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+      const sm = b.closest("details").querySelector("summary .muted"); if (sm) sm.textContent = rulesSummary(S.setupRules) || "normal rules";
     });
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S && S.modal && !["final", "show", "board"].includes(S.modal)) { if (S.modal === "tv") S.tvQueue = []; S.modal = null; renderModal(); } });

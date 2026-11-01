@@ -448,3 +448,46 @@ export const ECONOMY = {
 };
 
 export const INDUSTRIES: Record<IndustryId, IndustryConfig> = { chocolate: softened(CHOCOLATE), ai: softened(AI), weed: softened(WEED) };
+
+// ---------------------------------------------------------------------------
+// House rules, mergers, hostile bids and product reviews
+// ---------------------------------------------------------------------------
+
+/** House rules a group can set in the lobby. */
+export const HOUSE_RULES = {
+  startCash: [500_000, 1_000_000, 2_000_000] as number[],
+  startCashRange: [250_000, 5_000_000] as [number, number],
+  /** Calm: fewer, softer stories. Wild: a story every round, hitting 1.5x as hard. */
+  news: {
+    calm: { storyChanceFactor: 0.4, ecoPerRound: [1, 2] as [number, number], strength: 0.7 },
+    normal: { storyChanceFactor: 1, ecoPerRound: [2, 3] as [number, number], strength: 1 },
+    wild: { storyChanceFactor: 10, ecoPerRound: [3, 4] as [number, number], strength: 1.5 },
+  },
+};
+
+/** Friendly mergers between two players' companies. */
+export const MERGER = {
+  /** The survivor's board rests after a merger, like after a takeover (rounds without share purchases). */
+  cooldown: 1,
+};
+
+/** Owning this share of a company without control makes headlines: a hostile bid, the target gets a round to defend. */
+export const HOSTILE_BID_SHARES = 40;
+
+/** Review lines. {p} = product name, {u} = unit (bar, subscription...), {c} = company. */
+export const REVIEWS = {
+  critic: {
+    5: ["\"{p} is the best {u} I've had this year. And I've had a lot.\" ★★★★★ Food Critic Weekly", "\"Worth every cent. Possibly worth more cents.\"", "\"{c} has done it. Book the gold medal.\"", "\"I'd sell my car for another {p}.\""],
+    4: ["\"Solid. {p} punches above its price.\"", "\"Good stuff. I'd tell my mum about {p}.\"", "\"{c} knows what it's doing. Mostly.\"", "\"Better than it has any right to be.\""],
+    3: ["\"It's a {u}. It does {u} things. Fine.\"", "\"{p}: perfectly, aggressively average.\"", "\"Not bad, not good, very much a {u}.\"", "\"Three stars. The stars are tired.\""],
+    2: ["\"{p} costs too much for what it is.\"", "\"I wanted to like {p}. I tried. Twice.\"", "\"Tastes like a premium price, nothing else.\"", "\"{c}, we need to talk.\""],
+    1: ["\"{p} is an insult to the very idea of a {u}.\"", "\"My dog refused {p}. My dog eats socks.\"", "\"One star, and only because zero isn't allowed.\"", "\"Who approved this? Seriously, who?\""],
+  } as Record<number, string[]>,
+  soldOut: ["Customer: \"Sold out AGAIN? I've been to four shops for {p}!\"", "Reddit: \"Has anyone actually seen {p} in a store this week?\"", "Customer: \"Queued 40 minutes, got the last {u}. Worth it.\""],
+  leftover: ["Store manager: \"We've got a warehouse full of {p}. Anyone?\"", "Customer: \"There's a whole aisle of {p}. Nobody's touching it.\"", "Reseller: \"{p} for a third off, still no takers.\""],
+  cheap: ["Customer: \"{p} is SO cheap. Suspiciously cheap.\"", "Student: \"{p} is my entire budget plan now.\""],
+  luxury: ["Customer: \"Paid a fortune for {p}. I feel rich. And poor.\"", "Influencer: \"{p} is a lifestyle, not a {u}.\""],
+  hype: ["TikTok: \"Everyone's posting {p}. I don't even know what it is.\"", "Teenager: \"If you don't have {p} are you even alive?\""],
+  flop: ["Comment section: \"{c}'s new ad is the cringiest thing I've seen in years.\""],
+  launch: ["Customer: \"The new {c} launch is unhinged and I love it.\""],
+};

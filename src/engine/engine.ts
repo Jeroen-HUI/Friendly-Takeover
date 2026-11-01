@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, BULK, CAMPAIGNS, COSTS, DEALS, ECONOMY, EXCHANGE, GUIDANCE, LIVE_AUCTION, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
-  WILDCARD_EFFECTS, WILDCARDS, type IndustryConfig,
+  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, type IndustryConfig,
 } from "./config";
 import { Rng } from "./rng";
 import {
@@ -33,11 +33,27 @@ import {
   type ShareDealTerms,
   type LoanDealTerms,
   type PactDealTerms,
+  type MergerDealTerms,
+  type HouseRules,
 } from "./types";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 const deepClone = <T>(v: T): T => (typeof structuredClone === "function" ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
+/** Still running a business: not bankrupt and not merged into another company. */
+export const operating = (c: Company) => !c.bankrupt && !c.merged;
+/** The house rules of a game, with the normal rules filled in. */
+export function rulesOf(state: { config: GameConfig }): Required<HouseRules> {
+  const r = state.config.rules ?? {};
+  return {
+    startCash: clamp(num(r.startCash, 0) || 0, 0, HOUSE_RULES.startCashRange[1]),
+    takeovers: r.takeovers !== false,
+    wildcards: r.wildcards !== false,
+    news: r.news === "calm" || r.news === "wild" ? r.news : "normal",
+  };
+}
+/** A small stable hash, for picking review lines without touching the game's random numbers. */
+function hash(str: string): number { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -97,12 +113,14 @@ export function storeCapacity(industry: IndustryConfig): number {
 export function createGame(config: GameConfig, players: PlayerSetup[]): GameState {
   if (players.length < 2 || players.length > 8) throw new Error("A game needs 2 to 8 players");
   const industry = INDUSTRIES[config.industry];
+  const sc = Number(config.rules?.startCash);
+  const startCash = Number.isFinite(sc) && sc > 0 ? clamp(sc, HOUSE_RULES.startCashRange[0], HOUSE_RULES.startCashRange[1]) : industry.start.cash;
   const companies: Company[] = players.map((p) => ({
     id: p.id,
     playerName: p.playerName,
     companyName: p.companyName,
     trait: p.trait,
-    cash: industry.start.cash,
+    cash: startCash,
     debt: 0,
     capacity: industry.start.capacity,
     qualityCap: industry.start.qualityCap,
@@ -199,6 +217,8 @@ export function materialFactor(index: number): number {
 /** Company value excluding stakes in other companies. */
 function baseValue(c: Company, industry: IndustryConfig): number {
   if (c.bankrupt) return 0;
+  // A merged company is only a holding company now: its own cash plus its stakes (added in companyValues).
+  if (c.merged) return c.cash - c.debt;
   const last = c.history.slice(-2).map((h) => h.profit);
   const avgProfit = last.length ? last.reduce((a, b) => a + b, 0) / last.length : 0;
   const value = (
@@ -330,8 +350,12 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     materialOrder: Math.min(Math.round(c.capacity * 3), Math.max(0, Math.round(num(d.materialOrder, prev.materialOrder ?? Math.round(c.capacity * 0.8))))),
     bulkSell: Math.max(0, Math.round(num(d.bulkSell, 0))),
     guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(d.guidance.units)), profit: Math.round(d.guidance.profit) } : null,
+    productName: typeof d.productName === "string" ? cleanName(d.productName) : undefined,
+    style: Number.isInteger(d.style) && (d.style as number) >= 0 && (d.style as number) <= 11 ? d.style : undefined,
   };
 }
+/** Names typed by players: no control characters or angle brackets, at most 28 characters. */
+export function cleanName(name: string): string { return String(name ?? "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 28); }
 
 /** Slow trend of a buyer group: multiplier on its size in a given round. */
 function trendFactor(state: GameState, s: SegmentId, round: number): number {
@@ -373,16 +397,31 @@ function economyItem(state: GameState, rng: Rng, kind: number): ActiveNews {
 
 /** Picks the news for one round: a few small market-report items plus maybe a story. It breaks one round later, so an insider tip can reveal it early. */
 function pickRoundNews(state: GameState, rng: Rng, industry: IndustryConfig): ActiveNews[] {
-  const [lo, hi] = ECONOMY.perRound;
+  const level = HOUSE_RULES.news[rulesOf(state).news];
+  const [lo, hi] = level.strength === 1 ? ECONOMY.perRound : level.ecoPerRound;
   const kinds = rng.shuffle([0, 1, 2, 3, 4]).slice(0, lo + rng.int(hi - lo + 1));
   const items = kinds.map((k) => economyItem(state, rng, k));
   const story = pickNews(state, rng, industry);
-  return story ? [story, ...items] : items;
+  const all = story ? [story, ...items] : items;
+  return level.strength === 1 ? all : all.map((n) => ({ ...n, event: { ...n.event, effect: scaleEffect(n.event.effect, level.strength) } }));
+}
+/** Calm or wild news: every multiplier's distance from 1 (and interest moves) scaled by k. */
+function scaleEffect(e: NewsEffect, k: number): NewsEffect {
+  const m = (x: number | undefined) => (x === undefined ? undefined : Math.max(0.05, 1 + (x - 1) * k));
+  const out: NewsEffect = { ...e };
+  if (e.costMultiplier !== undefined) out.costMultiplier = m(e.costMultiplier);
+  if (e.demandMultiplier !== undefined) out.demandMultiplier = m(e.demandMultiplier);
+  if (e.capacityMultiplier !== undefined) out.capacityMultiplier = m(e.capacityMultiplier);
+  if (e.interestDelta !== undefined) out.interestDelta = e.interestDelta * k;
+  if (e.randomCompanyBoost !== undefined) out.randomCompanyBoost = e.randomCompanyBoost * k;
+  if (e.cheapestBoost !== undefined) out.cheapestBoost = e.cheapestBoost * k;
+  if (e.segmentMultiplier) out.segmentMultiplier = Object.fromEntries(Object.entries(e.segmentMultiplier).map(([s, v]) => [s, m(v)]));
+  return out;
 }
 
 function pickNews(state: GameState, rng: Rng, industry: IndustryConfig): ActiveNews | null {
   const difficulty = DIFFICULTIES[state.config.difficulty];
-  if (!rng.chance(difficulty.newsChance)) return null;
+  if (!rng.chance(Math.min(1, difficulty.newsChance * HOUSE_RULES.news[rulesOf(state).news].storyChanceFactor))) return null;
   const usedIds = new Set(state.news.map((n) => n.event.id));
   const recentHeadlines = new Set(state.feed.map((f) => f.headline));
   let pool = industry.news.filter((e) => !usedIds.has(e.id) && !recentHeadlines.has(e.headline));
@@ -391,7 +430,7 @@ function pickNews(state: GameState, rng: Rng, industry: IndustryConfig): ActiveN
   const event = rng.pick(pool);
   const active: ActiveNews = { event, roundsLeft: event.duration };
   if (event.effect.randomCompanyBoost) {
-    const alive = state.companies.filter((c) => !c.bankrupt);
+    const alive = state.companies.filter(operating);
     if (alive.length === 0) return null;
     active.targetCompanyId = rng.pick(alive).id;
   }
@@ -415,8 +454,9 @@ function drawNews(state: GameState, rng: Rng, industry: IndustryConfig) {
   }
   if (!Array.isArray(state.upcomingNews)) state.upcomingNews = pickRoundNews(state, rng, industry);
   for (const next of state.upcomingNews) {
-    if (next.targetCompanyId && state.companies.find((c) => c.id === next.targetCompanyId)?.bankrupt) {
-      const alive = state.companies.filter((c) => !c.bankrupt);
+    const tgt = next.targetCompanyId ? state.companies.find((c) => c.id === next.targetCompanyId) : undefined;
+    if (tgt && !operating(tgt)) {
+      const alive = state.companies.filter(operating);
       next.targetCompanyId = alive.length ? rng.pick(alive).id : undefined;
     }
     state.news.push(next);
@@ -444,7 +484,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const rng = new Rng(state.rngState);
   const fx = activeNewsEffects(state);
   const round = state.round;
-  const alive = state.companies.filter((c) => !c.bankrupt);
+  const rules = rulesOf(state);
+  let alive = state.companies.filter(operating);
   const n = state.companies.length;
   // Investor panic from earlier share dumps fades a bit every round.
   for (const c of state.companies) c.sentiment = (c.sentiment ?? 0) * BALANCE.sentimentRecovery;
@@ -536,7 +577,24 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       state.dealLog!.push({ id: deal.id, round, ok, reason, from: deal.from, to: deal.to });
       if (!ok && from && to) { note(from.id, `Deal with ${to.companyName} fell through: ${reason}`); note(to.id, `Deal with ${from.companyName} fell through: ${reason}`); }
     };
-    if (!from || !to || from.id === to.id || from.bankrupt || to.bankrupt) { done(false, "one of the companies is out of the game"); continue; }
+    if (!from || !to || from.id === to.id || !operating(from) || !operating(to)) { done(false, "one of the companies is out of the game"); continue; }
+    if ((deal.kind === "shares" || deal.kind === "merger") && !rules.takeovers) { done(false, "share deals and mergers are off in this game (house rules)"); continue; }
+    if (deal.kind === "merger") {
+      const t = deal.terms as MergerDealTerms;
+      const survivor = t.survivor === from.id ? from : t.survivor === to.id ? to : null;
+      if (!survivor) { done(false, "the terms don't add up"); continue; }
+      const absorbed = survivor === from ? to : from;
+      if (round < difficulty.takeoverUnlockRound) { done(false, `mergers open in round ${difficulty.takeoverUnlockRound}`); continue; }
+      const ruled = [survivor, absorbed].find((c) => c.controlledBy && c.controlledBy !== survivor.id && c.controlledBy !== absorbed.id);
+      if (ruled) { done(false, `${ruled.companyName} is controlled by someone else`); continue; }
+      const ok = mergeCompanies(state, survivor, absorbed, round);
+      if (!ok) { done(false, "one of the companies has no value left to merge"); continue; }
+      survivor.takeoverCooldown = Math.max(survivor.takeoverCooldown, MERGER.cooldown);
+      note(survivor.id, `Merged with ${absorbed.originalName ?? absorbed.companyName}: you run the combined company`);
+      note(absorbed.id, `Merged into ${survivor.companyName}: you now hold ${survivor.shares.holders[absorbed.id] ?? 0}% of it`);
+      done(true, `${absorbed.originalName ?? absorbed.companyName} merged into ${survivor.companyName}`);
+      continue;
+    }
     if (deal.kind === "shares") {
       const t = deal.terms as ShareDealTerms;
       const target = byIdAll.get(t.company);
@@ -589,6 +647,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       done(true, `no attacks through round ${round + rounds - 1}`);
     } else done(false, "unknown deal");
   }
+  // Companies merged away this round stop operating right now.
+  alive = alive.filter(operating);
   // A pact is broken by buying the other's shares or aiming a wildcard at them: the attacker pays the penalty.
   const reportsRef: { r?: Record<string, RoundReport> } = {};
   const breakPact = (attacker: Company, victim: Company, how: string) => {
@@ -626,11 +686,11 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   }
   for (const c of rng.shuffle(alive)) {
     const wc = dec[c.id].wildcard;
-    if (!wc) continue;
+    if (!wc || !rules.wildcards) continue;
     const card = WILDCARDS[wc.card];
     const used = c.wildcardsUsed[wc.card] ?? 0;
     const target = wc.target ? byIdAll.get(wc.target) : undefined;
-    if (used >= card.maxUses || (card.needsTarget && (!target || target.bankrupt || target.id === c.id))) continue;
+    if (used >= card.maxUses || (card.needsTarget && (!target || !operating(target) || target.id === c.id))) continue;
     if (card.needsTarget && target) breakPact(c, target, "a " + card.name.toLowerCase());
     c.wildcardsUsed[wc.card] = used + 1;
     c.cash -= card.cost;
@@ -745,7 +805,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   for (const j of state.companies.filter((c) => c.bankrupt)) {
     const tid = decisionsByCompany[j.id]?.journalistTarget;
     const t = typeof tid === "string" ? byIdAll.get(tid) : undefined;
-    if (!t || t.bankrupt) continue;
+    if (!t || !operating(t)) continue;
     t.brand = clamp(t.brand - JOURNALIST.brand, 0, 100);
     t.hype = clamp(t.hype - JOURNALIST.hype, 0, 100);
     journalistHits.push({ journalist: j, target: t, before: startPrices[t.id] * 100 });
@@ -1086,13 +1146,31 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     if (cap > c.qualityCap) w.events.push(`R&D breakthrough: quality ${cap} unlocked`);
     c.qualityCap = Math.max(c.qualityCap, cap);
     c.capacity = Math.round(c.capacity * (1 - BALANCE.capacityDepreciation) + d.investCapacity / (BALANCE.capacityCostPerUnit * industry.baseUnitCost));
-    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null, bulkSell: 0 };
+    if (d.productName) c.productName = d.productName;
+    if (d.style !== undefined) c.style = d.style;
+    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null, bulkSell: 0, productName: undefined, style: undefined };
+  }
+  // Reviews: what critics and customers say about each product (public, just for fun; no effect on the numbers).
+  for (const w of work) {
+    const r = reports[w.c.id], c = w.c;
+    const score = 0.7 * (w.d.quality - avgQ) - 3 * (avgPrice > 0 ? w.d.price / avgPrice - 1 : 0) + (c.brand - avgBrand) / 40 + (crazyBoost[c.id] ?? 0) * 0.8;
+    const stars = clamp(Math.round(3 + score), 1, 5);
+    const h = hash(`${state.config.seed}:${round}:${c.id}`);
+    const pick = (list: string[], k: number) => list[(h >>> k) % list.length];
+    const fill = (t: string) => t.replace(/\{p\}/g, c.productName || c.companyName).replace(/\{u\}/g, industry.labels.product).replace(/\{c\}/g, c.companyName);
+    const quotes = [fill(pick(REVIEWS.critic[stars], 0))];
+    const soldOut = r.unmetDemand > 0 && r.inventoryEnd === 0;
+    const extra = w.viralFlop ? REVIEWS.flop : (crazyBoost[c.id] ?? 0) > 0 ? REVIEWS.launch : soldOut ? REVIEWS.soldOut : r.inventoryEnd > 0.3 * Math.max(1, w.available) ? REVIEWS.leftover
+      : avgPrice > 0 && w.d.price < avgPrice * 0.8 ? REVIEWS.cheap : avgPrice > 0 && w.d.price > avgPrice * 1.3 ? REVIEWS.luxury : c.hype > avgHype + 15 ? REVIEWS.hype : null;
+    if (extra) quotes.push(fill(pick(extra, 7)));
+    r.reviews = { stars, quotes };
   }
 
   // 5. Share trading: sales first, then buybacks (defense), then purchases in random order. ------
   const byId = new Map(state.companies.map((c) => [c.id, c]));
   for (const w of rng.shuffle(work)) {
     const seller = w.c;
+    if (!rules.takeovers) break;
     for (const [targetId, requested] of Object.entries(w.d.sellShares)) {
       const target = byId.get(targetId);
       if (!target) continue;
@@ -1133,7 +1211,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     }
   }
   const showdownDone = new Set<string>();
-  if (round >= difficulty.takeoverUnlockRound) {
+  if (round >= difficulty.takeoverUnlockRound && rules.takeovers) {
     for (const w of rng.shuffle(work)) {
       const buyer = w.c;
       if (buyer.takeoverCooldown > 0) {
@@ -1142,7 +1220,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       }
       for (const [targetId, requested] of Object.entries(w.d.buyShares)) {
         const target = byId.get(targetId);
-        if (!target || target.bankrupt || target.id === buyer.id) continue;
+        if (!target || !operating(target) || target.id === buyer.id) continue;
         if (target.controlledBy && target.controlledBy !== buyer.id) { w.events.push(`Couldn't buy shares of ${target.companyName}: it's controlled by someone else`); continue; }
         breakPact(buyer, target, "bought its shares");
         const held = target.shares.holders[buyer.id] ?? 0;
@@ -1192,7 +1270,10 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         target.shares.holders[buyer.id] = nowHeld;
         w.events.push(`Bought ${qty} shares of ${target.companyName} (now ${nowHeld}%)`);
         reports[target.id]?.events.push(`${buyer.companyName} bought ${qty} of your shares (now holds ${nowHeld}%)`);
-        if (held < 20 && nowHeld >= 20 && nowHeld <= BALANCE.controlThreshold) {
+        if (held < HOSTILE_BID_SHARES && nowHeld >= HOSTILE_BID_SHARES && nowHeld <= BALANCE.controlThreshold) {
+          state.feed.push({ round, headline: `Hostile bid! ${buyer.companyName} now owns ${nowHeld}% of ${target.companyName}. ${target.companyName} has one round to defend itself` });
+          reports[target.id]?.events.push(`HOSTILE BID: ${buyer.companyName} owns ${nowHeld}% of you. Defend now: buy back shares, set a defense fund, or find a friendly buyer`);
+        } else if (held < 20 && nowHeld >= 20 && nowHeld <= BALANCE.controlThreshold) {
           state.feed.push({ round, headline: `Rumours: ${buyer.companyName} is circling ${target.companyName} and now owns ${nowHeld}%` });
         }
         if (nowHeld > BALANCE.controlThreshold && target.controlledBy !== buyer.id) {
@@ -1243,7 +1324,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     }
   }
   for (const c of state.companies) {
-    if (c.bankrupt) continue;
+    if (!operating(c)) continue;
     if (c.cash < 0 && c.debt >= BALANCE.maxDebt) goBankrupt(state, c, round, byId);
   }
 
@@ -1251,7 +1332,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   for (const w of work) w.c.history.push(reports[w.c.id]);
   const values = companyValues(state);
   for (const c of state.companies) {
-    if (!c.bankrupt && values[c.id] < 0) goBankrupt(state, c, round, byId);
+    if (operating(c) && values[c.id] < 0) goBankrupt(state, c, round, byId);
   }
   const finalValues = companyValues(state);
   for (const w of work) {
@@ -1272,7 +1353,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     state.news.push({ event: { id: "reg-" + passedRegulation, headline: "New rule: " + reg.name, effect: reg.effect, duration: SUMMIT.duration }, roundsLeft: SUMMIT.duration });
   }
   // Monopoly: one company controls every other company still in business. Game over, they win.
-  const stillAlive = state.companies.filter((c) => !c.bankrupt);
+  const stillAlive = state.companies.filter(operating);
   const boss = stillAlive.find((c) => !c.controlledBy && stillAlive.length > 1 && stillAlive.every((o) => o.id === c.id || o.controlledBy === c.id));
   if (boss) {
     state.monopolyBy = boss.id;
@@ -1283,7 +1364,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   state.round = round + 1;
   state.auction = null;
   state.summit = null;
-  if (state.monopolyBy || state.round > state.config.rounds || state.companies.filter((c) => !c.bankrupt).length <= 1) {
+  if (state.monopolyBy || state.round > state.config.rounds || state.companies.filter(operating).length <= 1) {
     state.finished = true;
   } else {
     // Raw material prices move a little every round (pulled back toward normal). It shows in the market report.
@@ -1341,7 +1422,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         }));
     }
     if (bought.includes("survey")) {
-      result.survey = state.companies.filter((c) => !c.bankrupt).map((c) => ({ companyId: c.id, companyName: c.companyName, brand: c.brand, hype: c.hype }));
+      result.survey = state.companies.filter(operating).map((c) => ({ companyId: c.id, companyName: c.companyName, brand: c.brand, hype: c.hype }));
     }
     if (bought.includes("marketStudy")) {
       result.marketStudy = { round, potential: potentials, next: state.finished ? null : { round: state.round, potential: segmentPotential(state) } };
@@ -1395,7 +1476,8 @@ export function exchangeTrade(input: GameState, traderId: string, targetId: stri
   const n = Math.trunc(qty);
   const trader = state.companies.find((c) => c.id === traderId), target = state.companies.find((c) => c.id === targetId);
   if (state.finished) throw new Error("The game is over");
-  if (!trader || !target || trader.bankrupt || target.bankrupt) throw new Error("That company isn't trading");
+  if (!trader || !target || trader.bankrupt || !operating(target)) throw new Error(target?.merged ? `${target.companyName} has merged and isn't listed any more` : "That company isn't trading");
+  if (!rulesOf(state).takeovers) throw new Error("The stock exchange is off in this game (house rules)");
   if (trader.id === target.id) throw new Error("Buy back your own shares in the Takeovers tab");
   if (state.round < diff.takeoverUnlockRound) throw new Error(`The stock exchange opens in round ${diff.takeoverUnlockRound}`);
   if (!n) throw new Error("Choose how many shares");
@@ -1458,7 +1540,7 @@ export function liveLotOpen(state: GameState, lot: string, now = Date.now()): bo
 export function liveBid(input: GameState, bidderId: string, lot: string, amount: number, now = Date.now()): GameState {
   const state = deepClone(input);
   const bidder = state.companies.find((c) => c.id === bidderId);
-  if (!bidder || bidder.bankrupt) throw new Error("You can't bid");
+  if (!bidder || !operating(bidder)) throw new Error("You can't bid");
   if (!liveLotOpen(state, lot, now)) throw new Error("Sold! This auction is closed");
   const min = liveMinBid(state, lot);
   if (!(amount >= min)) throw new Error(`The next bid must be at least €${min.toLocaleString("en")}`);
@@ -1470,6 +1552,71 @@ export function liveBid(input: GameState, bidderId: string, lot: string, amount:
   l.endsAt = now + LIVE_AUCTION.goingMs;
   l.bids++;
   return state;
+}
+
+/**
+ * Friendly merger: `absorbed` folds into `survivor`. Everything it runs (cash, debt, factory, stock, stores, brand)
+ * moves over; the shares of the combined company are split by value, so the absorbed company becomes a holding
+ * company that owns its part of the survivor (and keeps its other stakes). Its player plays on as an investor.
+ */
+export function mergeCompanies(state: GameState, survivor: Company, absorbed: Company, round: number): boolean {
+  const industry = INDUSTRIES[state.config.industry];
+  const vS = baseValue(survivor, industry), vA = baseValue(absorbed, industry);
+  if (!(vS > 0) || !(vA > 0)) return false;
+  const rS = vS / (vS + vA), rA = 1 - rS;
+  const S = survivor, A = absorbed;
+  // Operations.
+  const wSum = (a: number, b: number) => (a * vS + b * vA) / (vS + vA);
+  const inv = S.inventory + A.inventory;
+  S.inventoryUnitCost = inv > 0 ? (S.inventory * S.inventoryUnitCost + A.inventory * A.inventoryUnitCost) / inv : 0;
+  S.inventory = inv;
+  const mat = (S.materials ?? 0) + (A.materials ?? 0);
+  S.materialPaid = mat > 0 ? ((S.materials ?? 0) * (S.materialPaid ?? 1) + (A.materials ?? 0) * (A.materialPaid ?? 1)) / mat : 1;
+  S.materials = mat;
+  S.cash += A.cash; S.debt += A.debt;
+  S.capacity += A.capacity;
+  S.stores = Math.min(RETAIL.maxStores, S.stores + A.stores);
+  S.brand = clamp(wSum(S.brand, A.brand), 0, 100);
+  S.hype = clamp(wSum(S.hype, A.hype), 0, 100);
+  S.rndProgress = Math.max(S.rndProgress, A.rndProgress);
+  S.qualityCap = Math.max(S.qualityCap, A.qualityCap);
+  S.workers += A.workers;
+  S.cumProduced = (S.cumProduced ?? 0) + (A.cumProduced ?? 0);
+  S.credibility = Math.round(wSum(S.credibility ?? 0, A.credibility ?? 0));
+  S.sentiment = Math.max(S.sentiment, A.sentiment);
+  // Shares: survivor's holders keep rS of their stake, the absorbed company's holders get rA of theirs, in survivor shares.
+  const parts: { key: string; x: number }[] = [];
+  parts.push({ key: "founder", x: S.shares.founder * rS }, { key: "float", x: S.shares.float * rS }, { key: "treasury", x: S.shares.treasury * rS });
+  for (const [h, q] of Object.entries(S.shares.holders)) parts.push({ key: "h:" + h, x: q * rS });
+  parts.push({ key: "h:" + A.id, x: A.shares.founder * rA }, { key: "float", x: A.shares.float * rA }, { key: "treasury", x: A.shares.treasury * rA });
+  for (const [h, q] of Object.entries(A.shares.holders)) parts.push({ key: h === S.id ? "treasury" : "h:" + h, x: q * rA });
+  const merged = new Map<string, number>();
+  for (const p of parts) merged.set(p.key, (merged.get(p.key) ?? 0) + p.x);
+  // Whole shares adding up to 100 (largest remainders get the leftovers).
+  const entries = [...merged.entries()].map(([key, x]) => ({ key, x, n: Math.floor(x) }));
+  let left = 100 - entries.reduce((a, e) => a + e.n, 0);
+  for (const e of [...entries].sort((a, b) => (b.x - b.n) - (a.x - a.n))) { if (left <= 0) break; e.n++; left--; }
+  S.shares = { founder: 0, float: 0, treasury: 0, holders: {} };
+  for (const e of entries) {
+    if (e.key === "founder" || e.key === "float" || e.key === "treasury") S.shares[e.key] += e.n;
+    else if (e.n > 0) S.shares.holders[e.key.slice(2)] = (S.shares.holders[e.key.slice(2)] ?? 0) + e.n;
+  }
+  // Control of the combined company: whoever now holds more than half (usually nobody).
+  const top = Object.entries(S.shares.holders).sort((a, b) => b[1] - a[1])[0];
+  S.controlledBy = top && top[1] > BALANCE.controlThreshold ? top[0] : null;
+  // The absorbed company becomes an empty holding company, owned by its player.
+  A.cash = 0; A.debt = 0; A.capacity = 0; A.inventory = 0; A.inventoryUnitCost = 0; A.materials = 0; A.stores = 0;
+  A.brand = 0; A.hype = 0; A.workers = 0; A.sentiment = 0;
+  A.shares = { founder: 100, float: 0, treasury: 0, holders: {} };
+  A.controlledBy = null;
+  A.merged = { into: S.id, round };
+  for (const c of state.companies) if (c.controlledBy === A.id && c.id === S.id) c.controlledBy = null;
+  // Loans between players and pacts follow the business.
+  for (const l of state.playerLoans ?? []) { if (l.lender === A.id) l.lender = S.id; if (l.borrower === A.id) l.borrower = S.id; }
+  state.playerLoans = (state.playerLoans ?? []).filter((l) => l.lender !== l.borrower);
+  state.pacts = (state.pacts ?? []).filter((p) => p.a !== A.id && p.b !== A.id);
+  state.feed.push({ round, headline: `MERGER! ${A.companyName} and ${S.companyName} join forces. ${S.playerName} runs the show; ${A.playerName} keeps ${S.shares.holders[A.id] ?? 0}% and a very nice office chair` });
+  return true;
 }
 
 function goBankrupt(state: GameState, c: Company, round: number, byId: Map<string, Company>) {
@@ -1548,6 +1695,7 @@ export function standings(state: GameState): Standing[] {
       missionDone: done,
       missionBonus: done ? MISSION_BONUS : 0,
       journalistPoints: c.journalistPoints ?? 0,
+      merged: c.merged ? c.merged.into : null,
     };
   });
   return rows.sort((a, b) => Number(b.monopoly) - Number(a.monopoly) || b.score - a.score);
@@ -1569,6 +1717,10 @@ export function publicInfo(state: GameState) {
       stores: c.stores,
       controlledBy: c.controlledBy,
       bankrupt: c.bankrupt,
+      merged: c.merged ? c.merged.into : null,
+      productName: c.productName ?? null,
+      style: c.style ?? null,
+      reviews: last?.reviews ?? null,
     };
   });
 }

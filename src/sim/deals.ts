@@ -1,7 +1,7 @@
 // How computer players handle private deals: they say yes to good offers, no to bad ones,
 // and now and then pitch a deal themselves. Used in single-player (online, deals are between people).
 
-import { BALANCE, DIFFICULTIES, sharePrices, type Company, type DealOrder, type GameState, type LoanDealTerms, type PactDealTerms, type ShareDealTerms } from "../engine";
+import { BALANCE, DIFFICULTIES, companyValues, rulesOf, sharePrices, type Company, type DealOrder, type GameState, type LoanDealTerms, type MergerDealTerms, type PactDealTerms, type ShareDealTerms } from "../engine";
 import { Rng } from "../engine/rng";
 
 const pick = <T,>(rng: Rng, list: T[]) => list[rng.int(list.length)];
@@ -49,6 +49,22 @@ export function botRespondDeal(state: GameState, botId: string, deal: DealOrder,
     }
     if (bot.cash < 700_000 && rate <= 0.08) return yes(["Cheaper than the bank? Yes please.", "You're a lifesaver. Literally, my CFO fainted."]);
     return no(["I'm fine for cash, thanks.", "At that rate I'd rather call the bank."]);
+  }
+
+  if (deal.kind === "merger") {
+    const t = deal.terms as MergerDealTerms;
+    if (!rulesOf(state).takeovers) return no(["Mergers are off in this game."]);
+    if (state.round < DIFFICULTIES[state.config.difficulty].takeoverUnlockRound) return no(["Too early to get married. Ask me again in a few rounds."]);
+    const v = companyValues(state), mine = v[botId] ?? 0, theirs = v[other.id] ?? 0;
+    const botLeads = t.survivor === botId;
+    // Running the show: yes if the partner adds real value. Being absorbed: only when clearly behind.
+    if (botLeads) {
+      if (theirs >= mine * 0.25) return yes(["A merger with me in charge? Where do I sign?", "Welcome aboard. I'll keep your coffee machine.", "Deal. I always wanted a bigger factory."]);
+      return no(["You'd bring... what exactly? No offence.", "Grow a bit first, then we'll talk."]);
+    }
+    if (strategy.includes("raider")) return no(["Me, a junior partner? Never.", "I don't merge. I acquire."]);
+    if (mine < theirs * 0.6 && rng.chance(0.7)) return yes(["Fine, you run it. I'll take my shares and a nice title.", "Better a slice of a big cake than all of a small one. Deal."]);
+    return no(["Why would I hand you my company?", "Make me the boss and we'll talk.", "I'm doing fine on my own, thanks."]);
   }
 
   // Pact: raiders laugh, others like peace, especially when the other side owns a lot of them.

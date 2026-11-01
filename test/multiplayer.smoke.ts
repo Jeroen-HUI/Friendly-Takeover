@@ -70,7 +70,7 @@ const server = {
     if (action === "start") {
       if (g.host_user_id !== userId) fail(403, "Only the host can start the game");
       if (g.status !== "lobby") fail(409, "The game has already started");
-      const state = startOnlineGame({ industry: g.industry, difficulty: g.difficulty, rounds: g.rounds, botCount: g.bot_count, botSkill: g.bot_skill, seed: 1234 },
+      const state = startOnlineGame({ industry: g.industry, difficulty: g.difficulty, rounds: g.rounds, botCount: g.bot_count, botSkill: g.bot_skill, seed: 1234, rules: g.rules ?? null },
         players.map((p) => ({ id: p.id, name: p.player_name, company: p.company_name, trait: p.trait })));
       Object.assign(g, { status: "playing", current_round: 1, round_deadline: new Date(Date.now() + g.round_seconds * 1000).toISOString() });
       publish(g.id, 0, state);
@@ -139,6 +139,11 @@ const fakeApi = {
       return Object.values(acc).sort((x: any, y: any) => y.points - x.points);
     }
     if (name === "join_game") return server.join(HOST, a.p_code, a.p_player_name, a.p_company_name, a.p_trait);
+    if (name === "set_house_rules") {
+      const g = db.games.find((x) => x.id === a.p_game_id && x.host_user_id === HOST && x.status === "lobby");
+      if (!g) throw new Error("Only the host can change the rules before the game starts");
+      g.rules = { ...a.p_rules }; return g.rules;
+    }
     if (name === "update_game_settings") {
       const g = db.games.find((x) => x.id === a.p_game_id)!;
       Object.assign(g, { industry: a.p_industry, difficulty: a.p_difficulty, mode: a.p_mode, rounds: a.p_rounds, round_seconds: a.p_round_seconds, bot_count: a.p_bot_count, bot_skill: a.p_bot_skill });
@@ -274,12 +279,16 @@ await until("friend in lobby", () => /Sanne/.test($(".lobby")!.textContent!));
 // Host settings: 6 rounds, one hard bot.
 click('[data-set="rounds"][data-val="6"]');
 await until("rounds saved", () => HG().rounds === 6 && $('[data-set="rounds"][data-val="6"]')?.getAttribute("aria-checked") === "true");
+click(`[data-rule="startCash"][data-val="2000000"]`);
+await until("house rule saved", () => HG().rules && HG().rules.startCash === 2000000 && $(`[data-rule="startCash"][data-val="2000000"]`)?.getAttribute("aria-checked") === "true");
 click('[data-set="bot_count"][data-val="1"]');
 await until("bot saved", () => HG().bot_count === 1 && /Bot 1/.test($(".lobby")!.textContent!));
 click('[data-set="bot_skill"][data-val="hard"]');
 await until("bot skill saved", () => HG().bot_skill === "hard");
 
 click("#btn-mp-start");
+await until("game started", () => db.states.get(HG().id));
+if (db.states.get(HG().id)!.config.rules?.startCash !== 2000000) throw new Error("house rules should reach the server game: " + JSON.stringify(db.states.get(HG().id)!.config));
 await until("game screen", () => $("#btn-submit"));
 closeIntro();
 {
@@ -399,6 +408,7 @@ click("#btn-rematch");
 await until("rematch lobby", () => $(".lobby"));
 if (db.games.at(-1)!.league_id !== HG().id) throw new Error("rematch should be in the same league");
 if (db.games.at(-1)!.rounds !== 6 || db.games.at(-1)!.bot_count !== 1) throw new Error("rematch should keep the settings");
+await until("rematch rules", () => db.games.at(-1)!.rules?.startCash === 2000000);
 if (errors.length) throw new Error("script errors: " + errors.join(" | "));
 console.log(`multiplayer smoke ok: lobby code ${code}, 6 online rounds with a friend and a bot, chat, a loan deal, season table and rematch; ${db.reports.length} reports written`);
 process.exit(0);
