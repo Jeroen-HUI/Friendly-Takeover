@@ -4844,9 +4844,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const key = S.modal + ":" + S.game.round + ":" + (S.tvIndex || 0);
     if (S.lastSound === key) return;
     S.lastSound = key;
-    if (S.modal === "results") setTimeout(() => sfx(me().history.at(-1).profit >= 0 ? "profit" : "loss"), 350);
+    if (S.modal === "results") setTimeout(() => { if (S.game && S.game.companies) sfx(me().history.at(-1).profit >= 0 ? "profit" : "loss"); }, 350);
     if (S.modal === "tv") sfx(S.tvQueue[S.tvIndex] && ["deal", "showdown"].includes(S.tvQueue[S.tvIndex].scene) ? "takeover" : S.tvQueue[S.tvIndex] && S.tvQueue[S.tvIndex].scene === "auction" ? "profit" : "news");
-    if (S.modal === "final") setTimeout(() => sfx(FT.standings(S.game)[0].companyId === "you" ? "win" : "lose"), 350);
+    if (S.modal === "final") setTimeout(() => { if (S.game && S.game.config) sfx(FT.standings(S.game)[0].companyId === "you" ? "win" : "lose"); }, 350);
   }
   function renderModal() {
     if (!S.modal) { modal.innerHTML = ""; return; }
