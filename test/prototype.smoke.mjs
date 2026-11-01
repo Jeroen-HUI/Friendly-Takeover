@@ -38,6 +38,19 @@ if (doc.querySelectorAll(".overlay .achcard").length) throw new Error("modal sho
 click('[data-title="achievements"]');
 if (doc.querySelectorAll(".achcard").length < 20) throw new Error("achievement cards missing");
 click("#btn-close");
+// Privacy, terms and credits from the title footer; the delete flow asks for confirmation first.
+click('.title-foot [data-legal="privacy"]');
+if (!/Privacy statement/.test(doc.querySelector(".overlay").textContent) || !/no ads, no tracking/.test(doc.querySelector(".overlay").textContent)) throw new Error("privacy page missing");
+click('.overlay [data-legal="terms"]');
+if (!/No real money/.test(doc.querySelector(".overlay").textContent)) throw new Error("terms page missing");
+click('.overlay [data-legal="credits"]');
+if (!/Open Font License/.test(doc.querySelector(".overlay").textContent)) throw new Error("credits page missing");
+click('.overlay [data-legal="privacy"]'); click("#lg-delete");
+if (!doc.getElementById("lg-confirm")) throw new Error("delete should ask to type DELETE");
+click("#lg-delete-go");
+if (!/Type DELETE/.test(doc.querySelector(".overlay").textContent)) throw new Error("delete without confirmation should be refused");
+click("#btn-close");
+if (doc.querySelector('link[href*="fonts.googleapis"]')) throw new Error("fonts should be self-hosted");
 // The daily challenge is the same game for everyone: same seed, same rivals.
 click('[data-title="daily"]'); click("#d-start");
 const d1 = window.__ftDebug.S;
@@ -347,7 +360,19 @@ if (!/Mission:/.test(doc.querySelector(".overlay").textContent)) throw new Error
 if (!auctionSeen || !summitSeen) throw new Error("auction or summit never appeared");
 if (votePopups < 2) throw new Error("vote should pop up at the start of both summit rounds, got " + votePopups);
 if (!tvTags.has("Auction") || !tvTags.has("Summit")) throw new Error("special broadcasts missing: " + [...tvTags].join(","));
+// Weed is 18+: the game asks once; "No" goes back to the menu, "Yes" is remembered.
 click("#btn-again");
+click('input[name="industry"][value="weed"]'); click("#btn-start");
+if (!doc.getElementById("age-yes")) throw new Error("weed game should ask for 18+");
+click("#age-no");
+if (!doc.querySelector(".title-screen")) throw new Error("saying no should return to the menu");
+click("#t-continue");
+if (!doc.getElementById("age-yes")) throw new Error("continuing a weed game should still ask");
+click("#age-yes");
+if (doc.getElementById("age-yes") || !doc.querySelector("#btn-submit")) throw new Error("18+ confirmation should open the game");
+if (window.localStorage.getItem("ft-18") !== "1") throw new Error("18+ should be remembered");
+click("#btn-menu"); window.localStorage.removeItem("ft-save");
+click("#t-new");
 click('input[name="industry"][value="ai"]');
 click('input[name="difficulty"][value="tycoon"]');
 click('input[name="botSkill"][value="hard"]');

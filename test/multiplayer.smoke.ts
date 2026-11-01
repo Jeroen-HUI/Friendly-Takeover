@@ -120,6 +120,7 @@ const HOST = "user-host";
 const fakeApi = {
   async signIn() {},
   async rpc(name: string, a: any) {
+    if (name === "report_content") { (db as any).reportsSent = [...((db as any).reportsSent ?? []), a]; return null; }
     if (name === "create_game") return server.createGame(HOST, a.p_player_name, a.p_company_name, a.p_trait, a);
     if (name === "respond_deal") { const d = db.deals.find((x) => x.id === a.p_deal_id && x.status === "offered"); if (!d) throw new Error("That offer is no longer open"); d.status = a.p_accept ? "accepted" : "declined"; return null; }
     if (name === "cancel_deal") { const d = db.deals.find((x) => x.id === a.p_deal_id && x.status === "offered"); if (d) d.status = "cancelled"; return null; }
@@ -304,6 +305,21 @@ for (let r = 1; r <= 6; r++) {
     server.message(gid, 1, friend.player_id, null, "Bring it on");
     server.offer(gid, 1, friend.player_id, myId, "loan", { amount: 200000, repay: 210000, rounds: 1, direction: "lend" });
     await until("friend's chat and offer", () => /Bring it on/.test($("#talkwin")!.textContent!) || /deal offer/.test($(".agenda")!.textContent!), 6000);
+    // Report the friend's message (it goes to report_content with the message id), then hide and unhide them.
+    click(`[data-thread="all"]`);
+    await until("report flag", () => $(`[data-report-from="${friend.player_id}"]`));
+    click(`[data-report-from="${friend.player_id}"]`);
+    ($("#r-reason") as any).value = "spam"; ($("#r-note") as any).value = "test";
+    click("#r-send");
+    await until("report sent", () => ((db as any).reportsSent || []).length === 1);
+    await until("report confirmation", () => /report was sent/.test($("#talkwin")!.textContent!));
+    { const rep = (db as any).reportsSent[0], msg = db.messages.find((m) => m.body === "Bring it on")!;
+      if (rep.p_player_id !== friend.player_id || rep.p_reason !== "spam" || rep.p_message_id !== msg.id || rep.p_note !== "test") throw new Error("report payload: " + JSON.stringify(rep)); }
+    if (!/report was sent/.test($("#talkwin")!.textContent!)) throw new Error("report confirmation missing");
+    if ($(`[data-report-from="${myId}"]`)) throw new Error("my own messages should have no report flag");
+    click(`[data-report-from="${friend.player_id}"]`); click("#r-mute");
+    if (/Bring it on/.test($("#tlog")!.textContent!)) throw new Error("hidden player's messages still show");
+    window.localStorage.removeItem("ft-muted");
     click(`[data-thread="${friend.player_id}"]`);
     await until("deal card", () => $("[data-deal-accept]"));
     click("[data-deal-accept]");

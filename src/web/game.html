@@ -1,8 +1,7 @@
 <title>Friendly Takeover</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Nunito:wght@600;700;800;900&display=swap">
+<!-- Fonts are built into the page (no requests to Google Fonts, so no visitor data goes to Google). -->
+<style>/*__FONTS__*/</style>
 <style>
 /* Layout: a game screen. Top bar, player cards, a skyline strip where companies grow and shrink,
    then a side menu beside one framed window per business area, and a live feed underneath.
@@ -403,6 +402,7 @@ button[data-tip] { cursor: pointer; }
 .acc-chip b { font-family: var(--font-display); font-size: 14px; }
 .acc-chip span { font-size: 11.5px; font-weight: 900; color: var(--muted); letter-spacing: 0.06em; }
 .acc-chip .badge { position: absolute; top: -6px; left: -6px; }
+@media (max-width: 640px) { .acc-chip { top: 6px; right: 6px; grid-auto-flow: column; align-items: baseline; gap: 8px; padding: 4px 9px; } .acc-chip b { font-size: 12px; } .acc-chip span { font-size: 10.5px; } .title-logo { margin-top: 24px; } }
 .tside .soon.new { background: var(--good); color: #062614; }
 .invitebar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 24px); padding: 10px 14px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px #8a6420; }
 .invitebar[hidden] { display: none; }
@@ -505,7 +505,11 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .tchip .badge, .chatbtn .badge { position: static; margin-left: 4px; }
 .tlog { flex: 1; min-height: 120px; overflow-y: auto; display: grid; align-content: start; gap: 6px; padding-right: 2px; }
 .tmsg { display: grid; gap: 1px; padding: 6px 9px; border-radius: 8px; background: var(--panel-3); max-width: 88%; font-size: 13.5px; font-weight: 700; }
-.tmsg b { font-size: 12px; }
+.tmsg b { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.tm-flag { margin-left: auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; opacity: 0.55; }
+.tm-flag:hover, .tm-flag:focus-visible { opacity: 1; color: var(--bad); outline: none; }
+.reportform { display: grid; gap: 6px; } .reportform h3 { margin: 0; }
+.reportform select, .reportform input { padding: 7px 9px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 700; }
 .tmsg.me { justify-self: end; background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); }
 .tmsg.me b { color: inherit !important; }
 .dealcard { border-radius: 9px; padding: 9px 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; font-size: 13.5px; font-weight: 700; display: grid; gap: 4px; box-shadow: 0 0 0 2px #8a6420; }
@@ -529,6 +533,17 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .stars button.on { color: var(--gold); }
 .btn.chatbtn[aria-pressed="true"] { background: linear-gradient(#5fd08a, #2e9a5c); color: #062614; }
 @media (max-width: 640px) { .talkwin { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 78vh; } }
+.legalwin { max-width: 760px; }
+.legal { font-size: 14.5px; line-height: 1.5; max-height: min(78vh, 900px); overflow-y: auto; }
+.legal h3 { margin: 10px 0 2px; font-size: 15px; color: var(--gold); }
+.legal p, .legal ul { margin: 0; } .legal ul { padding-left: 20px; display: grid; gap: 3px; }
+.legal a { color: var(--gold); font-weight: 800; }
+.legal-tabs { display: flex; gap: 6px; flex-wrap: wrap; position: sticky; top: -12px; padding: 4px 0 6px; background: inherit; z-index: 1; }
+.legal-actions .sumline { align-items: center; }
+.title-foot { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 2px; z-index: 2; }
+.title-foot button { border: 0; background: rgba(10, 15, 36, 0.75); color: #c8d0f0; font: inherit; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px; cursor: pointer; }
+.title-foot button:hover, .title-foot button:focus-visible { color: var(--gold); outline: none; }
+@media (max-width: 640px) { .title-foot { position: static; justify-content: center; margin-top: 6px; grid-row: 4; } }
 .calcwin { position: fixed; right: 16px; bottom: 16px; width: 292px; z-index: 30; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .calcwin[hidden] { display: none; }
 .calcwin .win-title { cursor: move; gap: 8px; user-select: none; touch-action: none; }
@@ -1021,6 +1036,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
           </div>
         </div>
       </div>
+      <nav class="title-foot" aria-label="Legal"><button type="button" data-legal="privacy">Privacy</button><button type="button" data-legal="terms">Terms</button><button type="button" data-legal="credits">Credits</button></nav>
     </section>`;
   }
   let titleRaf = 0;
@@ -1214,12 +1230,154 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${row("Results show", "Reveal everyone's numbers one by one after each round", sw("show", PREFS.show, "Results show"))}
         ${row("How to play", "Show the guide when you start your next game", sw("help", helpOn, "How to play"))}
       </div>
+      <div class="ogroup"><h3>About</h3>
+        ${row("Privacy, terms and credits", "What data the game uses, the rules, and who made what", `<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-legal="privacy">Privacy</button><button class="btn small" type="button" data-legal="terms">Terms</button><button class="btn small" type="button" data-legal="credits">Credits</button></span>`)}
+      </div>
       <div class="ogroup"><h3>Saved game</h3>
         ${row(save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game", "Your game saves in this browser after every round", `<button class="btn danger small" type="button" id="o-delete" ${save ? "" : "disabled"}>Delete</button>`)}
       </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-close" data-autofocus>Done</button></div></div></div>`;
   }
 
+
+
+  // ======================================================================
+  // Privacy, terms, credits, the 18+ check for the Weed industry, and deleting your data.
+  // ======================================================================
+  const LEGAL = {
+    updated: "1 November 2026",
+    owner: "Jeroen, an independent game developer in the Netherlands",
+    email: "",   // add a contact email for privacy requests here
+    issues: "https://github.com/Jeroen-HUI/Friendly-Takeover/issues",
+  };
+  const contactHtml = () => (LEGAL.email ? `email <a href="mailto:${esc(LEGAL.email)}">${esc(LEGAL.email)}</a> or ` : "") + `open an issue on <a href="${LEGAL.issues}" target="_blank" rel="noopener">GitHub</a> (public) or use the in-game feedback`;
+  function legalWin(title, body, extra = "") {
+    return `<div class="win legalwin"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body legal">
+      <div class="legal-tabs"><button type="button" class="btn small ${S.modal === "privacy" ? "go" : ""}" data-legal="privacy">Privacy</button><button type="button" class="btn small ${S.modal === "terms" ? "go" : ""}" data-legal="terms">Terms</button><button type="button" class="btn small ${S.modal === "credits" ? "go" : ""}" data-legal="credits">Credits</button></div>
+      ${body}${extra}
+      <p class="muted">Last updated ${LEGAL.updated}.</p>
+      <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-close">Close</button></div></div></div>`;
+  }
+  function privacyModal() {
+    return legalWin("Privacy statement", `
+      <p>Friendly Takeover is made by ${LEGAL.owner} ("we"). This page explains what data the game uses and what you can do about it. Short version: <b>no ads, no tracking, no analytics, and we never sell data.</b></p>
+      <h3>Playing on your own (against bots)</h3>
+      <p>Nothing leaves your device. Your saved game, settings and calculator notes are kept in your browser's storage. You can wipe them below at any time.</p>
+      <h3>Playing online and accounts</h3>
+      <p>Online features need an account: multiplayer, your profile, friends, leaderboards and daily-challenge scores. The first time you use one, you get a guest account automatically (just opening the game doesn't create one). We store:</p>
+      <ul><li>a random account ID, the name you choose and your friend code;</li>
+        <li>your games: company names, decisions, results, chat messages, deals and emoji reactions;</li>
+        <li>friends, game invites, achievements, daily-challenge scores and when you were last online;</li>
+        <li>your email address, only if you choose "Save with email", so we can send you login links.</li></ul>
+      <p>Other players in a game see your name, company and what you write to them. The party-mode TV screen shows the same to anyone in the room with its secret link.</p>
+      <h3>Feedback and reports</h3>
+      <p>The rating and comment you send from the final screen are stored without your account. If you report a message or a name, we store the report, a copy of that message, and who sent the report, so we can look into it.</p>
+      <h3>Why we use this data</h3>
+      <p>To run the game you ask to play (GDPR article 6(1)(b)), and to keep it safe and fair, for example handling reports and stopping abuse (our legitimate interest, article 6(1)(f)).</p>
+      <h3>Who helps us</h3>
+      <ul><li><b>Supabase</b> runs the database, login and game server. Data is stored in Ireland (EU). Login emails are sent through Supabase.</li>
+        <li><b>GitHub Pages</b> (GitHub, USA) hosts the website files. Like any web host it receives your IP address when the page loads.</li></ul>
+      <p>The fonts are built into the game, so loading it sends nothing to Google or other font services.</p>
+      <h3>Cookies and browser storage</h3>
+      <p>We don't use tracking cookies. The game keeps only what it needs to work in your browser's storage: your saved game, settings and online login. That kind of storage doesn't need a cookie banner.</p>
+      <h3>How long we keep it</h3>
+      <ul><li>Online games: 12 months after they were created.</li>
+        <li>Guest accounts nobody has used for 12 months: deleted with their data.</li>
+        <li>Accounts saved with an email: until you delete them.</li>
+        <li>Closed reports: 12 months. Feedback: 24 months.</li></ul>
+      <h3>Your rights</h3>
+      <p>You can see, correct and delete your data. Change your name in Profile. Delete your account with the button below: it removes your profile, email, friends, achievements, scores and chat messages straight away. In games with other players your company stays so their game can finish, renamed to "Deleted player". For anything else, ${contactHtml()}. You can also complain to the Dutch data protection authority, the <a href="https://autoriteitpersoonsgegevens.nl" target="_blank" rel="noopener">Autoriteit Persoonsgegevens</a>.</p>
+      <h3>Age</h3>
+      <p>Online play and chat are for players aged 16 and over. The Weed industry is for players aged 18 and over.</p>`,
+      `<div class="card legal-actions"><h3>Delete your data</h3>
+        <div class="sumline"><span>Everything this browser keeps: saved game, settings, notes, login</span><button class="btn small danger" type="button" id="lg-wipe">Delete on this device</button></div>
+        <div class="sumline"><span>Your online account and everything linked to it</span><button class="btn small danger" type="button" id="lg-delete">Delete my account</button></div>
+        ${LG.msg ? `<div class="note ${LG.ok ? "pos" : "neg"}">${esc(LG.msg)}</div>` : ""}
+        ${LG.confirm ? `<div class="note neg" style="color:var(--ink)">This can't be undone. Type <b>DELETE</b> to delete your online account and its data.<div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="lg-confirm" placeholder="DELETE" style="flex:1"><button class="btn small danger" type="button" id="lg-delete-go" ${LG.busy ? "disabled" : ""}>${LG.busy ? "Deleting…" : "Delete for good"}</button></div></div>` : ""}</div>`);
+  }
+  function termsModal() {
+    return legalWin("Terms of use", `
+      <p>By playing Friendly Takeover you agree to these terms. They're short, so please read them.</p>
+      <h3>The game</h3>
+      <p>Friendly Takeover is a free business game. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
+      <h3>No real money</h3>
+      <p>All money in the game is pretend. You can't buy it, sell it, win it or cash it out. There is no gambling.</p>
+      <h3>Age</h3>
+      <p>Online play and chat: 16 and over. The Weed industry: 18 and over. It's a business game; nothing real is sold.</p>
+      <h3>Be decent</h3>
+      <p>No harassment, threats, hate, sexual content, spam, sharing other people's personal details, or anything illegal, in chat, names or company names. Ruthless business is the point of the game; being cruel to real people is not.</p>
+      <h3>Reports and removal</h3>
+      <p>Use the ⚑ button in chat to report a message or a name. We check reports and may remove content, rename companies or block accounts that break these terms. If we remove something of yours and you think we got it wrong, ${contactHtml()}. To report illegal content, use the ⚑ button or ${contactHtml()}.</p>
+      <h3>What you write</h3>
+      <p>Your messages and names stay yours. You let us store them and show them to the players in your game (and on its party-mode screen) so the game works.</p>
+      <h3>Accounts</h3>
+      <p>Keep your login email to yourself. Guest accounts nobody uses for 12 months are deleted. You can delete your account at any time under Privacy.</p>
+      <h3>No guarantees</h3>
+      <p>The game is provided as it is. We work hard on it, but it may have bugs, change, be reset, go offline or stop. As far as the law allows, we're not liable for lost games, scores or anything that follows from using it. Nothing here limits your rights as a consumer.</p>
+      <h3>Law</h3>
+      <p>Dutch law applies. Questions? ${contactHtml()}.</p>`);
+  }
+  function creditsModal() {
+    return legalWin("Credits", `
+      <p>Friendly Takeover is designed and built by Jeroen.</p>
+      <h3>Fonts</h3>
+      <p><b>Silkscreen</b> by Jason Kottke and <b>Nunito</b> by Vernon Adams, Cyreal and Jacques Le Bailly, both under the <a href="https://openfontlicense.org" target="_blank" rel="noopener">SIL Open Font License 1.1</a>, built into the game.</p>
+      <h3>Everything else</h3>
+      <p>The pixel art, sounds and music are drawn and generated by the game itself. Companies, people and news are fictional.</p>`);
+  }
+  const LG = { confirm: false, busy: false, msg: "", ok: false };
+  const is18 = () => { try { return localStorage.getItem("ft-18") === "1"; } catch (e) { return false; } };
+  // The industry of whatever is on screen (online lobby or a game).
+  const shownIndustry = () => (S && S.screen === "lobby" && MP.game ? MP.game.industry : S && S.screen === "game" && S.game ? S.game.config.industry : null);
+  function ageModal() {
+    return `<div class="win" style="max-width:520px"><div class="win-title">18+ only</div><div class="win-body">
+      <p style="margin:0;font-size:16px;font-weight:800">This game is set in the <b>Weed</b> industry, which is for players aged 18 and over.</p>
+      <div class="hint">It's a business game about running a company: nothing real is sold and no real money is involved.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="age-no">${S.screen === "lobby" && mpIsHost() ? "No, switch to Chocolate" : "No, take me back"}</button><button class="btn go" type="button" id="age-yes">I'm 18 or older</button></div>
+    </div></div>`;
+  }
+  function ageGate() {
+    if (S && S.modal !== "age" && shownIndustry() === "weed" && !is18()) { S.ageWas = S.modal; S.modal = "age"; }
+  }
+  function bindLegal() {
+    const on = (sel, fn) => modal.querySelectorAll(sel).forEach((el) => el.addEventListener("click", fn));
+    on("#lg-wipe", () => {
+      try { Object.keys(localStorage).filter((k) => k.startsWith("ft-")).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+      LG.ok = true; LG.msg = "Deleted everything this browser kept for the game. Reloading…"; renderModal(); bindModal();
+      setTimeout(() => location.replace(location.pathname), window.__ftFast ? 10 : 900);
+    });
+    on("#lg-delete", () => { LG.confirm = true; LG.msg = ""; renderModal(); bindModal(); });
+    on("#lg-delete-go", async () => {
+      if (($("#lg-confirm") || {}).value !== "DELETE") { LG.ok = false; LG.msg = "Type DELETE in capitals to confirm."; renderModal(); bindModal(); return; }
+      if (!window.__ftApi && !loadAuth()) { LG.ok = false; LG.msg = "There's no online account on this device, so there's nothing to delete online."; LG.confirm = false; renderModal(); bindModal(); return; }
+      LG.busy = true; renderModal(); bindModal();
+      try {
+        await api().signIn();
+        await api().rpc("delete_my_account", {});
+        try { await api().logout(); } catch (e) {}
+        try { ["ft-auth", "ft-mp", "ft-daily", "ft-ach", "ft-stats"].forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+        mpStop(); MP.gameId = null; ACC.profile = null; ACC.friends = []; ACC.online = false;
+        LG.ok = true; LG.msg = "Your online account and its data are deleted. If you play online again, you'll start as a new guest.";
+      } catch (e) { LG.ok = false; LG.msg = "Couldn't delete it: " + e.message; }
+      LG.busy = false; LG.confirm = false; renderModal(); bindModal();
+    });
+    on("#age-yes", () => { try { localStorage.setItem("ft-18", "1"); } catch (e) {} S.modal = S.ageWas || null; S.ageWas = null; render(); });
+    on("#age-no", async () => {
+      S.modal = S.ageWas = null;
+      if (S.screen === "lobby" && mpIsHost()) {
+        try { const g = MP.game; await api().rpc("update_game_settings", { p_game_id: g.id, p_industry: "chocolate", p_difficulty: g.difficulty, p_mode: Number(g.round_seconds) >= 86400 ? "daily" : "live", p_rounds: Number(g.rounds), p_round_seconds: Number(g.round_seconds), p_bot_count: Number(g.bot_count || 0), p_bot_skill: g.bot_skill || "normal" }); } catch (e) {}
+        MP.game = { ...MP.game, industry: "chocolate" }; MP.sig = ""; mpRefresh(); render(); return;
+      }
+      if (S.screen === "lobby") { try { await api().rpc("leave_game", { p_game_id: MP.gameId }); } catch (e) {} }
+      mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
+    });
+  }
+  // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-legal]");
+    if (!b || !S) return;
+    LG.msg = ""; LG.confirm = b.dataset.legalDelete === "1"; S.modal = b.dataset.legal; renderModal(); bindModal();
+  });
 
   // ======================================================================
   // Online multiplayer (Supabase). The server runs the engine; each player gets their own view.
@@ -1760,7 +1918,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const chip = (id, label, color) => { const u = unread(id); return `<button type="button" class="tchip ${TALK.thread === id ? "on" : ""}" data-thread="${id}">${color ? `<span class="dot" style="background:${color}"></span>` : ""}${esc(label)}${u ? `<span class="badge">${u}</span>` : ""}</button>`; };
     const chips = chip("all", "Everyone") + list.map((id) => chip(id, byId(id).playerName.replace(/ \(bot\)$/, ""), colVar(id))).join("");
     const items = [
-      ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}</b><span>${esc(m.text)}</span></div>` })),
+      ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread && !mutedIds().includes(m.from)).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}${S.mp && m.from !== "you" && /^m\d+$/.test(m.id || "") && byId(m.from) && !/^bot-/.test(m.from) ? `<button type="button" class="tm-flag" data-report="${m.id.slice(1)}" data-report-from="${m.from}" title="Report or hide" aria-label="Report this message">⚑</button>` : ""}</b><span>${esc(m.text)}</span></div>` })),
       ...(TALK.thread === "all" ? [] : dealList().filter((d) => (d.from === TALK.thread && d.to === "you") || (d.to === TALK.thread && d.from === "you")).map((d) => ({ t: d.t, html: dealCard(d) }))),
     ].sort((a, b) => a.t - b.t);
     readMark()[TALK.thread] = Date.now() + 1e6;
@@ -1771,10 +1929,31 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="tchips" role="tablist">${chips}</div>
         <div class="tlog" id="tlog">${items.length ? items.map((x) => x.html).join("") : `<div class="hint">${empty}</div>`}</div>
         ${TALK.err ? `<div class="note neg">${esc(TALK.err)}</div>` : ""}
+        ${TALK.report ? reportForm() : TALK.reported ? `<div class="note pos">${esc(TALK.reported)}</div>` : ""}
         ${TALK.form && canDeal ? dealForm() : ""}
         <form class="tsend" id="tsend" autocomplete="off"><input type="text" id="t-input" maxlength="300" placeholder="${TALK.thread === "all" ? "Message everyone" : "Message " + esc(byId(TALK.thread).companyName)}" aria-label="Message"><button class="btn small go" type="submit">Send</button></form>
-        ${canDeal && !TALK.form ? `<button class="btn small" type="button" id="t-newdeal">Make a deal</button>` : ""}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${canDeal && !TALK.form ? `<button class="btn small" type="button" id="t-newdeal">Make a deal</button>` : ""}${S.mp && TALK.thread !== "all" && !/^bot-/.test(TALK.thread) && !TALK.report ? `<button class="linkbtn" type="button" data-report-player="${TALK.thread}">⚑ Report or hide ${esc(byId(TALK.thread).playerName)}</button>` : ""}</div>
       </div>`;
+  }
+  // ----- Reporting and hiding (online only). Reports go to the developer; hiding is just on this device.
+  const REPORT_REASONS = [["harassment", "Harassment or threats"], ["hate", "Hate"], ["sexual", "Sexual content"], ["spam", "Spam"], ["name", "Offensive name"], ["other", "Something else"]];
+  function mutedIds() { try { return JSON.parse(localStorage.getItem("ft-muted") || "[]"); } catch (e) { return []; } }
+  function setMuted(id, on) { const m = mutedIds().filter((x) => x !== id); if (on) m.push(id); try { localStorage.setItem("ft-muted", JSON.stringify(m.slice(-200))); } catch (e) {} }
+  function reportForm() {
+    const r = TALK.report, who = byId(r.from), muted = mutedIds().includes(r.from);
+    return `<div class="card reportform"><h3>${r.msg ? "Report this message" : "Report " + esc(who ? who.playerName : "player")}</h3>
+      ${r.text ? `<div class="hint">"${esc(r.text)}"</div>` : `<div class="hint">${esc(who ? who.playerName + " · " + who.companyName : "")}</div>`}
+      <select id="r-reason" aria-label="Reason">${REPORT_REASONS.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select>
+      <input type="text" id="r-note" maxlength="300" placeholder="Anything we should know? (optional)">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between"><button class="btn small" type="button" id="r-mute">${muted ? "Show their messages again" : "Hide their messages"}</button><span style="display:flex;gap:6px"><button class="btn small" type="button" id="r-cancel">Cancel</button><button class="btn small danger" type="button" id="r-send" ${r.busy ? "disabled" : ""}>Send report</button></span></div></div>`;
+  }
+  async function sendReport() {
+    const r = TALK.report; r.busy = true; renderTalk();
+    try {
+      await api().rpc("report_content", { p_game_id: MP.gameId, p_player_id: r.from, p_reason: ($("#r-reason") || {}).value || "other", p_message_id: r.msg ? Number(r.msg) : null, p_note: ($("#r-note") || {}).value || null });
+      TALK.report = null; TALK.reported = "Thanks, your report was sent. We'll look at it.";
+    } catch (e) { r.busy = false; TALK.err = e.message; }
+    renderTalk();
   }
   // Which shares each side can sell: your own founder shares, or stakes held in other companies.
   function sellable(id) {
@@ -1844,10 +2023,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
     talkEl.hidden = !TALK.open || !S || S.screen !== "game" || !S.game;
     if (!S || S.screen !== "game" || !S.game) return;
     if (!talkEl.hidden) {
-      const keep = $("#t-input") ? $("#t-input").value : "";
+      const keep = $("#t-input") ? $("#t-input").value : "", rr = $("#r-reason") ? $("#r-reason").value : "", rn = $("#r-note") ? $("#r-note").value : "";
       if (TALK.form) readDealForm();
       talkEl.innerHTML = talkHtml();
       if (keep && $("#t-input")) $("#t-input").value = keep;
+      if (rr && $("#r-reason")) $("#r-reason").value = rr;
+      if (rn && $("#r-note")) $("#r-note").value = rn;
       const log = $("#tlog"); if (log) log.scrollTop = log.scrollHeight;
     }
     const b = $("#btn-chat");
@@ -1856,6 +2037,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function onTalkClick(e) {
     const q = (sel) => e.target.closest(sel);
     if (q("#talk-close")) { TALK.open = false; renderTalk(); return; }
+    if (q("[data-report]")) { const b = q("[data-report]"), m = talkList().find((x) => x.id === "m" + b.dataset.report); TALK.report = { msg: b.dataset.report, from: b.dataset.reportFrom, text: m ? m.text : "" }; TALK.reported = ""; TALK.err = ""; renderTalk(); return; }
+    if (q("[data-report-player]")) { TALK.report = { msg: null, from: q("[data-report-player]").dataset.reportPlayer, text: "" }; TALK.reported = ""; TALK.err = ""; renderTalk(); return; }
+    if (q("#r-cancel")) { TALK.report = null; renderTalk(); return; }
+    if (q("#r-send")) { sendReport(); return; }
+    if (q("#r-mute")) { const id = TALK.report.from, was = mutedIds().includes(id); setMuted(id, !was); TALK.report = null; TALK.reported = was ? "Their messages show again." : "Hidden: you won't see their messages on this device."; renderTalk(); return; }
     if (q("[data-thread]")) { TALK.thread = q("[data-thread]").dataset.thread; TALK.form = null; TALK.err = ""; renderTalk(); return; }
     if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); return; }
     if (q("[data-dkind]")) { readDealForm(); TALK.form.kind = q("[data-dkind]").dataset.dkind; renderTalk(); return; }
@@ -2115,7 +2301,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const localSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   for (const id of localGet("ft-ach", [])) ACC.ach.add(id);
   const rpcSafe = async (name, args) => { try { return await api().rpc(name, args); } catch (e) { return undefined; } };
+  // No account is created just by opening the page: only once someone uses an online feature
+  // (multiplayer, profile, friends, leaderboards) or already has an account on this device.
+  const hasAccount = () => !!window.__ftApi || !!loadAuth();
   async function accountSync(full) {
+    if (!ACC.wanted && !hasAccount()) return false;
     try {
       await api().signIn();
       const prof = await api().rpc("ensure_profile", { p_name: (S && S.opts && S.opts.name !== "You" ? S.opts.name : null) || null });
@@ -2172,10 +2362,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function accountChip() {
     const p = ACC.profile;
-    return `<button class="acc-chip" id="t-account" type="button">${p ? `<b>${esc(p.name)}</b><span>${p.anonymous ? "Guest" : "Saved"} · ${esc(p.friend_code)}</span>` : `<b>Profile</b><span>${ACC.online ? "…" : "offline"}</span>`}${ACC.invites.length ? `<i class="badge">${ACC.invites.length}</i>` : ""}</button>`;
+    return `<button class="acc-chip" id="t-account" type="button">${p ? `<b>${esc(p.name)}</b><span>${p.anonymous ? "Guest" : "Saved"} · ${esc(p.friend_code)}</span>` : `<b>Profile</b><span>${ACC.online ? "…" : ACC.wanted ? "connecting…" : "not online yet"}</span>`}${ACC.invites.length ? `<i class="badge">${ACC.invites.length}</i>` : ""}</button>`;
   }
   function bindAccountChip() { const c = $("#t-account"); if (c) c.addEventListener("click", () => openModal("profile")); }
-  function openModal(m) { S.modal = m; ACC.err = ""; if (m === "leaderboard") loadBoard(); if (m === "friends") { ACC.fsig = ""; accTick(); } renderModal(); bindModal(); }
+  function openModal(m) {
+    S.modal = m; ACC.err = "";
+    if (["profile", "friends", "leaderboard"].includes(m) && !ACC.online) { ACC.wanted = true; accountSync(true).then(() => { if (S.modal === m) { if (m === "leaderboard") loadBoard(); renderModal(); bindModal(); } if (S.screen === "title") { const c = $("#t-account"); if (c) { c.outerHTML = accountChip(); bindAccountChip(); } } }); }
+    if (m === "leaderboard") loadBoard(); if (m === "friends") { ACC.fsig = ""; accTick(); } renderModal(); bindModal();
+  }
 
   // ----- Invite inbox on the title screen.
   let inviteEl = null;
@@ -2241,7 +2435,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         : `<div class="sumline"><span class="muted">Email</span><b>${esc(p.email || "")}</b></div><div class="hint">Log in with this email on any device to play as ${esc(p.name)}.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" id="p-logout">Log out on this device</button><input type="email" id="p-login-email" placeholder="other account email" style="flex:1;min-width:180px"><button class="btn small" type="button" id="p-login" ${ACC.busy ? "disabled" : ""}>Switch account</button></div>`}
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" data-open="friends">Friends</button><button class="btn" type="button" id="btn-close">Close</button></div>
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="linkbtn" type="button" data-legal="privacy" data-legal-delete="1">Delete my account and data</button><span style="display:flex;gap:8px"><button class="btn" type="button" data-open="friends">Friends</button><button class="btn" type="button" id="btn-close">Close</button></span></div>
     </div></div>`;
   }
   async function accAction(fn, okMsg) {
@@ -2987,6 +3181,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ---------------- render ----------------
   function render() {
     if (!S) return;
+    ageGate();
     if (S.screen === "tv") {
       app.innerHTML = tvScreen();
       document.querySelectorAll("canvas[data-tavatar]").forEach((cv) => drawAvatar(cv, cv.dataset.tavatar, css(COLORS[Number(cv.dataset.color) % COLORS.length])));
@@ -4226,6 +4421,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "board") inner = boardModal();
     if (S.modal === "soon") inner = soonModal();
     if (S.modal === "options") inner = optionsModal();
+    if (S.modal === "privacy") inner = privacyModal();
+    if (S.modal === "terms") inner = termsModal();
+    if (S.modal === "credits") inner = creditsModal();
+    if (S.modal === "age") inner = ageModal();
     modal.innerHTML = `<div class="overlay" role="dialog" aria-modal="true">${inner}</div>`;
     modal.querySelectorAll("canvas[data-avatar]").forEach((cv) => drawAvatar(cv, cv.dataset.avatar, colRaw(cv.dataset.avatar)));
     modal.querySelectorAll("canvas[data-trait]").forEach((cv) => drawTrait(cv, cv.dataset.trait));
@@ -4886,6 +5085,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function bindModal() {
     const on = (sel, ev, fn) => modal.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
+    if (["privacy", "terms", "credits", "age"].includes(S.modal)) bindLegal();
     on("#btn-continue", "click", () => { S.modal = afterResults(); render(); });
     on("#btn-show-done", "click", () => { S.modal = S.game.finished ? (S.boardQueue && S.boardQueue.length ? "board" : "final") : "results"; S.boardIndex = 0; render(); });
     on("#btn-board-next", "click", () => {
@@ -4989,6 +5189,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { const tv = new URLSearchParams(location.search).get("tv"); if (tv && /^[0-9a-f-]{36}\.[0-9a-f]{6,32}$/i.test(tv)) { const [id, code] = tv.split("."); tvStart(id, code); return; } } catch (e) {}
     const back = readLoginFromUrl();
     if (back) S.modal = back;
+    try { const pg = new URLSearchParams(location.search).get("page"); if (["privacy", "terms", "credits"].includes(pg)) S.modal = pg; } catch (e) {}
     try { const fc = new URLSearchParams(location.search).get("friend"); if (fc && /^[A-Za-z0-9]{6}$/.test(fc)) { S.friendCode = fc.toUpperCase(); S.modal = "friends"; } } catch (e) {}
     accStart();
     let join = null;
