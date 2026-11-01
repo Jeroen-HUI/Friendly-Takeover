@@ -141,6 +141,8 @@ button, input { font: inherit; color: inherit; }
 :root[data-theme="light"] .w-cash b { text-shadow: none; }
 @media (max-width: 1500px) { .topbar .logo h1 { font-size: 24px; } .topbar .sub { font-size: 12px; } .topbar .round { font-size: 17px; } .w-cash b { font-size: 24px; } .w-debt b { font-size: 17px; } .wallet > span { padding: 5px 11px; } .topbar .tools .btn { padding-left: 8px; padding-right: 8px; } }
 @media (max-width: 1180px) { .topbar .sub { display: none; } }
+/* Between phone and wide desktop the name would be cut to "FRIE…": show just the logo icon instead. */
+@media (min-width: 1200px) and (max-width: 1560px) { .topbar .logo > div { display: none; } }
 @media (min-width: 1200px) { .topbar { flex-wrap: nowrap; } .topbar .logo { min-width: 0; flex: 0 1 auto; } .topbar .logo > div { min-width: 0; } .topbar .logo h1, .topbar .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .topbar > * { flex-shrink: 0; } .topbar > .logo { flex-shrink: 1; } .topbar .spacer { flex: 1 1 0; min-width: 0; } }
 @media (max-width: 760px) { .wallet { order: 5; width: 100%; } .wallet > span { flex: 1; } .w-cash b { font-size: 24px; } }
 .cashchip span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -494,7 +496,7 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 @keyframes scpulse { 50% { transform: scale(1.6); opacity: 0.6; } }
 @media (prefers-reduced-motion: reduce) { .stockchart .sc-dot { animation: none; } }
 .stock-foot { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; font-weight: 800; color: var(--muted); } .stock-foot b { color: var(--ink); }
-.stock .exbtns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; white-space: normal; } .stock .exbtns .btn { margin: 0; padding: 6px 4px; }
+.stock .exbtns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; white-space: normal; } .stock .exbtns .btn { margin: 0; padding: 6px 2px; font-size: 10px; white-space: nowrap; letter-spacing: 0; }
 .livelot.mine { box-shadow: 0 0 0 3px var(--good); }
 .bidrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .bidrow input { flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; }
