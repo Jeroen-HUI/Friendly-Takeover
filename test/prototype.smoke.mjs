@@ -251,6 +251,9 @@ for (let r = 1; r <= 8; r++) {
     sellTried = true;
   }
   if (r === 3) {
+    // Production is never filled in for you: it stays at what you chose last round.
+    const D3 = window.__ftDebug.S, me3 = D3.game.companies.find((c) => c.id === "you");
+    if (D3.draft.production !== Math.min(me3.capacity, me3.lastDecisions.production)) throw new Error("production should carry over from last round: " + D3.draft.production + " vs " + me3.lastDecisions.production);
     click('[data-tab="retail"]');
     click('[data-step="f-sopen"][data-dir="1"]');
     click('[data-step="f-sopen"][data-dir="1"]');

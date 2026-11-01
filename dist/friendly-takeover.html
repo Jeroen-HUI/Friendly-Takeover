@@ -3083,12 +3083,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), d = c.lastDecisions;
     S.draft = { ...d, loanChange: 0, buyShares: {}, sellShares: {}, bankruptBids: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, auctionBid: 0, vote: null, journalistTarget: null, hire: 0 };
     S.visited = {};
-    const last = c.history.at(-1);
-    if (last) S.draft.production = Math.min(c.capacity, Math.max(0, Math.round((last.sold + last.unmetDemand * 0.7) * 1.05 - c.inventory)));
-    if (S.game.config.difficulty === "tycoon") {
-      const need = Math.ceil(Math.min(c.capacity, S.draft.production) / FT.teamOutput(ind()));
-      S.draft.hire = Math.max(-10, Math.min(10, need - c.workers));
-    }
+    // Everything starts as last round's plan: forecasting how much to make is the player's job.
+    S.draft.production = Math.max(0, Math.min(c.capacity, Math.round(d.production || 0)));
   }
 
   function endRound(silent) {
