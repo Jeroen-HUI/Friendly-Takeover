@@ -1,7 +1,7 @@
 // How computer players handle private deals: they say yes to good offers, no to bad ones,
 // and now and then pitch a deal themselves. Used in single-player (online, deals are between people).
 
-import { BALANCE, DIFFICULTIES, companyValues, rulesOf, sharePrices, type Company, type DealOrder, type GameState, type LoanDealTerms, type MergerDealTerms, type PactDealTerms, type ShareDealTerms } from "../engine";
+import { BALANCE, difficultyOf, companyValues, rulesOf, sharePrices, type Company, type DealOrder, type GameState, type LoanDealTerms, type MergerDealTerms, type PactDealTerms, type ShareDealTerms } from "../engine";
 import { Rng } from "../engine/rng";
 
 const pick = <T,>(rng: Rng, list: T[]) => list[rng.int(list.length)];
@@ -23,7 +23,7 @@ export function botRespondDeal(state: GameState, botId: string, deal: DealOrder,
     const fair = prices[target.id] * t.qty;
     // "sell": the proposer sells to the other side; "buy": the proposer buys from them.
     const botSells = (t.direction === "sell" ? deal.from : deal.to) === botId;
-    if (state.round < DIFFICULTIES[state.config.difficulty].takeoverUnlockRound) return no(["Share trading isn't open yet. Ask me again later."]);
+    if (state.round < difficultyOf(state).takeoverUnlockRound) return no(["Share trading isn't open yet. Ask me again later."]);
     if (botSells) {
       // Selling: wants a premium, a big one for its own company, and never hands over control cheaply.
       const own = target.id === botId;
@@ -54,7 +54,7 @@ export function botRespondDeal(state: GameState, botId: string, deal: DealOrder,
   if (deal.kind === "merger") {
     const t = deal.terms as MergerDealTerms;
     if (!rulesOf(state).takeovers) return no(["Mergers are off in this game."]);
-    if (state.round < DIFFICULTIES[state.config.difficulty].takeoverUnlockRound) return no(["Too early to get married. Ask me again in a few rounds."]);
+    if (state.round < difficultyOf(state).takeoverUnlockRound) return no(["Too early to get married. Ask me again in a few rounds."]);
     const v = companyValues(state), mine = v[botId] ?? 0, theirs = v[other.id] ?? 0;
     const botLeads = t.survivor === botId;
     // Running the show: yes if the partner adds real value. Being absorbed: only when clearly behind.
@@ -86,7 +86,7 @@ export function botProposeDeal(state: GameState, bots: Record<string, string>, h
   const bot = pick(rng, alive) as Company;
   const prices = sharePrices(state);
   const id = `bot-${bot.id}-${state.round}`;
-  const unlocked = state.round >= DIFFICULTIES[state.config.difficulty].takeoverUnlockRound;
+  const unlocked = state.round >= difficultyOf(state).takeoverUnlockRound;
   // You own a chunk of the bot: it wants peace.
   if ((bot.shares.holders[humanId] ?? 0) >= 15) {
     return { deal: { id, from: bot.id, to: humanId, kind: "pact", terms: { rounds: 2, penalty: 300_000 } }, line: "You own a lot of me. How about a pact? Two rounds, €300k if you break it." };

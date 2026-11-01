@@ -242,6 +242,35 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .rules-box { padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
 .rules-box summary { cursor: pointer; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .rules-box .orow { margin-top: 8px; }
+.bvote { display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: var(--panel-2); margin-top: 8px; }
+.bv-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; font-size: 13px; }
+.bv-k { font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.bv-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--panel-3); }
+.bv-bar .y { background: var(--good); } .bv-bar .n { background: var(--bad); margin-left: auto; }
+.bv-voters { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; font-weight: 800; }
+.bv-who { padding: 2px 7px; border-radius: 999px; background: var(--panel-3); color: var(--muted); }
+.bv-who.yes { color: var(--good); } .bv-who.no { color: var(--bad); }
+.bv-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.tv.mega .tv-tag { background: var(--bad); color: #fff; animation: megaBlink 1s steps(2) infinite; }
+.tv.mega .tv-set { box-shadow: 0 0 0 3px var(--bad), 0 0 24px rgba(255, 80, 80, 0.45); }
+@keyframes megaBlink { 50% { opacity: 0.55; } }
+:root[data-motion="off"] .tv.mega .tv-tag { animation: none; }
+.cs { display: grid; gap: 8px; }
+.cs-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cs-chip { border: 0; cursor: pointer; padding: 7px 11px; border-radius: 999px; font-weight: 900; font-size: 12.5px; background: var(--panel-3); color: var(--ink); box-shadow: 0 0 0 2px #0b1027; }
+.cs-chip[aria-pressed="true"] { background: linear-gradient(var(--frame-light), var(--frame)); color: var(--accent-ink); }
+.cs-chip:disabled { cursor: default; opacity: 0.85; }
+.cs-del { border: 0; background: none; color: var(--muted); cursor: pointer; font-weight: 900; margin-left: -4px; padding: 2px 4px; }
+.cs-num { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; }
+.cs-num input { width: 104px; text-align: right; }
+.cs-set { color: var(--gold); font-size: 10px; vertical-align: middle; }
+.cs-sec { border-radius: 10px; background: var(--panel-2); padding: 8px 10px; }
+.cs-sec > summary { cursor: pointer; padding: 2px 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.cs-sec .orow { background: var(--panel-3); margin: 6px 0 0; }
+.cs-sec .hint { margin-top: 6px; }
+.cs-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.cs-name { width: 130px; }
+@media (max-width: 560px) { .cs .orow { flex-wrap: wrap; } .cs .octl { flex-wrap: wrap; } .cs-num input { width: 90px; } }
 .choices.row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; }
 @media (max-width: 520px) { .choices.traits { grid-template-columns: 1fr; } }
 :root[data-theme="light"] .trait-card em { color: #8a5a00; }
@@ -853,7 +882,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function units(n) { return n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : Math.round(n).toLocaleString("en"); }
   const pct = (x) => Math.round(x * 100) + "%";
   const ind = () => FT.INDUSTRIES[S.game.config.industry];
-  const diff = () => FT.DIFFICULTIES[S.game.config.difficulty];
+  const diff = () => FT.difficultyOf(S.game);
   const me = () => S.game.companies.find((c) => c.id === "you");
   const byId = (id) => S.game.companies.find((c) => c.id === id);
   const signed = (x) => { const p = Math.round(Math.abs(x) * 1000) / 10; return (x >= 0 ? "+" : "−") + (p < 10 && Math.round(p) !== p ? p.toFixed(1) : Math.round(p)) + "%"; };
@@ -998,22 +1027,134 @@ details.howto[open] summary::after { content: "▾ hide"; }
     for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + (f % 40) / 40 * 0.4, d = 13 + (k % 2); g.fillRect(Math.round(x + Math.cos(a) * d), Math.round(y + Math.sin(a) * d), 2, 2); }
   }
   const DEFAULT_OPTS = { name: "You", company: "Cocoa Loco", industry: "chocolate", bots: 4, difficulty: "standard", trait: "visionary", botSkill: "normal", rounds: 8, rules: {} };
-  // ----- House rules (lobby and new-game screen). Missing = the normal rules.
-  const RULES_UI = [
-    ["startCash", "Starting cash", "How much every company starts with", [[500000, "€500k"], [1000000, "€1M"], [2000000, "€2M"]], 1000000],
-    ["takeovers", "Takeovers", "Share buying, takeovers, mergers and the stock exchange", [[true, "On"], [false, "Off"]], true],
-    ["wildcards", "Wildcards", "Spies, scandals, lawsuits and crazy launches", [[true, "On"], [false, "Off"]], true],
-    ["news", "News", "Calm: little news. Wild: a big story every round, hitting harder", [["calm", "Calm"], ["normal", "Normal"], ["wild", "Wild"]], "normal"],
+  // ----- Custom start (new-game screen and lobby). Missing settings = the normal rules.
+  const NORMAL_RULES = () => FT.rulesOf({ config: { rules: {} } });
+  /** "8" or "∞" for unlimited games (until the host ends it). */
+  const roundsTxt = (g) => (g.config.rounds >= 999 ? "∞" : String(g.config.rounds));
+  const rulesNow = () => (S && S.game && S.game.config ? FT.rulesOf(S.game) : NORMAL_RULES());
+  // [key, label, help, kind, extra]. num: [min, max, step, scale (shown = stored / scale), unit, default(ctx)]
+  const CS_SECTIONS = [
+    ["Starting position", [
+      ["startCash", "Starting cash", "Cash every company starts with", "num", [250000, 5000000, 50000, 1, "€", (c) => FT.INDUSTRIES[c.industry].start.cash]],
+      ["startDebt", "Starting debt", "Bank debt from day one (interest every round)", "num", [0, 5000000, 100000, 1, "€", () => 0]],
+      ["startCapacity", "Factory size", "Compared with a normal starting factory", "num", [50, 200, 5, 0.01, "%", () => 100]],
+      ["startQuality", "Best quality", "Highest quality you can make from the start", "seg", [[3, "3"], [4, "4"], [5, "5"]], 3],
+      ["startBrand", "Brand", "How well known every company is (0-80)", "num", [0, 80, 5, 1, "", (c) => FT.INDUSTRIES[c.industry].start.brand]],
+      ["startStores", "Own stores", "Stores you start with (they open when retail opens)", "num", [0, 5, 1, 1, "", () => 0]],
+      ["founderShares", "Founder's shares", "What each founder keeps; the rest trades on the market. Above 49% nobody can take you over by buying shares", "num", [10, 60, 5, 1, "%", () => 30]],
+    ]],
+    ["Market", [
+      ["marketSize", "Market size", "How many customers there are, compared with normal", "num", [50, 200, 5, 0.01, "%", () => 100]],
+      ["growth", "Growth per round", "How fast the market grows (negative = shrinks)", "num", [-5, 15, 1, 0.01, "%", (c) => Math.round(FT.INDUSTRIES[c.industry].growth * 100)]],
+    ]],
+    ["Shares and takeovers", [
+      ["takeovers", "Takeovers", "Share buying, takeovers and the stock exchange", "bool"],
+      ["takeoverRound", "Shares open in round", "First round you can buy shares in rivals", "num", [1, 10, 1, 1, "", (c) => FT.DIFFICULTIES[c.difficulty].takeoverUnlockRound]],
+      ["sharesPerRound", "Shares per round", "Most shares you can buy in one rival per round", "num", [5, 50, 5, 1, "", (c) => FT.DIFFICULTIES[c.difficulty].maxSharesPerRound]],
+      ["mergers", "Friendly mergers", "Two players can merge their companies", "bool"],
+      ["dividends", "Dividends", "Every 3 rounds companies pay their dividend policy to shareholders", "bool"],
+      ["votes", "Board votes", "Shareholders vote on mergers and extra loans, weighted by shares", "bool"],
+      ["runnerUp", "Runner-up bonus", "A takeover pays the second-biggest shareholder 10% of the company's value", "bool"],
+    ]],
+    ["Events", [
+      ["news", "News", "Calm: little news. Wild: a big story every round, hitting harder", "seg", [["calm", "Calm"], ["normal", "Normal"], ["wild", "Wild"]], "normal"],
+      ["mega", "Mega events", "Rare huge events: crashes, booms, blackouts", "bool"],
+      ["wildcards", "Wildcards", "Spies, scandals, lawsuits and crazy launches", "bool"],
+      ["auctions", "Auctions", "Live auctions every third round", "bool"],
+      ["summits", "Industry summits", "Vote on new rules every third round", "bool"],
+      ["retail", "Own stores", "Open your own shops from round 3", "bool"],
+    ]],
   ];
-  const ruleVal = (rules, k) => { const def = RULES_UI.find((r) => r[0] === k)[4]; return rules && rules[k] !== undefined ? rules[k] : def; };
-  const rulesNow = () => (S && S.game && S.game.config ? FT.rulesOf(S.game) : { startCash: 0, takeovers: true, wildcards: true, news: "normal" });
-  function rulesSummary(rules) {
-    const out = [];
-    if (ruleVal(rules, "startCash") !== 1000000) out.push("start " + eur(ruleVal(rules, "startCash")));
-    if (ruleVal(rules, "takeovers") === false) out.push("no takeovers");
-    if (ruleVal(rules, "wildcards") === false) out.push("no wildcards");
-    if (ruleVal(rules, "news") !== "normal") out.push(ruleVal(rules, "news") + " news");
-    return out.length ? "House rules: " + out.join(", ") : "";
+  const CS_PRESETS = [
+    ["normal", "Normal", "8 rounds, the normal rules", { rounds: 8, rules: {} }],
+    ["blitz", "⚡ Blitz", "5 short rounds, shares open in round 2", { rounds: 5, seconds: 150, rules: { takeoverRound: 2, sharesPerRound: 20, startCash: 1500000 } }],
+    ["recession", "Recession", FT.SCENARIOS.recession.description, { rounds: 8, rules: { scenario: "recession" } }],
+    ["debt", "Everyone in debt", FT.SCENARIOS.debt.description, { rounds: 8, rules: { scenario: "debt" } }],
+    ["giant", "Giant vs startups", FT.SCENARIOS.giant.description, { rounds: 8, rules: { scenario: "giant" } }],
+    ["goldrush", "Gold rush", FT.SCENARIOS.goldrush.description, { rounds: 10, rules: { scenario: "goldrush" } }],
+    ["endless", "Endless", "No round limit: play until the host ends it", { rounds: 999, rules: { unlimited: true } }],
+  ];
+  const myPresets = () => { try { const v = JSON.parse(localStorage.getItem("ft-presets") || "[]"); return Array.isArray(v) ? v.slice(0, 12) : []; } catch (e) { return []; } };
+  const saveMyPresets = (list) => { try { localStorage.setItem("ft-presets", JSON.stringify(list.slice(0, 12))); } catch (e) {} };
+  const sameRules = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
+  const csVal = (ctx, k, field) => {
+    const r = ctx.rules || {};
+    if (r[k] !== undefined) return r[k];
+    if (field && field[3] === "bool") return NORMAL_RULES()[k];
+    if (field && field[3] === "seg") return field[5];
+    return undefined;
+  };
+  const roundsText = (n) => (n >= 999 ? "unlimited" : n + " rounds");
+  /** One-line summary of everything that differs from the normal game. */
+  function rulesSummary(rules, rounds) {
+    const r = rules || {}, out = [];
+    if (r.scenario && r.scenario !== "none") out.push(FT.SCENARIOS[r.scenario].name);
+    if (r.unlimited || rounds >= 999) out.push("unlimited rounds");
+    for (const [, fields] of CS_SECTIONS) for (const f of fields) {
+      const [k, label, , kind, x] = f;
+      if (r[k] === undefined) continue;
+      if (kind === "bool") { if (r[k] === false) out.push("no " + label.toLowerCase()); }
+      else if (kind === "seg") { if (r[k] !== f[5]) out.push(label.toLowerCase() + " " + String((x.find((o) => o[0] === r[k]) || [0, r[k]])[1]).toLowerCase()); }
+      else out.push(label.toLowerCase() + " " + (x[4] === "€" ? eur(r[k]) : Math.round(r[k] / x[3]) + x[4]));
+    }
+    if (r.handicaps && Object.keys(r.handicaps).length) out.push(Object.keys(r.handicaps).length + " handicap" + (Object.keys(r.handicaps).length > 1 ? "s" : ""));
+    return out.length ? out.join(", ") : "";
+  }
+  /** The custom start editor. ctx: { rules, rounds, seconds?, industry, difficulty, players: [{id, name}], editable, where: "setup" | "lobby" } */
+  function customStart(ctx) {
+    const dis = ctx.editable ? "" : "disabled", r = ctx.rules || {};
+    const unlimited = !!r.unlimited || ctx.rounds >= 999;
+    const presetOn = (p) => sameRules(p.rules, r) && (p.rounds >= 999 ? unlimited : !unlimited && p.rounds === ctx.rounds);
+    const chip = (id, label, tip, on, attr) => `<button type="button" class="cs-chip" aria-pressed="${on}" ${attr} ${dis}${tipAttr(tip)}>${esc(label)}</button>`;
+    const presets = CS_PRESETS.map(([id, label, tip, p]) => chip(id, label, tip, presetOn(p), `data-cs-preset="${id}"`)).join("")
+      + myPresets().map((p, i) => chip("my" + i, "★ " + p.name, roundsText(p.rounds) + (rulesSummary(p.rules, p.rounds) ? ": " + rulesSummary(p.rules, p.rounds) : ""), presetOn(p), `data-cs-mine="${i}"`) + (ctx.editable ? `<button type="button" class="cs-del" data-cs-unsave="${i}" aria-label="Delete preset ${esc(p.name)}">×</button>` : "")).join("");
+    const row = (label, help, ctl) => `<div class="orow"><div class="otext"><b>${label}</b>${help ? `<small>${help}</small>` : ""}</div><div class="octl">${ctl}</div></div>`;
+    const field = (f) => {
+      const [k, label, help, kind, x] = f, v = csVal(ctx, k, f), set = r[k] !== undefined;
+      if (kind === "bool") return row(label, help, `<div class="seg" role="radiogroup" aria-label="${label}">${[[true, "On"], [false, "Off"]].map(([b, n]) => `<button type="button" role="radio" aria-checked="${v === b}" data-cs="${k}" data-val="${b}" ${dis}>${n}</button>`).join("")}</div>`);
+      if (kind === "seg") return row(label, help, `<div class="seg" role="radiogroup" aria-label="${label}">${x.map(([o, n]) => `<button type="button" role="radio" aria-checked="${v === o}" data-cs="${k}" data-val='${JSON.stringify(o)}' ${dis}>${n}</button>`).join("")}</div>`);
+      const [min, max, step, scale, unit, def] = x, shown = set ? Math.round((v / scale) * 100) / 100 : def(ctx);
+      return row(label + (set ? ' <span class="cs-set" title="Changed">●</span>' : ""), help, `<span class="cs-num">${unit === "€" ? "€" : ""}<input type="number" inputmode="decimal" min="${min}" max="${max}" step="${step}" value="${shown}" data-csn="${k}" data-scale="${scale}" aria-label="${label}" ${dis}>${unit && unit !== "€" ? unit : ""}</span>`);
+    };
+    const levels = [["weak", "Weak"], ["normal", "Normal"], ["strong", "Strong"], ["giant", "Giant"]];
+    const hc = r.handicaps || {};
+    const handicaps = (ctx.players || []).map((p) => row(esc(p.name), "", `<div class="seg" role="radiogroup" aria-label="Start for ${esc(p.name)}">${levels.map(([lv, n]) => `<button type="button" role="radio" aria-checked="${(hc[p.id] || "normal") === lv}" data-cs-hc="${esc(p.id)}" data-val="${lv}" ${dis}>${n}</button>`).join("")}</div>`)).join("");
+    const changed = rulesSummary(r, ctx.rounds);
+    return `<div class="cs" data-cs-root="${ctx.where}">
+      <div class="cs-presets" role="group" aria-label="Presets">${presets}</div>
+      ${row("Rounds", unlimited ? "No limit: the host ends the game when you're done" : "From 3 to 99, or unlimited", `<span class="cs-num"><input type="number" min="3" max="99" step="1" value="${unlimited ? "" : ctx.rounds}" placeholder="∞" data-cs-rounds aria-label="Rounds" ${unlimited ? "disabled" : dis}></span><div class="seg" role="radiogroup" aria-label="Unlimited rounds"><button type="button" role="radio" aria-checked="${!unlimited}" data-cs-unl="false" ${dis}>Limit</button><button type="button" role="radio" aria-checked="${unlimited}" data-cs-unl="true" ${dis}>∞</button></div>`)}
+      ${CS_SECTIONS.map(([title, fields], i) => `<details class="cs-sec" ${i === 0 && Object.keys(r).length ? "open" : ""}><summary><b>${title}</b></summary>${fields.map(field).join("")}</details>`).join("")}
+      ${handicaps ? `<details class="cs-sec" ${Object.keys(hc).length ? "open" : ""}><summary><b>Handicaps</b> <span class="muted">different starting positions per player</span></summary><div class="hint">Weak: half the cash and a smaller factory. Strong: 1.5x cash. Giant: 3x cash, double factory, famous brand.</div>${handicaps}</details>` : ""}
+      <div class="cs-foot"><span class="muted">${changed ? esc(changed) : "Normal rules"}</span>${ctx.editable ? `<span style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(r).length || ctx.rounds !== 8 ? `<button type="button" class="btn small" data-cs-reset>Reset</button>` : ""}<input type="text" class="cs-name" maxlength="24" placeholder="Preset name" data-cs-name aria-label="Preset name"><button type="button" class="btn small" data-cs-save>Save preset</button></span>` : ""}</div>
+    </div>`;
+  }
+  /** Wires a custom-start editor. commit({ rules, rounds, seconds }) stores the change (and re-renders). */
+  function bindCustomStart(root, ctx, commit) {
+    if (!root || !ctx.editable) return;
+    const q = (sel) => root.querySelectorAll(sel);
+    const cur = () => ({ rules: { ...(ctx.rules || {}) }, rounds: ctx.rounds });
+    const go = (next) => { sfx("click"); commit(next); };
+    q("[data-cs-preset]").forEach((b) => b.addEventListener("click", () => { const p = CS_PRESETS.find((x) => x[0] === b.dataset.csPreset)[3]; go({ rules: { ...p.rules }, rounds: p.rounds, seconds: p.seconds }); }));
+    q("[data-cs-mine]").forEach((b) => b.addEventListener("click", () => { const p = myPresets()[Number(b.dataset.csMine)]; if (p) go({ rules: { ...(p.rules || {}) }, rounds: p.rounds || 8, seconds: p.seconds }); }));
+    q("[data-cs-unsave]").forEach((b) => b.addEventListener("click", () => { const l = myPresets(); l.splice(Number(b.dataset.csUnsave), 1); saveMyPresets(l); go(cur()); }));
+    q("[data-cs]").forEach((b) => b.addEventListener("click", () => { const n = cur(); n.rules[b.dataset.cs] = JSON.parse(b.dataset.val); if (b.dataset.cs === "news" && n.rules.news === "normal") delete n.rules.news; go(n); }));
+    q("[data-csn]").forEach((inp) => inp.addEventListener("change", () => {
+      const n = cur(), k = inp.dataset.csn, v = Number(inp.value);
+      if (inp.value === "" || !Number.isFinite(v)) delete n.rules[k];
+      else n.rules[k] = Math.min(Number(inp.max), Math.max(Number(inp.min), v)) * Number(inp.dataset.scale);
+      go(n);
+    }));
+    q("[data-cs-rounds]").forEach((inp) => inp.addEventListener("change", () => { const n = cur(); n.rounds = Math.min(99, Math.max(3, Math.round(Number(inp.value) || 8))); delete n.rules.unlimited; go(n); }));
+    q("[data-cs-unl]").forEach((b) => b.addEventListener("click", () => { const n = cur(); if (b.dataset.csUnl === "true") { n.rules.unlimited = true; n.rounds = 999; } else { delete n.rules.unlimited; n.rounds = ctx.rounds >= 999 ? 8 : ctx.rounds; } go(n); }));
+    q("[data-cs-hc]").forEach((b) => b.addEventListener("click", () => { const n = cur(), hc = { ...(n.rules.handicaps || {}) }; if (b.dataset.val === "normal") delete hc[b.dataset.csHc]; else hc[b.dataset.csHc] = b.dataset.val; if (Object.keys(hc).length) n.rules.handicaps = hc; else delete n.rules.handicaps; go(n); }));
+    q("[data-cs-reset]").forEach((b) => b.addEventListener("click", () => go({ rules: {}, rounds: 8 })));
+    q("[data-cs-save]").forEach((b) => b.addEventListener("click", () => {
+      const box = root.querySelector("[data-cs-name]"), name = ((box && box.value) || "").trim().slice(0, 24);
+      if (!name) { if (box) { box.focus(); box.placeholder = "Type a name first"; } return; }
+      const { handicaps, ...rest } = ctx.rules || {};
+      saveMyPresets([{ name, rounds: ctx.rounds, rules: rest, seconds: ctx.seconds }, ...myPresets().filter((p) => p.name !== name)]);
+      go(cur());
+    }));
   }
   function loadSave() {
     try {
@@ -1055,7 +1196,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const dSt = localGet("ft-daily", null), dNew = !(dSt && dSt.day === todayUTC());
     const side = [["help", "help", "How to play", ""], ["friends", "friends", "Friends", ACC.friends.some((f) => f.status === "incoming") ? "NEW" : ""], ["trophy", "achievements", "Career", ""], ["calendar", "daily", "Daily game", dNew ? "NEW" : ""], ["podium", "leaderboard", "Leaderboards", ""]]
       .map(([icon, act, label, tag]) => `<button class="tside" type="button" data-title="${act}"><canvas data-ticon="${icon}" width="12" height="12" aria-hidden="true"></canvas>${label}${tag ? `<span class="soon new">${tag}</span>` : ""}</button>`).join("");
-    const cont = save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game";
+    const cont = save ? `Round ${save.game.round} of ${roundsTxt(save.game)}` : "No saved game";
     return `<section class="title-screen" aria-label="Main menu">
       <canvas class="title-bg" id="title-bg" aria-hidden="true"></canvas>${signs}
       ${accountChip()}
@@ -1225,7 +1366,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function bindTitle() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
-    on("#t-new", "click", () => { S.modal = "setup"; renderModal(); bindModal(); });
+    on("#t-new", "click", () => { S.modal = "setup"; S.setup = null; renderModal(); bindModal(); });
     on("#t-continue", "click", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
     on("#t-online", "click", () => { S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
     on("#t-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
@@ -1271,7 +1412,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${row("Privacy, terms and credits", "What data the game uses, the rules, and who made what", `<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-legal="privacy">Privacy</button><button class="btn small" type="button" data-legal="terms">Terms</button><button class="btn small" type="button" data-legal="credits">Credits</button></span>`)}
       </div>
       <div class="ogroup"><h3>Saved game</h3>
-        ${row(save ? `Round ${save.game.round} of ${save.game.config.rounds}` : "No saved game", "Your game saves in this browser after every round", `<button class="btn danger small" type="button" id="o-delete" ${save ? "" : "disabled"}>Delete</button>`)}
+        ${row(save ? `Round ${save.game.round} of ${roundsTxt(save.game)}` : "No saved game", "Your game saves in this browser after every round", `<button class="btn danger small" type="button" id="o-delete" ${save ? "" : "disabled"}>Delete</button>`)}
       </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-close" data-autofocus>Done</button></div></div></div>`;
   }
@@ -1539,7 +1680,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       }
       if (api().marketLive && S && S.screen === "game" && S.game && !S.game.finished) {
         const ml = await api().marketLive(MP.gameId);
-        if (ml && ml.round === S.game.round) { const sig = JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join(); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
+        if (ml && ml.round === S.game.round) { const sig = JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join() + JSON.stringify((ml.data.board || []).map((p) => [p.id, p.votes])) + (ml.data.rounds || ""); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
       }
       const rows = await api().deals(MP.gameId);
       const next = rows.map((d) => ({ id: String(d.id), t: new Date(d.created_at).getTime(), round: d.round, from: cid(d.from_player_id), to: cid(d.to_player_id), kind: d.kind, terms: JSON.parse(JSON.stringify(d.terms).split(MP.playerId).join("you")), status: d.status, note: d.note }));
@@ -1644,7 +1785,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ----- Lobby
-  const ROUND_TIMES = [[120, "2 min"], [300, "5 min"], [600, "10 min"], [900, "15 min"], [86400, "1 day"]];
+  const ROUND_TIMES = [[120, "2 min"], [150, "2½ min"], [300, "5 min"], [600, "10 min"], [900, "15 min"], [86400, "1 day"]];
   function lobbyScreen() {
     const g = MP.game, host = mpIsHost(), dis = host ? "" : "disabled";
     const link = (onHostedPage() && location.protocol !== "file:" ? location.origin + location.pathname : PLAY_URL) + "?join=" + g.code;
@@ -1667,12 +1808,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="card"><h3>Settings ${host ? "" : '<span class="muted" style="font-size:12px">(the host decides)</span>'}</h3>
           <div class="orow"><div class="otext"><b>Industry</b></div><div class="octl">${sel("industry", [["chocolate", "Chocolate"], ["ai", "AI"], ["weed", "Weed 18+"]], g.industry)}</div></div>
           <div class="orow"><div class="otext"><b>Difficulty</b></div><div class="octl">${sel("difficulty", [["standard", "Standard"], ["cutthroat", "Cutthroat"], ["tycoon", "Tycoon"]], g.difficulty)}</div></div>
-          <div class="orow"><div class="otext"><b>Rounds</b></div><div class="octl">${sel("rounds", [[6, "6"], [8, "8"], [10, "10"], [12, "12"]], g.rounds)}</div></div>
           <div class="orow"><div class="otext"><b>Time per round</b><small>The host can skip it once everyone is ready</small></div><div class="octl">${sel("round_seconds", ROUND_TIMES, g.round_seconds)}</div></div>
           <div class="orow"><div class="otext"><b>Bots</b><small>Fill the table with computer players</small></div><div class="octl">${sel("bot_count", [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4"]], g.bot_count || 0)}</div></div>
           <div class="orow"><div class="otext"><b>Bot skill</b></div><div class="octl">${sel("bot_skill", [["normal", "Normal"], ["hard", "Hard"]], g.bot_skill || "normal")}</div></div>
-          <h3 style="margin-top:8px">House rules</h3>
-          ${RULES_UI.map(([k, label, desc, opts]) => `<div class="orow"><div class="otext"><b>${label}</b><small>${desc}</small></div><div class="octl"><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${ruleVal(g.rules, k) === v}" data-rule="${k}" data-val="${JSON.stringify(v).replace(/"/g, "&quot;")}" ${dis}>${n}</button>`).join("")}</div></div></div>`).join("")}
+          <h3 style="margin-top:8px">Game setup</h3>
+          ${customStart(lobbyCtx())}
         </div>
       </div>
       ${MP.error ? `<div class="note neg">${esc(MP.error)}</div>` : ""}
@@ -1680,8 +1820,21 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${host ? `<button class="btn go" type="button" id="btn-mp-start" ${total < 2 || MP.working ? "disabled" : ""}>${MP.working ? "Starting…" : total < 2 ? "Waiting for a friend (or add a bot)" : "Start the game"}</button>` : `<span class="muted" style="align-self:center">Waiting for the host to start…</span>`}</div>
     </div></section>`;
   }
+  function lobbyCtx() {
+    const g = MP.game;
+    return { rules: g.rules || {}, rounds: Number(g.rounds) || 8, seconds: g.round_seconds, industry: g.industry, difficulty: g.difficulty, editable: mpIsHost(), where: "lobby",
+      players: [...MP.players.map((p) => ({ id: p.id, name: p.player_name })), ...Array.from({ length: g.bot_count || 0 }, (_, k) => ({ id: "bot-" + (k + 1), name: "Bot " + (k + 1) }))] };
+  }
   function bindLobby() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
+    bindCustomStart(document.querySelector('[data-cs-root="lobby"]'), lobbyCtx(), async (next) => {
+      if (!mpIsHost()) return;
+      const rounds = next.rules.unlimited ? 999 : next.rounds;
+      MP.game = { ...MP.game, rules: next.rules, rounds, ...(next.seconds ? { round_seconds: next.seconds } : {}) }; render();
+      try { const r = await api().rpc("set_house_rules", { p_game_id: MP.game.id, p_rules: next.rules, p_rounds: rounds, p_round_seconds: next.seconds || null }); MP.game = { ...MP.game, rules: r || next.rules }; MP.error = ""; }
+      catch (er) { MP.error = er.message; }
+      MP.sig = ""; mpRefresh(); render();
+    });
     on("[data-set]", "click", async (e) => {
       if (!mpIsHost()) return;
       const g = { ...MP.game, [e.currentTarget.dataset.set]: e.currentTarget.dataset.val };
@@ -1690,13 +1843,6 @@ details.howto[open] summary::after { content: "▾ hide"; }
         MP.error = "";
       } catch (er) { MP.error = er.message; }
       sfx("click"); MP.sig = ""; mpRefresh();
-    });
-    on("[data-rule]", "click", async (e) => {
-      if (!mpIsHost()) return;
-      const rules = { ...(MP.game.rules || {}), [e.currentTarget.dataset.rule]: JSON.parse(e.currentTarget.dataset.val) };
-      try { const r = await api().rpc("set_house_rules", { p_game_id: MP.game.id, p_rules: rules }); MP.game = { ...MP.game, rules: r || rules }; MP.error = ""; }
-      catch (er) { MP.error = er.message; }
-      sfx("click"); MP.sig = ""; mpRefresh(); render();
     });
     on("#btn-copy-tv", "click", () => { const i = $("#tv-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); } $("#btn-copy-tv").textContent = "Copied!"; });
     on("#btn-copy", "click", () => { const i = $("#invite-link"); try { navigator.clipboard.writeText(i.value); } catch (e) { i.select(); document.execCommand && document.execCommand("copy"); } $("#btn-copy").textContent = "Copied!"; });
@@ -2262,7 +2408,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const font = (px, w) => (g.font = `${w || 700} ${px}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-display") || "monospace"}`);
     g.fillStyle = gold; font(26); g.fillText("FRIENDLY TAKEOVER", 56, 86);
     g.fillStyle = ink; font(44); g.fillText(c.companyName.slice(0, 24), 56, 156);
-    font(22, 400); g.fillStyle = "#b9c1ea"; g.fillText(`${c.playerName} · ${ind().name} · ${S.game.config.rounds} rounds`, 56, 192);
+    font(22, 400); g.fillStyle = "#b9c1ea"; g.fillText(`${c.playerName} · ${ind().name} · ${S.game.config.rounds >= 999 ? "endless" : S.game.config.rounds + " rounds"}`, 56, 192);
     g.fillStyle = r.place === 1 ? gold : ink; font(96); g.fillText("#" + r.place, 56, 310);
     font(26, 400); g.fillStyle = "#b9c1ea"; g.fillText(`of ${r.of} · final score ${eur(r.score)}`, 220, 300);
     // Value per round as pixel bars.
@@ -2632,6 +2778,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }).join("");
     return `<div class="win achwin"><div class="win-title">Career and achievements · ${ACC.ach.size} of ${ACH.length}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       ${careerCard(false)}
+      ${rivalsCareerCard()}
       <div class="achgrid">${cards}</div>
       <div class="hint">${ACC.profile && !ACC.profile.anonymous ? "Saved to your account." : "Saved on this device. Save your account with email (Profile) to keep them everywhere."}</div>
       <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Close</button></div></div></div>`;
@@ -2658,6 +2805,52 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return fresh;
   }
   // Called once when a game ends: stats, achievements, and the daily score.
+  // ----- Rivalry stats: your record against each friend you've played online (kept on this device).
+  const rivalsAll = () => localGet("ft-rivals", {});
+  function rivalUser(id) { if (!S.mp || /^bot-/.test(id)) return null; const p = (MP.players || []).find((x) => x.id === id); return p && p.user_id ? p.user_id : null; }
+  /** This game's head-to-head against one rival: who finished higher, stakes in each other, takeovers. */
+  function headToHead(id) {
+    const g = S.game, t = FT.standings(g), c = byId(id), m = me();
+    const mine = t.findIndex((x) => x.companyId === "you"), theirs = t.findIndex((x) => x.companyId === id);
+    return { ahead: mine < theirs, iOwn: c.shares.holders.you || 0, theyOwn: m.shares.holders[id] || 0, tookThem: c.controlledBy === "you", tookMe: m.controlledBy === id };
+  }
+  function recordRivals() {
+    if (!S.mp || localGet("ft-riv-" + MP.gameId, false)) return;
+    localSet("ft-riv-" + MP.gameId, true);
+    const all = rivalsAll();
+    for (const c of S.game.companies) {
+      const key = c.id === "you" ? null : rivalUser(c.id);
+      if (!key) continue;
+      const h = headToHead(c.id), r = all[key] || { games: 0, ahead: 0, behind: 0, tookThem: 0, tookMe: 0, wins: 0, theirWins: 0 };
+      const t = FT.standings(S.game);
+      r.name = c.playerName.replace(/ \(bot\)$/, ""); r.games++; h.ahead ? r.ahead++ : r.behind++;
+      if (h.tookThem) r.tookThem++; if (h.tookMe) r.tookMe++;
+      if (t[0].companyId === "you") r.wins = (r.wins || 0) + 1; if (t[0].companyId === c.id) r.theirWins = (r.theirWins || 0) + 1;
+      r.last = Date.now(); all[key] = r;
+    }
+    const keep = Object.entries(all).sort((a, b) => (b[1].last || 0) - (a[1].last || 0)).slice(0, 60);
+    localSet("ft-rivals", Object.fromEntries(keep));
+  }
+  function rivalLine(r) { return `${r.ahead}–${r.behind} in ${r.games} game${r.games > 1 ? "s" : ""}${r.wins || r.theirWins ? ` · wins ${r.wins || 0}–${r.theirWins || 0}` : ""}${r.tookThem || r.tookMe ? ` · takeovers ${r.tookThem}–${r.tookMe}` : ""}`; }
+  /** Final screen: head-to-head against everyone this game, plus your all-time record against friends. */
+  function rivalryCard() {
+    const others = S.game.companies.filter((c) => c.id !== "you" && (!S.mp || !/^bot-/.test(c.id)));
+    if (!others.length) return "";
+    const all = rivalsAll();
+    const rows = others.map((c) => {
+      const h = headToHead(c.id), key = rivalUser(c.id), r = key && all[key];
+      const bits = [h.ahead ? `<b class="pos">You finished ahead</b>` : `<b class="neg">They finished ahead</b>`];
+      if (h.iOwn) bits.push(`you own ${h.iOwn}% of them`); if (h.theyOwn) bits.push(`they own ${h.theyOwn}% of you`);
+      if (h.tookThem) bits.push("you took them over"); if (h.tookMe) bits.push("they took you over");
+      return `<div class="sumline rv-row"><span><b>${esc(c.playerName)}</b> <span class="muted">${esc(c.companyName)}</span><br><small>${bits.join(" · ")}</small></span>${r ? `<span class="num"${tipAttr("All-time: places ahead–behind, wins, takeovers")}>${esc(rivalLine(r))}</span>` : ""}</div>`;
+    }).join("");
+    return `<div class="card"><h3>⚔️ Rivalries</h3>${rows}${S.mp ? "" : `<div class="hint">Play friends online to keep an all-time record against each of them.</div>`}</div>`;
+  }
+  /** Career screen: your record against the friends you play most. */
+  function rivalsCareerCard() {
+    const list = Object.values(rivalsAll()).sort((a, b) => b.games - a.games).slice(0, 8);
+    return `<div class="card"><h3>⚔️ Rivals</h3>${list.length ? list.map((r) => `<div class="sumline"><b>${esc(r.name)}</b><span class="num">${esc(rivalLine(r))}</span></div>`).join("") + `<div class="hint">Ahead–behind counts who finished higher. Kept on this device.</div>` : `<div class="hint">Finish an online game with friends to start a rivalry record.</div>`}</div>`;
+  }
   async function recordGameEnd() {
     const key = S.mp ? "ft-rec-" + MP.gameId : null;
     if (S.recorded || (key && localGet(key, false))) return;
@@ -2810,15 +3003,87 @@ details.howto[open] summary::after { content: "▾ hide"; }
     try { S.game = FT.liveBid(S.game, "you", lot, amount, Date.now()); sfx("profit"); updateLiveUI(); saveGame(); }
     catch (e) { const el = document.querySelector(`[data-lot-msg="${lot}"]`); if (el) el.textContent = e.message; }
   }
+  // ----- Board votes (shareholders vote on mergers and extra loans, live during the round) and dividends.
+  const boardOpen = () => (S.game && !S.game.finished ? (S.game.board || []).filter((p) => p.round === S.game.round) : []);
+  const myBoardVotes = () => boardOpen().filter((p) => { const c = byId(p.company); return c && p.company !== "you" && FT.outsideVoters(S.game, c, p.partner).includes("you"); });
+  function proposalText(p) {
+    const c = byId(p.company);
+    if (p.kind === "loan") return `${p.company === "you" ? "You ask" : esc(c.companyName) + " asks"} the shareholders for an extra loan of <b>${eur(p.amount || 0)}</b> above the credit line`;
+    const sv = byId(p.survivor), other = byId(p.survivor === p.company ? p.partner : p.company === p.survivor ? p.partner : p.company);
+    const absorbed = byId(p.survivor === p.company ? p.partner : p.company);
+    return `${esc(absorbed ? absorbed.companyName : "?")} merges into <b>${esc(sv ? sv.companyName : "?")}</b>${other ? "" : ""}`;
+  }
+  // Endless games: the host (or you, alone) ends the game after the current round.
+  function endlessCard() {
+    const g = S.game;
+    if (!g || g.finished || !rulesNow().unlimited) return "";
+    if (g.config.rounds <= g.round) return `<div class="card"><h3>♾️ Final round</h3><div class="hint">The game ends after this round. Make it count.</div></div>`;
+    const can = !S.mp || mpIsHost();
+    return `<div class="card"><h3>♾️ Endless game · round ${g.round}</h3><div class="hint">No round limit. ${can ? "When you've had enough, end the game: this round becomes the final one and the winner is crowned after it." : "The host decides when the game ends."}</div>${can ? `<button type="button" class="btn small danger" id="btn-endless" style="justify-self:start">End the game after this round</button>` : ""}</div>`;
+  }
+  async function endEndless() {
+    if (S.mp) { try { const r = await api().call("end", { game_id: MP.gameId }); applyLive(r.live); } catch (e) { toast(e.message); } render(); return; }
+    S.game = FT.endAfterThisRound(S.game); saveGame(); toast("This is the final round!"); render();
+  }
+  function boardVotesCard() {
+    const open = boardOpen().filter((p) => p.company === "you" || myBoardVotes().includes(p));
+    if (!open.length) return "";
+    const rows = open.map((p) => {
+      const t = FT.boardTally(S.game, p), c = byId(p.company), mine = p.votes.you;
+      const voter = p.company !== "you" && t.voters.some((v) => v.id === "you");
+      const bar = `<div class="bv-bar" aria-label="Yes ${t.yes}%, no ${t.no}%"><i class="y" style="width:${t.yes}%"></i><i class="n" style="width:${t.no}%"></i></div>`;
+      const who = t.voters.map((v) => `<span class="bv-who ${v.vote === false ? "no" : v.vote ? "yes" : ""}">${esc(v.id === "you" ? "You" : byId(v.id).companyName)} ${v.held}% ${v.vote === false ? "✗" : v.vote ? "✓" : "…"}</span>`).join("");
+      return `<div class="bvote" data-proposal="${esc(p.id)}">
+        <div class="bv-head"><span class="bv-k">${p.kind === "loan" ? "Extra loan" : "Merger"} · board of ${esc(p.company === "you" ? "your company" : c.companyName)}</span><b class="${t.passed ? "pos" : "neg"}">${t.passed ? "Passing" : "Failing"}: ${t.yes}% yes · ${t.no}% no</b></div>
+        <div>${proposalText(p)}</div>${bar}
+        <div class="bv-voters"><span class="bv-who yes">Founder ${c.shares.founder}% ✓</span>${who}</div>
+        ${voter ? `<div class="bv-btns"><span class="muted">You own ${c.shares.holders.you}%. Your vote:</span><button type="button" class="btn small ${mine === true ? "go" : ""}" data-bvote="${esc(p.id)}" data-yes="1" aria-pressed="${mine === true}">Yes</button><button type="button" class="btn small ${mine === false ? "danger" : ""}" data-bvote="${esc(p.id)}" data-yes="0" aria-pressed="${mine === false}">No</button></div>` : `<div class="hint">Shareholders vote until the round ends. Not voting counts as yes; the public float doesn't vote.</div>`}
+      </div>`;
+    }).join("");
+    return `<div class="card" id="board-votes"><h3>🗳️ Board votes</h3><div class="hint">Big decisions need the shareholders. Votes count by shares and are counted when the round ends.</div>${rows}</div>`;
+  }
+  async function castMyVote(id, yes) {
+    if (S.mp) {
+      try { const r = await api().call("vote", { game_id: MP.gameId, proposal: id.split("you").join(MP.playerId), yes }); applyLive(r.live); sfx("click"); }
+      catch (e) { toast(e.message); }
+      return;
+    }
+    try { S.game = FT.castVote(S.game, "you", id, yes); sfx("click"); updateLiveUI(); saveGame(); } catch (e) { toast(e.message); }
+  }
+  function bindBoardVotes() {
+    document.querySelectorAll("[data-bvote]").forEach((b) => { if (b.dataset.bound) return; b.dataset.bound = "1"; b.addEventListener("click", (e) => castMyVote(e.currentTarget.dataset.bvote, e.currentTarget.dataset.yes === "1")); });
+  }
+  function shareholdersCard() {
+    const c = me(), d = S.draft, R = rulesNow(), every = FT.DIVIDENDS.every, g = S.game;
+    if (!R.dividends && !R.votes) return "";
+    const outside = 100 - c.shares.founder - c.shares.treasury, voters = FT.outsideVoters(g, c);
+    const next = Math.ceil(g.round / every) * every, pol = d.dividendPolicy ?? c.dividendPolicy ?? 0;
+    const quarter = c.history.filter((h) => h.round > next - every && h.round < g.round && h.round >= 1).reduce((a, h) => a + h.profit, 0);
+    const prem = FT.DIVIDENDS.valuePremium;
+    const div = R.dividends ? `<div class="ctl"><span class="lbl">Dividend policy</span><div class="seg" role="radiogroup" aria-label="Dividend policy">${FT.DIVIDENDS.policies.map((x) => `<button type="button" role="radio" aria-checked="${pol === x}" data-divpol="${x}">${x}%</button>`).join("")}</div>
+      <div class="hint">Every ${every} rounds (a quarter) you pay this share of the quarter's profit. The founder's ${c.shares.founder}% stays in your company; the other ${outside}% goes to shareholders and the market. Investors value a dividend payer ${Math.round(prem[25] * 100)}% (25%) or ${Math.round(prem[50] * 100)}% (50%) higher, which also makes you pricier to take over.</div>
+      <div class="sumline"><span class="muted">Next payout</span><b>${next > g.config.rounds ? "none before the end" : "end of round " + next}${pol && quarter > 0 ? " · about " + eur(quarter * pol / 100 * outside / 100) + " so far" : ""}</b></div>
+      ${c.lastDividend && c.lastDividend.amount > 0 ? `<div class="sumline"><span class="muted">Last dividend</span><b>round ${c.lastDividend.round}</b></div>` : ""}</div>` : "";
+    const room = Math.max(0, Math.round(FT.BALANCE.maxDebt - c.debt - Math.max(0, d.loanChange || 0)));
+    const loan = R.votes ? `<div style="margin-top:10px">${stepper("f-bloan", "Extra loan above the credit line (board vote)", Math.min(d.boardLoan || 0, room), 0, room, 100000, (x) => (x ? "+" + eur(x) : "none"))}
+      <div class="hint">${voters.length ? `Your shareholders vote on it next round (${voters.map((id) => esc(byId(id).companyName) + " " + c.shares.holders[id] + "%").join(", ")} against your ${c.shares.founder}%). If they say yes, the money arrives then.` : "Nobody else owns your shares, so you get it straight away."} Debt can never go above ${eur(FT.BALANCE.maxDebt)}.</div></div>` : "";
+    return `<div class="card"><h3>Shareholders</h3>${div}${loan}</div>`;
+  }
   // Online: overlay the server's live market onto my view (ids mapped to "you").
   function applyLive(data) {
     if (!data || !S.game || data.round !== S.game.round) return;
     const d = JSON.parse(JSON.stringify(data).split(MP.playerId).join("you"));
     S.serverSkew = d.serverNow ? d.serverNow - Date.now() : 0;
     S.game.live = { round: d.round, prices: d.prices, trades: d.trades, lots: d.lots };
+    const boardSig = () => boardOpen().map((p) => p.id).join(",");
+    const sigBefore = boardSig();
+    if (Array.isArray(d.board)) S.game.board = [...(S.game.board || []).filter((p) => p.round !== d.round), ...d.board.map(({ tally, ...p }) => p)];
+    const newVote = boardSig() !== sigBefore;
+    if (d.rounds && d.rounds !== S.game.config.rounds) { S.game.config = { ...S.game.config, rounds: d.rounds }; if (d.rounds <= S.game.round) toast("The host called it: this is the final round!"); }
     for (const c of S.game.companies) if (d.shares[c.id]) c.shares = d.shares[c.id];
     const mine = d.trades.filter((t) => t.trader === "you").reduce((a, t) => a + t.cash, 0);
     if (S.cash0 !== undefined) me().cash = S.cash0 + mine;
+    if (newVote && S.screen === "game" && !S.modal) { render(); return; }
     updateLiveUI();
   }
   const short2 = (id) => { const c = byId(id); return c ? (id === "you" ? "You" : c.companyName) : "?"; };
@@ -2950,6 +3215,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const t = $("#ticker"), th = tickerHtml();
     if (t) { if (th) t.outerHTML = th; else t.remove(); } else if (th) { const ag = document.querySelector(".agenda"); if (ag) ag.insertAdjacentHTML("afterend", th); }
     const ex = $("#live-exchange"); if (ex) { ex.outerHTML = exchangeCard(); bindLiveButtons(); }
+    const bv = $("#board-votes"); if (bv) { bv.outerHTML = boardVotesCard(); bindBoardVotes(); }
     for (const lot of liveLots()) { const el = document.querySelector(`.livelot[data-lot="${lot.key}"]`); if (el) { el.outerHTML = lotPanel(lot); bindLiveButtons(); } }
     const cash = $("#top-cash"); if (cash && cash.textContent !== eur(me().cash)) { cash.textContent = eur(me().cash); cash.classList.toggle("neg", me().cash < 0); cash.classList.remove("bump"); void cash.offsetWidth; cash.classList.add("bump"); }
   }
@@ -3134,7 +3400,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const sold0 = { budget: 0, mainstream: 0, premium: 0, hype: 0 };
     for (const c of game.companies) for (const k of Object.keys(sold0)) sold0[k] += c.history[0].segments[k].sold;
     S.marketHist.push({ round: 0, potential: FT.segmentPotential(y0), sold: sold0 });
-    S.chat.push({ round: 1, kind: "system", text: "Welcome to " + ind().name + ". " + game.config.rounds + " rounds, one winner (or one monopoly). Last year's numbers (year 0) are in Reports and Market: everyone starts equal." });
+    S.chat.push({ round: 1, kind: "system", text: "Welcome to " + ind().name + ". " + (game.config.rounds >= 999 ? "No round limit (the host ends the game)" : game.config.rounds + " rounds") + ", one winner (or one monopoly). Last year's numbers (year 0) are in Reports and Market" + (Object.keys(FT.rulesOf(game).handicaps).length || game.scenarioCompany ? "." : ": everyone starts equal.") });
     for (const n of game.news) S.chat.push({ round: 1, kind: "news", text: n.event.headline + (n.targetCompanyId ? " (it's " + byId(n.targetCompanyId).companyName + ")" : "") });
     resetDraft();
     S.tvQueue = PREFS.tv ? game.news.filter((n) => n.event.kind !== "economy").map(newsItem) : [];
@@ -3179,6 +3445,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     else if (me().bankrupt) items.push(["boardroom", "req", "You're a journalist: pick a company to expose"]);
     { const attacker = S.game.companies.find((o) => o.id !== "you" && (me().shares.holders[o.id] || 0) >= FT.HOSTILE_BID_SHARES && !me().controlledBy);
       if (attacker && live(me()) && !g.finished) items.push(["takeovers", "req", `Hostile bid: ${attacker.companyName} owns ${me().shares.holders[attacker.id]}% of you. Defend!`]); }
+    for (const p of myBoardVotes()) items.push(["boardroom", p.votes.you === undefined ? "req" : "", `Board vote: ${p.kind === "loan" ? byId(p.company).companyName + " wants an extra loan" : "a merger with " + byId(p.company).companyName}${p.votes.you === undefined ? " — vote" : p.votes.you ? " (you said yes)" : " (you said no)"}`]);
+    for (const p of boardOpen().filter((x) => x.company === "you")) { const t = FT.boardTally(g, p); items.push(["boardroom", "gold", `Your board votes on ${p.kind === "loan" ? "your extra loan" : "the merger"}: ${t.passed ? "passing" : "failing"} (${t.yes}% yes)`]); }
+    if (rulesNow().dividends && (me().dividendPolicy || 0) > 0 && g.round % FT.DIVIDENDS.every === 0) items.push(["finance", "gold", `Quarter ends: you pay a ${me().dividendPolicy}% dividend after this round`]);
     if (g.round === g.config.rounds) items.push(["finance", "gold", "Final round: the game ends after this one"]);
     if (live(me()) && !S.draft.guidance) items.push(["finance", "", "Investor call: give your forecast (optional)"]);
     const offers = dealList().filter((d) => d.to === "you" && d.status === "offered" && d.round === g.round).length;
@@ -3209,6 +3478,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
       else if (t.includes("buys what's left of")) add("auction", "sold", (c ? c.companyName : "") + " BUYS THE RUINS", "Auction", { a: c && c.id });
       else if (t.startsWith("Hostile bid!")) { const tg = S.game.companies.find((x) => t.includes("of " + x.companyName + ".")); add("chart", "down", "HOSTILE BID ON " + (tg ? tg.companyName : "A RIVAL"), "Hostile bid", { a: c && c.id, b: tg && tg.id }); }
       else if (t.startsWith("MERGER!")) add("deal", "", "MERGER: TWO BECOME ONE", "Merger", { a: c && c.id });
+      else if (t.includes("Their shareholders vote next round")) add("press", "banker", "BOARD VOTE: MERGER?", "Board vote", { a: c && c.id });
+      else if (t.includes("against the merger of") && t.endsWith("Blocked!")) add("chart", "down", "SHAREHOLDERS BLOCK MERGER", "Board vote", { a: c && c.id });
+      else if (t.startsWith("The shareholders approve:")) add("deal", "", "MERGER APPROVED", "Board vote", { a: c && c.id });
+      else if (t.includes("runner-up bonus")) add("chart", "up", "RUNNER-UP CASHES IN", "Takeover", { a: c && c.id });
+      else if (t.startsWith("The host calls it")) add("press", "minister", "FINAL ROUND!", "Breaking news");
       else if (t.startsWith("MONOPOLY!")) add("deal", "", "MONOPOLY! GAME OVER", "Monopoly", { a: S.game.monopolyBy, b: S.game.companies.find((x) => x.id !== S.game.monopolyBy && live(x))?.id });
       else if (t.startsWith("Industry summit:")) add("press", "minister", "SUMMIT: TIME TO VOTE", "Summit");
       else if (t.startsWith("Industry summit votes")) add("press", "minister", "NEW RULE PASSED", "Summit");
@@ -3254,6 +3528,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }
     const round = g.round;
     S.game = FT.resolveRound(g, decisions, dealsForRound(round));
+    // Bots vote straight away on the new round's board votes.
+    S.game = FT.castBotVotes(S.game, S.game.companies.filter((c) => c.id !== "you").map((c) => c.id));
     settleDeals(round);
     afterRound(g, round, rng);
     botPitch();
@@ -3303,7 +3579,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.flash = Object.fromEntries(S.game.companies.map((c) => [c.id, v[c.id] >= prevValues[c.id] ? "up" : "down"]));
     S.show = { round, before: prevValues, after: v };
     S.modal = PREFS.show ? "show" : S.game.finished ? (S.boardQueue.length ? "board" : "final") : "results";
-    if (S.game.finished) setTimeout(recordGameEnd, 0);
+    if (S.game.finished) { try { recordRivals(); } catch (e) {} setTimeout(recordGameEnd, 0); }
     resetDraft();
     saveGame();
     render();
@@ -3378,7 +3654,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <span class="spacer"></span>
       ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
-      <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + g.config.rounds}</div>
+      <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + roundsTxt(g)}</div>
       <span class="tools"><button class="btn snd chatbtn" id="btn-chat" type="button" aria-pressed="${TALK.open}"${tipAttr("Chat and private deals")}>Chat</button><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
       ${S.mp && !g.finished ? `<span class="mpchip" title="Online game ${esc(MP.game ? MP.game.code : "")}">ONLINE ${esc(MP.game ? MP.game.code : "")} · <b id="mp-timer"></b></span>` : ""}
       ${submitButton()}
@@ -3568,6 +3844,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       </div>
       <div style="display:grid;gap:12px;min-width:0">
         ${stepper("f-loan", "Loan (borrow or repay)", d.loanChange, -Math.round(c.debt), Math.max(0, Math.round(creditLimitUI(c) - c.debt)), 50000, (x) => (x > 0 ? "+" : "") + eur(x), `<div class="hint muted" style="font-size:12.5px"${tipAttr("Credit limit " + eurX(creditLimitUI(c)) + "\nDebt now " + eurX(c.debt))}>Interest ${(rateNow() * 100).toFixed(1).replace(".0", "")}% a round · the bank lends you up to ${eur(creditLimitUI(c))} in total</div>`)}
+        ${shareholdersCard()}
         ${investorCard()}
         <div class="card"><h3>Cost rules</h3><div class="hint">Every cost rule (upkeep, interest, overtime, idle machines, materials, stores, capacity, credit limit) is in Reports → Cost sheet.</div><button class="btn small" type="button" data-goto-report="costs" style="justify-self:start">Open the cost sheet</button></div>
       </div></div>`;
@@ -3772,6 +4049,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const roundsLeft = () => S.game.config.rounds - S.game.round;
   function missionDeadline() {
     const left = roundsLeft();
+    if (S.game.config.rounds >= 999) return "Checked when the host ends the game";
     return left <= 0 ? "Final round: it's checked after this one" : left === 1 ? "Checked after next round" : `Checked at the end of round ${S.game.config.rounds} · ${left + 1} rounds to go`;
   }
   const missionPending = () => !!(S.game && !S.game.finished && S.game.round <= 1 && !S.missionSeen && me().mission && !me().bankrupt);
@@ -3785,7 +4063,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ds-goal">${esc(mt.text)}</div>
         <div class="brief-facts">
           <div><span>Reward</span><b>+${eurX(FT.MISSION_BONUS)}</b><small>on your final score</small></div>
-          <div><span>Deadline</span><b>Round ${S.game.config.rounds}</b><small>checked at the very end</small></div>
+          <div><span>Deadline</span><b>${S.game.config.rounds >= 999 ? "The end" : "Round " + S.game.config.rounds}</b><small>checked at the very end</small></div>
           <div><span>Rivals</span><b>Have one too</b><small>revealed on the final screen</small></div>
         </div>
         <div class="ds-meta"><b>How:</b> ${esc(MISSION_TIPS[c.mission.id]())}</div>
@@ -3812,7 +4090,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me(), d = S.draft, g = S.game, W = FT.WILDCARDS, mt = missionText(c);
     const rivals = g.companies.filter((o) => o.id !== "you" && live(o));
     const mission = missionCard(true);
-    if (c.merged) return mergedPanel() + mission;
+    if (c.merged) return boardVotesCard() + mergedPanel() + mission;
     if (c.bankrupt) {
       const opts = rivals.map((o) => `<label class="choice"><input type="radio" name="jtarget" value="${o.id}" ${d.journalistTarget === o.id ? "checked" : ""}><span><b>${esc(o.companyName)}</b><small>${esc(o.playerName)}</small></span></label>`).join("");
       return `<div class="grid2"><div class="card"><h3>You're a journalist now</h3><div class="hint">Your company went bust, but you have a press badge. Each round, pick a company to investigate: it loses ${FT.JOURNALIST.brand} brand and ${FT.JOURNALIST.hype} hype. You score a point every time the company you exposed loses value that round.</div>
@@ -3833,16 +4111,16 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="hint">Sealed bids. Highest bid wins and pays its bid; minimum ${eurX(FT.BANKRUPTCY_SALE.minBid)}. If nobody bids, it's scrapped.</div></div>
         ${stepper(id, "Your bid for " + esc(dead.companyName), (d.bankruptBids || {})[dead.id] || 0, 0, Math.max(0, Math.round((c.cash + Math.max(0, creditLimitUI(c) - c.debt)) / 10000) * 10000), 10000, eur)}`;
     }).join("");
-    const playable = (list) => list.filter((r) => r <= g.config.rounds);
+    const playable = (list) => { const up = list.filter((r) => r >= g.round - 3); return up.length > 5 ? [...up.slice(0, 5), "…"] : up; };
     void salesOld;
     const auction = g.auction && g.auction.round === g.round
       ? lotPanel(liveLots().find((x) => x.key === "auction"))
-      : `<div class="card"><h3>Auctions</h3><div class="hint">Live auctions happen in rounds ${playable(FT.AUCTION.rounds).join(", ")}: a celebrity endorsement, a patent, a bankrupt rival's factory or a prime high-street location.${playable(FT.AUCTION.rounds).some((r) => r > g.round) ? " Next one: round " + playable(FT.AUCTION.rounds).find((r) => r > g.round) + "." : ""}</div></div>`;
+      : `<div class="card"><h3>Auctions</h3><div class="hint">${FT.auctionRounds(g).length ? `Live auctions happen in rounds ${playable(FT.auctionRounds(g)).join(", ")}: a celebrity endorsement, a patent, a bankrupt rival's factory or a prime high-street location.${FT.auctionRounds(g).some((r) => r > g.round) ? " Next one: round " + FT.auctionRounds(g).find((r) => r > g.round) + "." : ""}` : "No auctions in this game (house rules)."}</div></div>`;
     const summit = g.summit && g.summit.round === g.round
       ? `<div class="ctl ${d.vote ? "" : "reqbox"}"><span class="lbl">Industry summit: vote on a new rule ${d.vote ? "" : '<span class="neg">(required before you can submit)</span>'}</span><div class="choices">${g.summit.options.map((r, k) => { const reg = FT.SUMMIT.regulations[r], v = k ? "b" : "a"; return `<label class="choice"><input type="radio" name="vote" value="${v}" ${d.vote === v ? "checked" : ""}><span><b>${reg.name}</b><small>${reg.description}</small></span></label>`; }).join("")}</div><div class="hint muted" style="font-size:12.5px">Majority wins, a tie is a coin flip. The rule starts next round.</div></div>`
-      : `<div class="card"><h3>Industry summits</h3><div class="hint">In rounds ${playable(FT.SUMMIT.rounds).join(", ")} every company votes between two new rules (taxes, cheap credit, green rules…). The winner applies for ${FT.SUMMIT.duration} rounds. Talk to your rivals before you vote.</div></div>`;
+      : `<div class="card"><h3>Industry summits</h3><div class="hint">${FT.summitRounds(g).length ? `In rounds ${playable(FT.summitRounds(g)).join(", ")} every company votes between two new rules (taxes, cheap credit, green rules…). The winner applies for ${FT.SUMMIT.duration} rounds. Talk to your rivals before you vote.` : "No industry summits in this game (house rules)."}</div></div>`;
     return `<div class="grid2">
-      <div style="display:grid;gap:12px;min-width:0">${sales}${g.summit && g.summit.round === g.round ? summit + mission + auction : mission + auction + summit}<div class="hint">Everyone has a secret mission. They're revealed on the final screen.</div></div>
+      <div style="display:grid;gap:12px;min-width:0">${endlessCard()}${boardVotesCard()}${sales}${g.summit && g.summit.round === g.round ? summit + mission + auction : mission + auction + summit}<div class="hint">Everyone has a secret mission. They're revealed on the final screen.</div></div>
       <div style="display:grid;gap:12px;min-width:0">
         ${rulesNow().wildcards ? "" : `<div class="card"><h3>Wildcards are off</h3><div class="hint">House rule for this game: no spies, scandals or lawsuits.</div></div><div hidden>`}
         <div class="ctl"><span class="lbl">Wildcard (one per round)</span><div class="choices"><label class="choice"><input type="radio" name="wildcard" value="" ${d.wildcard ? "" : "checked"}><span><b>No wildcard</b><small>Keep your cards for later.</small></span></label>${cards}</div></div>
@@ -4138,6 +4416,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function newsItem(n) {
     const map = NEWS_TV[n.event.id] || ["anchor", "cocoa", n.event.headline.toUpperCase()];
     const target = n.targetCompanyId ? byId(n.targetCompanyId).companyName : "";
+    if (n.event.kind === "mega") return { scene: "crowd", variant: "phone", short: n.event.headline.replace(/^MEGA EVENT:\s*/, "").toUpperCase().slice(0, 40), full: n.event.headline, chips: effectChips(n.event.effect, ""), rounds: n.roundsLeft, tag: "⚠ Mega event", mega: true };
     return { scene: map[0], variant: map[1], short: map[2].replace("{co}", target.toUpperCase()), full: n.event.headline + (target ? " (it's " + target + ")" : ""), chips: effectChips(n.event.effect, target), rounds: n.roundsLeft };
   }
 
@@ -4145,7 +4424,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function tvHtml(item, key, idx, total, inline) {
     TVREG[key] = item;
     const chips = item.chips.map((c) => `<span class="fx ${c.good ? "up" : "down"}">${c.good ? "▲" : "▼"} ${esc(c.label)}</span>`).join("");
-    return `<div class="tv ${inline ? "inline" : ""}">
+    return `<div class="tv ${inline ? "inline" : ""} ${item.mega ? "mega" : ""}">
       <div class="tv-set">
         <div class="tv-screen">
           <canvas data-tv="${key}" width="128" height="72" aria-hidden="true"></canvas>
@@ -4650,7 +4929,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function helpModal() {
     return `<div class="win"><div class="win-title">How to play<span class="x" aria-hidden="true">×</span></div><div class="win-body">
-      <div class="intro">You run one company for ${S.game ? S.game.config.rounds : "a set number of"} rounds against your rivals. Whoever's company is worth the most at the end wins, unless someone takes control of every other company first: that's a monopoly, and it ends the game on the spot.</div>
+      <div class="intro">You run one company for ${S.game && S.game.config.rounds < 999 ? S.game.config.rounds : "a set number of"} rounds against your rivals. Whoever's company is worth the most at the end wins, unless someone takes control of every other company first: that's a monopoly, and it ends the game on the spot.</div>
       <ol class="steps">
         <li><span><b>Watch the news.</b> Each round starts with broadcasts: news that changes demand, costs or interest this round.</span></li>
         <li><span><b>Read (left menu, part 1).</b> <b>Market</b> has the market report, the history and what rivals did; the split per buyer group comes from a paid Market study. <b>Reports</b> has your profit, cash, balance, production and cost per unit. Like TOPSIM, the maths is up to you: nobody tells you how much will sell.</span></li>
@@ -4961,6 +5240,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${S.xpGain ? `<div class="card xpcard"><h3>+${S.xpGain.total} XP${S.xpGain.levelUp ? ` · Promoted to <span class="pos">${esc(S.xpGain.levelUp)}</span>!` : ""}</h3><div class="xp-parts">${S.xpGain.parts.map(([n, v]) => `<span>${esc(n)} <b>+${v}</b></span>`).join("")}</div>${careerCard(true)}</div>` : ""}
       ${emojiBar()}
       <div class="card"><h3>Company value per round</h3>${valueChart(640, 210)}</div>
+      ${rivalryCard()}
       ${recapCard()}
       ${S.mp ? leagueCard() : ""}
       ${feedbackCard()}
@@ -4968,6 +5248,19 @@ details.howto[open] summary::after { content: "▾ hide"; }
     </div></div>`;
   }
 
+  /** Custom-start context for the new-game screen (kept in S.setup while the screen is open). */
+  function setupCtx() {
+    const o = S.opts || DEFAULT_OPTS, st = S.setup || (S.setup = { rules: { ...(o.rules || {}) }, rounds: o.rounds || 8 });
+    const m = typeof modal !== "undefined" && modal ? modal : null;
+    const pickVal = (name, fb) => (m && m.querySelector(`input[name="${name}"]:checked`) || {}).value || fb;
+    const bots = Number(pickVal("bots", o.bots || 4));
+    return { rules: st.rules, rounds: st.rounds, industry: pickVal("industry", o.industry || "chocolate"), difficulty: pickVal("difficulty", o.difficulty || "standard"), editable: true, where: "setup",
+      players: [{ id: "you", name: "You" }, ...Array.from({ length: bots }, (_, i) => ({ id: "bot" + i, name: "Bot " + (i + 1) }))] };
+  }
+  function bindSetupCs() {
+    const root = document.querySelector('[data-cs-root="setup"]');
+    bindCustomStart(root, setupCtx(), (next) => { S.setup = { rules: next.rules, rounds: next.rounds }; root.outerHTML = customStart(setupCtx()); bindSetupCs(); });
+  }
   function setupModal() {
     const o = S.opts;
     const pick = (name, opts, cur) => opts.map(([v, n, t]) => `<label class="choice"><input type="radio" name="${name}" value="${v}" ${String(cur) === String(v) ? "checked" : ""}><span><b>${n}</b>${t ? `<small>${t}</small>` : ""}</span></label>`).join("");
@@ -4981,11 +5274,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ctl" style="align-self:start"><span class="lbl">Bot rivals</span><div class="choices row3">${pick("bots", [[3, "3", "Room to grow"], [4, "4", "Standard"], [5, "5", "Crowded"]], o.bots)}</div></div>
         <div class="ctl"><span class="lbl">Difficulty</span><div class="choices">${pick("difficulty", [["standard", "Standard", "Takeovers from round 3"], ["cutthroat", "Cutthroat", "Takeovers and stores from round 1-2"], ["tycoon", "Tycoon", "Hire and pay production teams"]], o.difficulty)}</div></div>
       </div>
-      <div class="ctl"><span class="lbl">Rounds</span><div class="choices">${pick("rounds", [[6, "6", "Quick game"], [8, "8", "Standard"], [10, "10", "Longer"], [12, "12", "Long game"]], o.rounds || 8)}</div></div>
       <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
-      <details class="rules-box" ${Object.keys(o.rules || {}).length ? "open" : ""}><summary><b>House rules</b> <span class="muted">${esc(rulesSummary(o.rules) || "normal rules")}</span></summary>
-        ${RULES_UI.map(([k, label, desc, opts]) => `<div class="orow"><div class="otext"><b>${label}</b><small>${desc}</small></div><div class="octl"><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${ruleVal(o.rules, k) === v}" data-srule="${k}" data-val="${JSON.stringify(v).replace(/"/g, "&quot;")}">${n}</button>`).join("")}</div></div></div>`).join("")}
-      </details>
+      <div class="ctl"><span class="lbl">Game setup</span>${customStart(setupCtx())}</div>
       <div class="ctl"><span class="lbl">CEO trait</span>${traitPicker("trait", o.trait)}</div>
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="btn-start" data-autofocus>Start game</button></div>
     </div></div>`;
@@ -5167,11 +5457,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- events ----------------
-  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire", "f-morder": "materialOrder", "f-bulk": "bulkSell" };
+  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire", "f-morder": "materialOrder", "f-bulk": "bulkSell", "f-bloan": "boardLoan" };
   function fmtFor(id) {
     const i = ind();
     if (id.startsWith("f-bk-")) return eur;
-    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x > 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams", "f-morder": units, "f-bulk": units }[id];
+    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x > 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams", "f-morder": units, "f-bulk": units, "f-bloan": (x) => (x ? "+" + eur(x) : "none") }[id];
   }
   function exactFor(id) {
     return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-prod": (x) => unitsX(x) + " " + ind().labels.unit, "f-buyback": (x) => x + " shares", "f-loan": (x) => (x >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(x)), "f-hire": (x) => (x >= 0 ? "Hire " : "Lay off ") + Math.abs(x) + " teams", "f-morder": (x) => unitsX(x) + " " + ind().labels.unit, "f-bulk": (x) => unitsX(x) + " " + ind().labels.unit }[id] || eurX;
@@ -5215,6 +5505,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#btn-calc", "click", () => { if (!CALC.open) TALK.open = false, renderTalk(); toggleCalc(); sfx("click"); });
     on("#btn-chat", "click", () => { toggleTalk(); sfx("click"); });
     bindLiveButtons();
+    bindBoardVotes();
+    on("#btn-endless", "click", endEndless);
+    on("[data-divpol]", "click", (e) => { S.draft.dividendPolicy = Number(e.currentTarget.dataset.divpol); sfx("click"); render(); });
     bindSubmit();
     on("#btn-help", "click", () => { S.modal = "help"; renderModal(); bindModal(); });
     on("#btn-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
@@ -5346,7 +5639,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("[data-vol]", "input", (e) => { const k = e.target.dataset.vol, v = Number(e.target.value) / 100; setVolume(k, v); const l = modal.querySelector("#vol-" + k); if (l) l.textContent = Math.round(v * 100) + "%"; });
     on('[data-vol="sfx"]', "change", () => sfx("profit"));
     on("#o-delete", "click", () => { try { localStorage.removeItem("ft-save"); } catch (e) {} renderModal(); bindModal(); if (S.screen === "title") { const m = S.modal; render(); S.modal = m; renderModal(); bindModal(); } });
-    on("#btn-again", "click", () => { if (S.mp) { mpForget(); goTitle(); return; } S.modal = "setup"; renderModal(); bindModal(); });
+    on("#btn-again", "click", () => { if (S.mp) { mpForget(); goTitle(); return; } S.modal = "setup"; S.setup = null; renderModal(); bindModal(); });
     on("#btn-start", "click", () => {
       const val = (name) => (modal.querySelector(`input[name="${name}"]:checked`) || {}).value;
       newGame({
@@ -5357,16 +5650,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
         difficulty: val("difficulty") || "standard",
         trait: val("trait") || "visionary",
         botSkill: val("botSkill") || "normal",
-        rounds: Number(val("rounds") || 8),
-        rules: { ...(S.setupRules || (S.opts && S.opts.rules) || {}) },
+        rounds: (S.setup && S.setup.rounds) || 8,
+        rules: { ...((S.setup && S.setup.rules) || (S.opts && S.opts.rules) || {}) },
       }, true);
     });
-    on("[data-srule]", "click", (e) => {
-      const b = e.currentTarget, k = b.dataset.srule, v = JSON.parse(b.dataset.val);
-      S.setupRules = { ...(S.setupRules || (S.opts && S.opts.rules) || {}), [k]: v };
-      b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
-      const sm = b.closest("details").querySelector("summary .muted"); if (sm) sm.textContent = rulesSummary(S.setupRules) || "normal rules";
-    });
+    if (S.modal === "setup") {
+      bindSetupCs();
+      // Defaults shown in the editor follow the industry, difficulty and number of bots.
+      modal.querySelectorAll('input[name="industry"], input[name="difficulty"], input[name="bots"]').forEach((el) => el.addEventListener("change", () => { const root = document.querySelector('[data-cs-root="setup"]'); if (root) { root.outerHTML = customStart(setupCtx()); bindSetupCs(); } }));
+    }
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S && S.modal && !["final", "show", "board"].includes(S.modal)) { if (S.modal === "tv") S.tvQueue = []; S.modal = null; renderModal(); } });
   window.addEventListener("resize", () => { if (S && S.screen !== "title") drawCity(1); });

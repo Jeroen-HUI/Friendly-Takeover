@@ -1,6 +1,6 @@
 // Bot strategies used to test balance, and later for the tutorial match against bots.
 
-import { INDUSTRIES, DIFFICULTIES, companyValues, sharePrices, type Company, type Decisions, type GameState } from "../engine";
+import { INDUSTRIES, difficultyOf, companyValues, sharePrices, type Company, type Decisions, type GameState } from "../engine";
 import { Rng } from "../engine/rng";
 import { smartDecisions, smartRaider, type Position } from "./smart";
 import { oracleDecisions } from "./oracle";
@@ -35,7 +35,7 @@ function spendable(c: Company): number {
 /** Retail plan: open stores two at a time up to a target, priced relative to the normal store price. */
 function retail(state: GameState, c: Company, target: number, priceFactor: number): Partial<Decisions> {
   const ind = INDUSTRIES[state.config.industry];
-  if (state.round < DIFFICULTIES[state.config.difficulty].retailUnlockRound) return {};
+  if (state.round < difficultyOf(state).retailUnlockRound) return {};
   const ref = ind.segments.mainstream.refPrice * 1.45;
   return { storesOpen: c.stores < target && c.cash > 1_000_000 ? 2 : 0, retailPrice: ref * priceFactor };
 }
@@ -104,7 +104,7 @@ function baseDecisions(strategy: NaiveStrategy, state: GameState, c: Company, rn
       };
     case "raider": {
       const base = { ...baseDecisions("mainstream", state, c, rng), ...retail(state, c, 4, 1.0) };
-      const difficulty = DIFFICULTIES[state.config.difficulty];
+      const difficulty = difficultyOf(state);
       if (state.round < difficulty.takeoverUnlockRound || c.takeoverCooldown > 0) return base;
       const prices = sharePrices(state);
       // Keep going after the target it already holds most of; otherwise pick the cheapest rival.
@@ -149,7 +149,7 @@ function exploitDecisions(strategy: ExploitStrategy, state: GameState, c: Compan
         for (const o of state.companies) if (held(o)) sells[o.id] = held(o);
         return { ...base, sellShares: sells };
       }
-      const diff = DIFFICULTIES[state.config.difficulty];
+      const diff = difficultyOf(state);
       if (state.round < diff.takeoverUnlockRound || c.takeoverCooldown > 0) return base;
       const room = Math.min(diff.maxSharesPerRound, 50 - held(leader));
       const price = sharePrices(state)[leader.id] * 1.4;
@@ -171,6 +171,12 @@ function exploitDecisions(strategy: ExploitStrategy, state: GameState, c: Compan
 }
 
 export function botDecisions(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
+  const d = botDecisionsInner(strategy, state, c, rng);
+  // Steady bots (premium and mainstream) pay a 25% dividend while their finances are healthy; the rest keep their cash.
+  const steady = /^(smart|pro)-(premium|mainstream)$/.test(strategy);
+  return { ...d, dividendPolicy: steady && c.cash > 1_500_000 && c.debt < 2_000_000 ? 25 : 0 };
+}
+function botDecisionsInner(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
   if (strategy === "smart-raider") return smartRaider(state, c, rng);
   if (strategy.startsWith("pro-")) return oracleDecisions(strategy.slice(4) as Position, state, c, rng);
   if (strategy.startsWith("smart-")) return smartDecisions(strategy.slice(6) as Position, state, c, rng);

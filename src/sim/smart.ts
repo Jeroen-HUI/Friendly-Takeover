@@ -3,7 +3,7 @@
 // Used to check that thinking ahead beats fixed plans (skill), and how much luck still matters.
 
 import {
-  AUCTION, BALANCE, BANKRUPTCY_SALE, DIFFICULTIES, INDUSTRIES, RETAIL, SUMMIT, WILDCARDS,
+  AUCTION, BALANCE, BANKRUPTCY_SALE, difficultyOf, INDUSTRIES, RETAIL, SUMMIT, WILDCARDS,
   COSTS, activeNewsEffects, companyValues, creditLimit, experienceFactor, materialFactor, materialList, retailRefPrice, segmentPotential, sharePrices, storeCapacity, teamOutput, unitCost,
   type Company, type Decisions, type GameState, type RegulationId, type SegmentId,
 } from "../engine";
@@ -34,7 +34,7 @@ function previousPotential(state: GameState): Record<SegmentId, number> {
 
 export function smartDecisions(pos: Position, state: GameState, c: Company, rng: Rng, opts: SmartOptions = {}): Partial<Decisions> {
   const ind = INDUSTRIES[state.config.industry];
-  const diff = DIFFICULTIES[state.config.difficulty];
+  const diff = difficultyOf(state);
   const plan = PLAN[pos];
   const k = (e: number) => Math.round(e * ((ind.baseUnitCost * ind.potentialPerCompany) / 500_000));
   const noise = opts.noise ?? 0;
@@ -214,7 +214,7 @@ export function smartDecisions(pos: Position, state: GameState, c: Company, rng:
 /** A smart raider: plays mainstream, then buys the weakest rival it can afford, with showdown stakes. */
 export function smartRaider(state: GameState, c: Company, rng: Rng): Partial<Decisions> {
   const base = smartDecisions("mainstream", state, c, rng);
-  const diff = DIFFICULTIES[state.config.difficulty];
+  const diff = difficultyOf(state);
   if (state.round < diff.takeoverUnlockRound || c.takeoverCooldown > 0 || state.round === state.config.rounds) return base;
   const prices = sharePrices(state);
   const rivals = state.companies.filter((o) => o.id !== c.id && !o.bankrupt && !o.controlledBy && o.shares.float > 0);

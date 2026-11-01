@@ -2,7 +2,7 @@
 // The full engine state never leaves the server: each player gets a "view" with rivals' secrets removed.
 
 import {
-  createGame, resolveRound, standings, publicInfo, companyValues, sharePrices, renameCompany,
+  createGame, resolveRound, standings, publicInfo, companyValues, sharePrices, renameCompany, castBotVotes, boardTally,
   type CeoTrait, type Company, type DealOrder, type Decisions, type DifficultyId, type GameState, type HouseRules, type IndustryId, type RoundReport,
 } from "../engine";
 import { Rng } from "../engine/rng";
@@ -42,7 +42,7 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
   const rules = settings.rules && typeof settings.rules === "object" ? settings.rules : undefined;
   const state = createGame({ industry: settings.industry, difficulty: settings.difficulty, rounds: settings.rounds, seed: settings.seed, ...(rules ? { rules } : {}) }, setup);
   state.bots = bots;
-  return state;
+  return castBotVotes(state, Object.keys(bots));
 }
 
 /** Resolves a round: human decisions as submitted (missing = repeat last round), bots decide for themselves. */
@@ -73,7 +73,8 @@ export function resolveOnlineRound(state: GameState, human: Record<string, Parti
     const names = funnyNames(buyer.companyName, c.companyName);
     next = renameCompany(next, by, c.id, names[rng.int(names.length)]);
   }
-  return next;
+  // Bots vote straight away on board votes in the new round.
+  return castBotVotes(next, Object.keys(next.bots ?? {}));
 }
 
 const HIDDEN_REPORT: Partial<RoundReport> = {
@@ -155,11 +156,13 @@ export function publicLive(state: GameState) {
   const prices = sharePrices(state);
   return {
     round: state.round,
+    rounds: state.config.rounds,
     prices: Object.fromEntries(state.companies.map((c) => [c.id, live?.prices[c.id] ?? prices[c.id]])),
     shares: Object.fromEntries(state.companies.map((c) => [c.id, c.shares])),
     trades: (live?.trades ?? []).slice(-60),
     lots: live?.lots ?? {},
+    board: (state.board ?? []).filter((p) => p.round === state.round).map((p) => ({ ...p, tally: boardTally(state, p) })),
     serverNow: Date.now(),
   };
 }
-export { exchangeTrade, liveBid, liveMinBid, liveLotOpen } from "../engine";
+export { exchangeTrade, liveBid, liveMinBid, liveLotOpen, castVote, endAfterThisRound } from "../engine";

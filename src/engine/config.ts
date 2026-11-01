@@ -353,6 +353,30 @@ const CHOCOLATE: IndustryConfig = {
     { id: "dentists", headline: "Dentists' association declares chocolate \"basically a vegetable\"", effect: { demandMultiplier: 1.25 }, duration: 1 },
     { id: "sugar-tax", headline: "Parliament introduces a sugar tax after a minister loses a bet", effect: { costMultiplier: 1.15, demandMultiplier: 0.9 }, duration: 2 },
     { id: "heatwave", headline: "Record heatwave melts half the country's shop displays", effect: { demandMultiplier: 0.8 }, duration: 1 },
+    { id: "valentines", headline: "Dating app glitch matches everyone with everyone. Valentine's Day declared every day", effect: { segmentMultiplier: { premium: 1.5, hype: 1.3 } }, duration: 1 },
+    { id: "gym-craze", headline: "New fitness craze: running a marathon while eating a chocolate bar", effect: { demandMultiplier: 1.2 }, duration: 1 },
+    { id: "cocoa-strike", headline: "Cocoa pickers' union strikes for better hats. Fair enough, honestly", effect: { costMultiplier: 1.25 }, duration: 1 },
+    { id: "cheap-wars", headline: "Supermarket chains start a price war over who sells the saddest chocolate", effect: { segmentMultiplier: { budget: 1.3, mainstream: 0.9 } }, duration: 1 },
+    { id: "food-critic", headline: "Famous food critic cries on live TV after one bite of dark chocolate", effect: { segmentMultiplier: { premium: 1.6 } }, duration: 1 },
+    { id: "diet-trend", headline: "Everyone's on the new \"only beige food\" diet. Chocolate is too brown", effect: { demandMultiplier: 0.82 }, duration: 1 },
+    { id: "squirrel", headline: "Squirrel gang raids a warehouse in broad daylight, takes only the hazelnut stock", effect: { capacityMultiplier: 0.85 }, duration: 1 },
+    { id: "kids-show", headline: "Hit kids' show features a talking chocolate bar. Parents give up", effect: { segmentMultiplier: { mainstream: 1.4, budget: 1.2 } }, duration: 1 },
+    { id: "luxury-scandal", headline: "Undercover reporter finds \"artisan\" chocolate is just regular chocolate with a ribbon", effect: { segmentMultiplier: { premium: 0.65 } }, duration: 1 },
+    { id: "random-viral", headline: "A grandma's review of one company's chocolate gets 40 million views", effect: { randomCompanyBoost: 0.45 }, duration: 1 },
+    { id: "cheapest-tourists", headline: "Bus of 3,000 tourists arrives and buys the cheapest bars to take home as \"local delicacy\"", effect: { cheapestBoost: 0.7 }, duration: 1 },
+    { id: "factory-cat", headline: "A cat falls asleep on a conveyor belt; every factory stops to film it", effect: { capacityMultiplier: 0.88 }, duration: 1 },
+    { id: "rate-cut-choc", headline: "Central bank cuts interest rates to cheer up a sad intern", effect: { interestDelta: -0.02 }, duration: 2 },
+    { id: "sugar-cheap", headline: "Sugar beet harvest so big farmers are building houses out of it", effect: { costMultiplier: 0.8 }, duration: 2 },
+    { id: "unboxing-ban", headline: "Social network bans unboxing videos after one goes on for nine hours", effect: { segmentMultiplier: { hype: 0.8 } }, duration: 1 },
+    { id: "easter", headline: "Easter moved forward by a month \"for logistical reasons\". Nobody asks questions", effect: { demandMultiplier: 1.35 }, duration: 1 },
+    { id: "office-snacks", headline: "Companies replace bonuses with office snack bowls. Employees furious, snack bowls full", effect: { segmentMultiplier: { mainstream: 1.3, budget: 1.15, premium: 0.85 } }, duration: 1 },
+    { id: "cocoa-flood", headline: "Cocoa trees confused by weather, produce double. Scientists shrug", effect: { costMultiplier: 0.85 }, duration: 1 },
+    { id: "influencer-quit", headline: "The country's biggest snack influencer quits \"to find himself\"", effect: { segmentMultiplier: { hype: 0.8 } }, duration: 1 },
+    { id: "chocolate-day", headline: "Parliament declares a national chocolate day by accident (the vote was about tax)", effect: { demandMultiplier: 1.3 }, duration: 1 },
+    { id: "machine-bug", headline: "Software update makes every wrapping machine wrap things twice", effect: { costMultiplier: 1.12, capacityMultiplier: 0.9 }, duration: 1 },
+    { id: "rich-kids", headline: "Rich kids start paying their homework helpers in fancy truffles", effect: { segmentMultiplier: { premium: 1.4, hype: 1.2 } }, duration: 1 },
+    { id: "bank-panic-choc", headline: "Bank's computer thinks it's 1982 and charges 1982 interest rates", effect: { interestDelta: 0.025 }, duration: 1 },
+    { id: "cheap-lovers", headline: "Students discover chocolate counts as a \"meal\" on their meal plan", effect: { segmentMultiplier: { budget: 1.25, hype: 1.2 } }, duration: 1 },
   ],
 };
 
@@ -399,6 +423,31 @@ const AI = deriveIndustry(CHOCOLATE, {
     { id: "enterprise", headline: "Every bank suddenly needs \"an AI strategy\" by Monday", effect: { segmentMultiplier: { premium: 1.6 } }, duration: 2 },
     { id: "free-tier", headline: "Students discover the free tier; servers groan", effect: { segmentMultiplier: { budget: 1.5 } }, duration: 1 },
     { id: "robot-dance", headline: "Viral video of a robot doing the floss sends AI gadgets flying off the shelves", effect: { segmentMultiplier: { hype: 1.8 } }, duration: 1 },
+    { id: "chip-glut", headline: "Chip factory overproduces by a factor of ten after someone typed one zero too many", effect: { costMultiplier: 0.8 }, duration: 2 },
+    { id: "grandma-ai", headline: "Grandmas discover AI chatbots and won't stop asking them for soup recipes", effect: { segmentMultiplier: { mainstream: 1.5 } }, duration: 1 },
+    { id: "hallucination", headline: "Chatbot tells a million people the moon is a cheese wheel. Trust in AI wobbles", effect: { demandMultiplier: 0.8 }, duration: 1 },
+    { id: "power-cut-ai", headline: "Power company accidentally unplugs the city to charge a single e-scooter", effect: { capacityMultiplier: 0.82 }, duration: 1 },
+    { id: "ai-homework", headline: "Every school bans AI homework help. Every student signs up anyway", effect: { segmentMultiplier: { budget: 1.4, hype: 1.2 } }, duration: 1 },
+    { id: "ceo-keynote", headline: "Tech keynote goes viral when the CEO's robot dog bites him on stage", effect: { segmentMultiplier: { hype: 1.5 } }, duration: 1 },
+    { id: "privacy-panic", headline: "Report reveals smart speakers have been listening to people sing in the shower", effect: { segmentMultiplier: { mainstream: 0.75, premium: 0.85 } }, duration: 1 },
+    { id: "lawyers-ai", headline: "Lawyers find out AI can write contracts. Lawyers find out AI can't write contracts", effect: { segmentMultiplier: { premium: 1.4 } }, duration: 1 },
+    { id: "free-ai", headline: "Mystery startup offers AI for free \"forever\". Lasts nine days", effect: { cheapestBoost: 0.7 }, duration: 1 },
+    { id: "random-ai-viral", headline: "One company's AI writes a birthday song so good it tops the charts", effect: { randomCompanyBoost: 0.45 }, duration: 1 },
+    { id: "cooling", headline: "Data centers run out of cooling water after a heatwave; servers wear tiny fans", effect: { capacityMultiplier: 0.85, costMultiplier: 1.1 }, duration: 1 },
+    { id: "rates-down-ai", headline: "Central bank cuts rates after asking a chatbot what to do", effect: { interestDelta: -0.02 }, duration: 2 },
+    { id: "office-mandate", headline: "Every office must now have an \"AI buddy\" for each employee, by law (nobody knows why)", effect: { demandMultiplier: 1.3 }, duration: 1 },
+    { id: "luxury-ai", headline: "Billionaires show off personal AI butlers with British accents", effect: { segmentMultiplier: { premium: 1.5, budget: 0.85 } }, duration: 1 },
+    { id: "ai-flop", headline: "AI-written movie is so bad cinemas hand out refunds and blankets", effect: { segmentMultiplier: { hype: 0.65 } }, duration: 1 },
+    { id: "cheap-phones", headline: "New €20 phone runs AI apps surprisingly well, mostly by guessing", effect: { segmentMultiplier: { budget: 1.5 } }, duration: 1 },
+    { id: "energy-tax", headline: "New energy tax on data centers, paid in electricity bills nobody can read", effect: { costMultiplier: 1.2 }, duration: 2 },
+    { id: "ai-friend", headline: "Survey: 40% of people would rather talk to their AI than their in-laws", effect: { demandMultiplier: 1.2, segmentMultiplier: { mainstream: 1.15 } }, duration: 1 },
+    { id: "gpu-thief", headline: "Gang of crypto miners steals a truck of GPUs, gets lost, returns it", effect: { costMultiplier: 1.12 }, duration: 1 },
+    { id: "robot-strike", headline: "Delivery robots refuse to work in the rain. Same, honestly", effect: { capacityMultiplier: 0.9 }, duration: 1 },
+    { id: "ai-fair", headline: "Biggest tech fair of the year: everyone leaves with a free AI stress ball", effect: { segmentMultiplier: { hype: 1.4, mainstream: 1.1 } }, duration: 1 },
+    { id: "budget-cuts-ai", headline: "Companies cut costs; \"the expensive AI\" is the first thing to go", effect: { segmentMultiplier: { premium: 0.7, budget: 1.2 } }, duration: 1 },
+    { id: "bank-glitch-ai", headline: "A trading bot buys every government bond by mistake. Interest rates jump", effect: { interestDelta: 0.025 }, duration: 1 },
+    { id: "students-free", headline: "Exam season: students pay anything for an AI that explains maths slowly", effect: { demandMultiplier: 1.25 }, duration: 1 },
+    { id: "chip-tariff", headline: "Two countries argue over who invented the microchip; tariffs on everything", effect: { costMultiplier: 1.25 }, duration: 1 },
   ],
 });
 
@@ -422,6 +471,30 @@ const WEED = deriveIndustry(CHOCOLATE, {
     { id: "budget-hunt", headline: "Students' loans arrive late; everyone hunts for bargains", effect: { segmentMultiplier: { budget: 1.4, premium: 0.7 } }, duration: 2 },
     { id: "boom-weed", headline: "Economy booms; everyone upgrades to the fancy stuff", effect: { segmentMultiplier: { premium: 1.5, budget: 0.85 } }, duration: 2 },
     { id: "celebrity", headline: "A company's strain gets name-dropped in a chart-topping song", effect: { randomCompanyBoost: 0.4 }, duration: 1 },
+    { id: "rain-perfect", headline: "Perfect weather all season; growers call it \"suspiciously chill\"", effect: { costMultiplier: 0.8 }, duration: 2 },
+    { id: "wellness", headline: "Wellness magazines declare CBD the new kale", effect: { segmentMultiplier: { premium: 1.25, mainstream: 1.3 } }, duration: 1 },
+    { id: "power-bill", headline: "Power company triples prices for grow lights after its CEO \"had a dream\"", effect: { costMultiplier: 1.25 }, duration: 1 },
+    { id: "munchies", headline: "Fast-food chains launch a \"midnight menu\". Customers are suddenly very relaxed", effect: { demandMultiplier: 1.25 }, duration: 1 },
+    { id: "moth", headline: "A plague of very polite moths eats one in five plants", effect: { capacityMultiplier: 0.82 }, duration: 1 },
+    { id: "students-week", headline: "University freshers' week lasts a whole month this year", effect: { segmentMultiplier: { budget: 1.5, hype: 1.2 } }, duration: 1 },
+    { id: "docu", headline: "Hit documentary about craft growers makes everyone want the fancy stuff", effect: { segmentMultiplier: { premium: 1.35, mainstream: 1.1 } }, duration: 1 },
+    { id: "cheapest-weed", headline: "Backpackers' travel blog lists the cheapest shop in the country. Queues form", effect: { cheapestBoost: 0.7 }, duration: 1 },
+    { id: "random-weed", headline: "One company's edible wins \"Snack of the Year\" at a very confused county fair", effect: { randomCompanyBoost: 0.45 }, duration: 1 },
+    { id: "rates-down-weed", headline: "Central bank cuts rates; chair seen smiling for the first time in years", effect: { interestDelta: -0.02 }, duration: 2 },
+    { id: "health-scare", headline: "Tabloid claims edibles make you forget your password. Sales dip", effect: { demandMultiplier: 0.82 }, duration: 1 },
+    { id: "influencer-detox", headline: "Top influencers go on a \"clean living\" retreat and post nothing but smoothies", effect: { segmentMultiplier: { hype: 0.65 } }, duration: 1 },
+    { id: "gummies-trend", headline: "Gummy bears in tiny sunglasses take over every feed", effect: { segmentMultiplier: { hype: 1.6 } }, duration: 1 },
+    { id: "rent-rise", headline: "Warehouse rents double after a landlord discovers spreadsheets", effect: { costMultiplier: 1.15 }, duration: 2 },
+    { id: "lab-test", headline: "Independent lab says most \"premium\" strains are \"fine, just fine\"", effect: { segmentMultiplier: { premium: 0.7 } }, duration: 1 },
+    { id: "stoner-film", headline: "A slow-paced film about a sofa becomes the biggest movie of the year", effect: { demandMultiplier: 1.2, segmentMultiplier: { mainstream: 1.15 } }, duration: 1 },
+    { id: "bargain-bin", headline: "Discount chain enters the market selling grams next to the toilet paper", effect: { segmentMultiplier: { budget: 1.4, mainstream: 0.85 } }, duration: 1 },
+    { id: "seed-shortage", headline: "Seed shortage after a farmer's parrot learns to open the storage room", effect: { capacityMultiplier: 0.9, costMultiplier: 1.1 }, duration: 1 },
+    { id: "wedding-season", headline: "Wedding season: every couple wants \"tasteful\" gift bags for guests", effect: { segmentMultiplier: { premium: 1.35, mainstream: 1.1 } }, duration: 1 },
+    { id: "rates-weed-up", headline: "Bank raises rates \"to make the graph look cooler\"", effect: { interestDelta: 0.02 }, duration: 1 },
+    { id: "tourist-boom", headline: "Travel site names the country \"the chillest place on Earth\"; tourists pour in", effect: { demandMultiplier: 1.3 }, duration: 1 },
+    { id: "grow-tech", headline: "New LED lamps make plants grow faster and sing (a little)", effect: { costMultiplier: 0.88 }, duration: 1 },
+    { id: "dry-spell", headline: "Dry spell; reservoirs so low the fish are queueing for water", effect: { capacityMultiplier: 0.85 }, duration: 1 },
+    { id: "pet-ban", headline: "Vets warn: keep edibles away from dogs. Dogs disagree", effect: { segmentMultiplier: { mainstream: 0.85 } }, duration: 1 },
   ],
 });
 
@@ -457,12 +530,79 @@ export const INDUSTRIES: Record<IndustryId, IndustryConfig> = { chocolate: softe
 export const HOUSE_RULES = {
   startCash: [500_000, 1_000_000, 2_000_000] as number[],
   startCashRange: [250_000, 5_000_000] as [number, number],
+  startDebtRange: [0, 5_000_000] as [number, number],
+  startCapacityRange: [0.5, 2] as [number, number],
+  startQualityRange: [3, 5] as [number, number],
+  startBrandRange: [0, 80] as [number, number],
+  startStoresRange: [0, 5] as [number, number],
+  founderSharesRange: [10, 60] as [number, number],
+  marketSizeRange: [0.5, 2] as [number, number],
+  growthRange: [-0.05, 0.15] as [number, number],
+  takeoverRoundRange: [1, 10] as [number, number],
+  sharesPerRoundRange: [5, 50] as [number, number],
+  roundsRange: [3, 99] as [number, number],
   /** Calm: fewer, softer stories. Wild: a story every round, hitting 1.5x as hard. */
   news: {
     calm: { storyChanceFactor: 0.4, ecoPerRound: [1, 2] as [number, number], strength: 0.7 },
     normal: { storyChanceFactor: 1, ecoPerRound: [2, 3] as [number, number], strength: 1 },
     wild: { storyChanceFactor: 10, ecoPerRound: [3, 4] as [number, number], strength: 1.5 },
   },
+};
+
+/** "Unlimited" games run with this many rounds until the host ends them. */
+export const UNLIMITED_ROUNDS = 999;
+
+/** Handicaps: a company's starting cash and factory scale with its start level; brand shifts a little. */
+export const START_LEVELS = {
+  weak: { cash: 0.5, capacity: 0.75, brand: -10 },
+  normal: { cash: 1, capacity: 1, brand: 0 },
+  strong: { cash: 1.5, capacity: 1.25, brand: 10 },
+  giant: { cash: 3, capacity: 2, brand: 25 },
+};
+
+/** Ready-made starting situations. `rules` fill in whatever the host didn't set; the extras happen in createGame. */
+export const SCENARIOS = {
+  none: { name: "Normal start", description: "Everyone starts the same, in a normal market.", rules: {} },
+  recession: { name: "Recession", description: "A smaller, shrinking market. Bargain hunters rule the first rounds, luxury buyers hide.", rules: { marketSize: 0.85, growth: -0.02 } },
+  debt: { name: "Everyone in debt", description: "Every company starts with €3M of bank debt. Interest bites from day one.", rules: { startDebt: 3_000_000, startCash: 1_500_000 } },
+  giant: { name: "Giant vs startups", description: "One random company starts as a giant (3x cash, double factory, famous brand). Everyone else: team up or get eaten.", rules: {} },
+  goldrush: { name: "Gold rush", description: "A huge, fast-growing market and cheap materials. Build fast before everyone else does.", rules: { marketSize: 1.3, growth: 0.1 } },
+};
+
+/** Quarterly dividends: every 3 rounds, companies pay their policy share of the quarter's profit to shareholders. */
+export const DIVIDENDS = {
+  every: 3,
+  policies: [0, 25, 50] as const,
+  /** Investors pay more for a company that pays dividends: value bonus per policy step while the last dividend is recent. */
+  valuePremium: { 0: 0, 25: 0.04, 50: 0.08 } as Record<number, number>,
+};
+
+/** Board votes on big decisions. */
+export const BOARD = {
+  /** Extra loans above the credit line can take total debt up to this share of the hard ceiling. */
+  maxBoardDebtShare: 1,
+};
+
+/** Whoever takes control of a company pays the largest other shareholder this share of the company's value. */
+export const RUNNER_UP = { share: 0.1, minShares: 5 };
+
+/** Rare, huge events that hit every industry (house rule "mega"). Not softened like the funny stories. */
+export const MEGA = {
+  chance: 0.07,
+  fromRound: 3,
+  events: [
+    { id: "mega-crash", headline: "MEGA EVENT: Stock market crash! Shoppers panic and stop spending", effect: { demandMultiplier: 0.88, interestDelta: 0.005 }, duration: 2 },
+    { id: "mega-boom", headline: "MEGA EVENT: Lottery jackpot shared by half the country. Everyone is rich (for now)", effect: { demandMultiplier: 1.15, segmentMultiplier: { premium: 1.1 } }, duration: 2 },
+    { id: "mega-supply", headline: "MEGA EVENT: Giant container ship stuck sideways in the canal. Again. Supplies run dry", effect: { costMultiplier: 1.18, capacityMultiplier: 0.9 }, duration: 2 },
+    { id: "mega-heat", headline: "MEGA EVENT: The summer that never ends. Nobody leaves the house, everyone scrolls", effect: { demandMultiplier: 0.92, segmentMultiplier: { hype: 1.25 } }, duration: 2 },
+    { id: "mega-rates", headline: "MEGA EVENT: Central bank chair replaced by a parrot. The parrot loves high rates", effect: { interestDelta: 0.015 }, duration: 2 },
+    { id: "mega-free", headline: "MEGA EVENT: Government sends every citizen a €500 \"treat yourself\" voucher", effect: { demandMultiplier: 1.2, segmentMultiplier: { budget: 1.1 } }, duration: 1 },
+    { id: "mega-blackout", headline: "MEGA EVENT: Continent-wide blackout. Factories run on hamster wheels", effect: { capacityMultiplier: 0.8 }, duration: 1 },
+    { id: "mega-offline", headline: "MEGA EVENT: The whole internet goes offline for a week. People rediscover shops", effect: { segmentMultiplier: { mainstream: 1.15, budget: 1.1, hype: 0.9 } }, duration: 1 },
+    { id: "mega-cheap", headline: "MEGA EVENT: Scientists invent a machine that makes raw materials from air. Prices collapse", effect: { costMultiplier: 0.82 }, duration: 2 },
+    { id: "mega-luxury", headline: "MEGA EVENT: Billionaire buys everything with a gold label \"for the vibes\"", effect: { segmentMultiplier: { premium: 1.3 } }, duration: 1 },
+    { id: "mega-trend", headline: "MEGA EVENT: The whole planet joins one giant online challenge. Whatever is viral sells out", effect: { segmentMultiplier: { hype: 1.35 } }, duration: 1 },
+  ],
 };
 
 /** Friendly mergers between two players' companies. */

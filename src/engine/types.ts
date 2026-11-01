@@ -71,6 +71,10 @@ export interface Decisions {
   productName?: string;
   /** Building style in the skyline (cosmetic, unlocked by CEO level). */
   style?: number;
+  /** Share of each quarter's profit paid to shareholders every 3 rounds (house rule "dividends"). Kept until changed. */
+  dividendPolicy?: 0 | 25 | 50;
+  /** Extra loan above the bank's credit line: needs the board's approval (house rule "votes"), voted on next round. */
+  boardLoan?: number;
 }
 
 export type GuidanceResult = "hit" | "close" | "miss";
@@ -117,7 +121,7 @@ export interface ResearchResult {
   survey?: { companyId: string; companyName: string; brand: number; hype: number }[];
   /** Expected market potential per segment for the next round, including announced news. */
   /** Insider tip: the news that will break in the round after next (null = nothing big coming). */
-  forecast?: { round: number; news: { headline: string; effect: NewsEffect; duration: number; kind: "story" | "economy" }[] };
+  forecast?: { round: number; news: { headline: string; effect: NewsEffect; duration: number; kind: "story" | "economy" | "mega" }[] };
   /** Board seats: owning 25% or more of a company gives you a copy of its round report. */
   boardSeats?: { companyId: string; companyName: string; held: number; report: Pick<RoundReport, "price" | "quality" | "produced" | "sold" | "revenue" | "profit" | "cashEnd" | "debtEnd" | "marketingCost" | "rndCost" | "capacityInvest" | "stores"> }[];
   /** Market study: what every buyer group was worth in the round just played, and the outlook for the next one (news included). */
@@ -191,6 +195,9 @@ export interface Company {
   /** Product line name (cosmetic) and skyline building style (cosmetic). */
   productName?: string;
   style?: number;
+  /** Dividend policy (0, 25 or 50% of each quarter's profit) and the last quarterly dividend paid. */
+  dividendPolicy?: 0 | 25 | 50;
+  lastDividend?: { round: number; amount: number } | null;
   /** Last decisions, used as defaults. */
   lastDecisions: Decisions;
   history: RoundReport[];
@@ -314,7 +321,7 @@ export interface NewsEvent {
   /** Rounds the effect lasts, including the round it is announced. */
   duration: number;
   /** "economy" = a small market-report item (TOPSIM-style indicators); stories are the funny headlines. */
-  kind?: "story" | "economy";
+  kind?: "story" | "economy" | "mega";
 }
 
 export interface ActiveNews {
@@ -325,15 +332,59 @@ export interface ActiveNews {
 }
 
 /** House rules a group can pick in the lobby. Missing = the normal rules. */
+export type ScenarioId = "none" | "recession" | "debt" | "giant" | "goldrush";
+export type StartLevel = "weak" | "normal" | "strong" | "giant";
 export interface HouseRules {
   /** Starting cash per company (euros). */
   startCash?: number;
+  /** Starting bank debt per company (euros). */
+  startDebt?: number;
+  /** Starting factory size, as a multiple of the normal factory (0.5 - 2). */
+  startCapacity?: number;
+  /** Starting maximum quality (3 - 5). */
+  startQuality?: number;
+  /** Starting brand (0 - 80). */
+  startBrand?: number;
+  /** Starting own stores (0 - 5, they open once retail opens). */
+  startStores?: number;
+  /** Shares each founder keeps (10 - 60); the rest trade on the market. */
+  founderShares?: number;
+  /** Market size, as a multiple of normal (0.5 - 2). */
+  marketSize?: number;
+  /** Market growth per round (-0.05 - 0.15). Unset = the industry's own growth. */
+  growth?: number;
+  /** First round in which shares can be bought (1 - 10). Unset = the difficulty's round. */
+  takeoverRound?: number;
+  /** Max shares one company may buy in one rival per round (5 - 50). Unset = the difficulty's limit. */
+  sharesPerRound?: number;
+  /** No round limit: the game runs until the host ends it (or one company is left). */
+  unlimited?: boolean;
   /** false = no share buying, takeovers, mergers or live exchange. */
   takeovers?: boolean;
   /** false = no wildcards. */
   wildcards?: boolean;
+  /** false = no auctions. */
+  auctions?: boolean;
+  /** false = no industry summits. */
+  summits?: boolean;
+  /** false = no own stores. */
+  retail?: boolean;
+  /** false = no friendly mergers. */
+  mergers?: boolean;
+  /** false = no quarterly dividends (dividend policy). */
+  dividends?: boolean;
+  /** false = no board votes on big decisions. */
+  votes?: boolean;
+  /** false = whoever takes over a company doesn't pay the runner-up shareholder a bonus. */
+  runnerUp?: boolean;
+  /** false = no mega events. */
+  mega?: boolean;
   /** How much news happens and how hard it hits. */
   news?: "calm" | "normal" | "wild";
+  /** A ready-made starting situation (its settings fill in whatever isn't set above). */
+  scenario?: ScenarioId;
+  /** Different starting positions per company id (handicaps). Missing = normal. */
+  handicaps?: Record<string, StartLevel>;
 }
 
 export interface GameConfig {
@@ -390,10 +441,32 @@ export interface GameState {
   bankruptcySales?: { round: number; companyId: string }[];
   /** Set when one player controls every other company: the game ends and they win. */
   monopolyBy?: string | null;
+  /** Big decisions waiting for a board vote this round (house rule "votes"). Shareholders vote live during the round. */
+  board?: BoardProposal[];
+  /** Scenario chosen at the start (shown in the UI). */
+  scenarioCompany?: string | null;
   /** Sealed-bid auction held this round, if any. */
   auction: { round: number; item: AuctionItemId } | null;
   /** Industry summit vote held this round, if any. */
   summit: { round: number; options: [RegulationId, RegulationId] } | null;
+}
+
+/** A big decision a company's shareholders vote on. Weighted by shares: the founder's shares vote yes,
+ * other shareholders vote yes or no (not voting counts as yes), the public float doesn't vote. */
+export interface BoardProposal {
+  id: string;
+  /** Round in which the vote happens (and the decision is carried out if it passes). */
+  round: number;
+  /** The company whose board votes. */
+  company: string;
+  kind: "merger" | "loan";
+  /** Merger: the other company and which one keeps running. Loan: the amount. */
+  partner?: string;
+  survivor?: string;
+  amount?: number;
+  /** Merger proposals for both companies share a group id: the merger needs both to pass. */
+  group?: string;
+  votes: Record<string, boolean>;
 }
 
 export interface PlayerSetup {

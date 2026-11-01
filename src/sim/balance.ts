@@ -5,12 +5,15 @@ import type { BotStrategy } from "./bots";
 const N = Number(process.argv[2] ?? 30);
 const diff = (process.argv[3] ?? "standard") as DifficultyId;
 const lineup = (process.argv[4] ?? "pro-budget,pro-mainstream,pro-premium,pro-hype").split(",") as BotStrategy[];
-for (const ind of ["chocolate", "ai", "weed"] as IndustryId[]) {
+// Optional: BALANCE_RULES='{"mega":false}' to test house rules, BALANCE_INDUSTRIES=chocolate,ai to limit industries.
+const rules = process.env.BALANCE_RULES ? JSON.parse(process.env.BALANCE_RULES) : undefined;
+const industries = (process.env.BALANCE_INDUSTRIES ?? "chocolate,ai,weed").split(",") as IndustryId[];
+for (const ind of industries) {
   const st: Record<string, { w: number; s: number; r: number }> = {};
   for (let m = 0; m < N; m++) {
     const rot = m % lineup.length;
     const seats = [...lineup.slice(rot), ...lineup.slice(0, rot)];
-    const res = runMatch(seats, 777 + m, ind, diff);
+    const res = runMatch(seats, 777 + m, ind, diff, 8, rules);
     res.ranking.forEach((r, i) => { const a = (st[r.strategy] ??= { w: 0, s: 0, r: 0 }); a.s += r.score; a.r += i + 1; if (i === 0) a.w++; });
   }
   const per = Object.values(st)[0] ? N * lineup.length / Object.keys(st).length : N;

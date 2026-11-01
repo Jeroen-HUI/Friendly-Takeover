@@ -6,7 +6,7 @@
 import { JSDOM, VirtualConsole } from "jsdom";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid } from "../src/server/core";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound } from "../src/server/core";
 
 // ---------------------------------------------------------------- fake backend
 type Row = Record<string, any>;
@@ -94,11 +94,12 @@ const server = {
       notify(g.id);
       return { ok: true, resolved: round };
     }
-    if (action === "trade" || action === "bid") {
+    if (action === "trade" || action === "bid" || action === "vote" || action === "end") {
       const state = db.states.get(g.id);
+      if (action === "end" && g.host_user_id !== userId) fail(403, "Only the host can end the game");
       try {
         const next = action === "trade" ? exchangeTrade(state, me.id, body.target_id, body.qty) : null;
-        const st2 = next ? next.state : liveBid(state, me.id, body.lot, body.amount);
+        const st2 = next ? next.state : action === "bid" ? liveBid(state, me.id, body.lot, body.amount) : action === "vote" ? castVote(state, me.id, body.proposal, body.yes) : endAfterThisRound(state);
         db.states.set(g.id, st2);
         live.set(g.id, { round: st2.round, data: JSON.parse(JSON.stringify(publicLive(st2))) });
         return { ok: true, trade: next ? next.trade : null, live: live.get(g.id).data };
@@ -142,7 +143,11 @@ const fakeApi = {
     if (name === "set_house_rules") {
       const g = db.games.find((x) => x.id === a.p_game_id && x.host_user_id === HOST && x.status === "lobby");
       if (!g) throw new Error("Only the host can change the rules before the game starts");
-      g.rules = { ...a.p_rules }; return g.rules;
+      g.rules = { ...a.p_rules };
+      if (a.p_rounds != null) g.rounds = a.p_rules.unlimited ? 999 : a.p_rounds;
+      if (a.p_round_seconds != null) g.round_seconds = a.p_round_seconds;
+      notify(g.id);
+      return g.rules;
     }
     if (name === "update_game_settings") {
       const g = db.games.find((x) => x.id === a.p_game_id)!;
@@ -208,7 +213,7 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>${html}</body></h
     w.scrollTo = () => {};
     const ctx: any = new Proxy({}, { get: (t: any, k) => (k === "createLinearGradient" ? () => ({ addColorStop() {} }) : k in t ? t[k] : () => {}), set: (t: any, k, v) => { t[k] = v; return true; } });
     w.HTMLCanvasElement.prototype.getContext = () => ctx;
-    w.addEventListener("error", (e: any) => errors.push(e.message));
+    w.addEventListener("error", (e: any) => errors.push(e.message + (process.env.FT_STACK ? " @ " + String(e.error && e.error.stack).slice(0, 900) : "")));
   },
 });
 const { window } = dom as any;
@@ -276,11 +281,11 @@ await until("invite sent", () => db.invites.some((i) => i.to === "user-kim" && i
 // A friend joins from another device.
 const friend = server.join("user-friend", code, "Sanne", "Bar None", "ruthless");
 await until("friend in lobby", () => /Sanne/.test($(".lobby")!.textContent!));
-// Host settings: 6 rounds, one hard bot.
-click('[data-set="rounds"][data-val="6"]');
-await until("rounds saved", () => HG().rounds === 6 && $('[data-set="rounds"][data-val="6"]')?.getAttribute("aria-checked") === "true");
-click(`[data-rule="startCash"][data-val="2000000"]`);
-await until("house rule saved", () => HG().rules && HG().rules.startCash === 2000000 && $(`[data-rule="startCash"][data-val="2000000"]`)?.getAttribute("aria-checked") === "true");
+// Host settings: 6 rounds, one hard bot, €2M start (custom start editor).
+{ const i = $("[data-cs-rounds]") as any; i.value = "6"; i.dispatchEvent(new window.Event("change", { bubbles: true })); }
+await until("rounds saved", () => HG().rounds === 6 && ($("[data-cs-rounds]") as any)?.value === "6");
+{ const i = $('[data-csn="startCash"]') as any; i.value = "2000000"; i.dispatchEvent(new window.Event("change", { bubbles: true })); }
+await until("house rule saved", () => HG().rules && HG().rules.startCash === 2000000 && ($('[data-csn="startCash"]') as any)?.value === "2000000");
 click('[data-set="bot_count"][data-val="1"]');
 await until("bot saved", () => HG().bot_count === 1 && /Bot 1/.test($(".lobby")!.textContent!));
 click('[data-set="bot_skill"][data-val="hard"]');
@@ -345,6 +350,14 @@ for (let r = 1; r <= 6; r++) {
     server.call("user-friend", "trade", { game_id: HG().id, target_id: myIdNow(), qty: 3 });
     await until("friend's trade on my ticker", () => /Sanne|Bar None/.test($("#ticker")?.textContent || "") && /bought 3% of/.test($("#ticker")!.textContent!), 8000);
     if ((D().game.companies[0].shares.holders[friend.player_id] || 0) !== 3) throw new Error("friend's stake in me should show live");
+    // Board vote online: the friend asks its shareholders (me) for an extra loan; I vote no through the server.
+    { const st = db.states.get(HG().id); st.board = [{ id: "l3-" + friend.player_id, round: 3, company: friend.player_id, kind: "loan", amount: 1000000, votes: {} }];
+      live.set(HG().id, { round: st.round, data: JSON.parse(JSON.stringify(publicLive(st))) }); notify(HG().id); }
+    click('[data-tab="boardroom"]');
+    await until("board vote card", () => $(`[data-bvote="l3-${friend.player_id}"][data-yes="0"]`), 8000);
+    click(`[data-bvote="l3-${friend.player_id}"][data-yes="0"]`);
+    await until("vote on the server", () => db.states.get(HG().id).board[0].votes[myIdNow()] === false);
+    await until("vote shown", () => D().game.board.find((p: any) => p.id === "l3-" + friend.player_id)?.votes.you === false);
   }
   if (r === 2) {
     const mine = D().game.companies[0].history.at(-1);

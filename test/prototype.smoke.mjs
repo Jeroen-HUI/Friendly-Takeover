@@ -20,6 +20,7 @@ const { window } = dom;
 const doc = window.document;
 const click = (sel) => { const el = doc.querySelector(sel); if (!el) throw new Error("missing " + sel); el.click(); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const setRounds = (n) => { const i = doc.querySelector("[data-cs-rounds]"); if (!i) throw new Error("rounds input missing"); i.value = String(n); i.dispatchEvent(new window.Event("change", { bubbles: true })); };
 await wait(50);
 // The game opens on the title screen.
 if (!doc.querySelector(".title-screen")) throw new Error("title screen did not render");
@@ -37,6 +38,7 @@ click("#t-account"); if (!/Profile/.test(doc.querySelector(".overlay").textConte
 if (doc.querySelectorAll(".overlay .achcard").length) throw new Error("modal should be closed");
 click('[data-title="achievements"]');
 if (doc.querySelectorAll(".achcard").length < 20) throw new Error("achievement cards missing");
+if (!/Rivals/.test(doc.querySelector(".overlay").textContent)) throw new Error("rivals card missing on the career screen");
 click("#btn-close");
 // Privacy, terms and credits from the title footer; the delete flow asks for confirmation first.
 click('.title-foot [data-legal="privacy"]');
@@ -302,6 +304,7 @@ for (let r = 1; r <= 8; r++) {
 }
 if (!/Final results/.test(doc.body.textContent)) throw new Error("final screen missing");
 if (!/Your story/.test(doc.body.textContent) || !doc.querySelector("#btn-recap")) throw new Error("recap missing");
+if (!/Rivalries/.test(doc.body.textContent) || !/finished ahead/.test(doc.body.textContent)) throw new Error("rivalry card missing on the final screen");
 await wait(50);
 const earned = JSON.parse(window.localStorage.getItem("ft-ach") || "[]");
 if (!earned.includes("first_game")) throw new Error("first_game achievement not earned: " + JSON.stringify(earned));
@@ -369,9 +372,9 @@ if (!tvTags.has("Auction") || !tvTags.has("Summit")) throw new Error("special br
 // House rules, a merger with a bot, product names and reviews, on a short Cutthroat game.
 {
   click("#btn-again");
-  click('input[name="difficulty"][value="cutthroat"]'); click('input[name="rounds"][value="6"]');
-  click(`[data-srule="news"][data-val='"wild"']`);
-  if (!/wild news/.test(doc.querySelector(".rules-box summary").textContent)) throw new Error("rules summary should update");
+  click('input[name="difficulty"][value="cutthroat"]'); setRounds(6);
+  click(`[data-cs="news"][data-val='"wild"']`); click('[data-cs="votes"][data-val="false"]');
+  if (!/news wild/.test(doc.querySelector(".cs-foot").textContent)) throw new Error("rules summary should update: " + doc.querySelector(".cs-foot").textContent);
   click("#btn-start");
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
   if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
@@ -413,12 +416,70 @@ if (!tvTags.has("Auction") || !tvTags.has("Summit")) throw new Error("special br
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done");
   click("#btn-menu"); window.localStorage.removeItem("ft-save");
   // Takeovers off: the tab says so.
-  click("#t-new"); click('[data-srule="takeovers"][data-val="false"]'); click("#btn-start");
+  click("#t-new"); click('[data-cs="takeovers"][data-val="false"]'); click("#btn-start");
   while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok");
   click('[data-tab="takeovers"]');
   if (!/Takeovers are off/.test(doc.body.textContent)) throw new Error("takeovers-off house rule not shown");
   click("#btn-menu"); window.localStorage.removeItem("ft-save");
-  click("#t-new"); click('[data-srule="takeovers"][data-val="true"]'); click(`[data-srule="news"][data-val='"normal"']`);
+  click("#t-new"); click('[data-cs-preset="normal"]');
+}
+// Custom start: presets, numbers, handicaps; dividends, board votes and an endless game.
+{
+  const D = window.__ftDebug;
+  const skipTv = () => { while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next"); if (doc.querySelector("#btn-tv-done")) click("#btn-tv-done"); if (doc.querySelector("#btn-mission-ok")) click("#btn-mission-ok"); };
+  const playRound = () => {
+    click("#btn-submit"); if (doc.querySelector("[data-vote]")) click('[data-vote="a"]'); click("#btn-confirm");
+    if (doc.querySelector("#btn-show-done")) click("#btn-show-done"); if (doc.querySelector("#btn-board-next") && !doc.querySelector("#btn-continue")) while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+    if (doc.querySelector("#btn-continue")) click("#btn-continue"); while (doc.querySelector("#btn-board-next")) click("#btn-board-next");
+    skipTv();
+  };
+  click("#t-new");
+  click('[data-cs-preset="blitz"]');
+  if (doc.querySelector("[data-cs-rounds]").value !== "5") throw new Error("blitz preset should set 5 rounds");
+  if (doc.querySelector('[data-cs-preset="blitz"]').getAttribute("aria-pressed") !== "true") throw new Error("blitz preset should show as chosen");
+  const cash = doc.querySelector('[data-csn="startCash"]'); cash.value = "2500000"; cash.dispatchEvent(new window.Event("change", { bubbles: true }));
+  const fs = doc.querySelector('[data-csn="founderShares"]'); fs.value = "40"; fs.dispatchEvent(new window.Event("change", { bubbles: true }));
+  click('[data-cs-hc="bot0"][data-val="giant"]');
+  if (!/handicap/.test(doc.querySelector(".cs-foot").textContent)) throw new Error("handicap not in the summary");
+  // Save it as a preset and see it come back.
+  const nm = doc.querySelector("[data-cs-name]"); nm.value = "Rich blitz"; click("[data-cs-save]");
+  if (!doc.querySelector("[data-cs-mine]") || !/Rich blitz/.test(doc.querySelector(".cs-presets").textContent)) throw new Error("saved preset missing");
+  click("#btn-start"); skipTv();
+  const g = D.S.game, you = g.companies.find((c) => c.id === "you"), giant = g.companies.find((c) => c.id === "bot0");
+  if (g.config.rounds !== 5 || Math.abs(you.cash - 2500000) > 400000 || you.shares.founder !== 40) throw new Error("custom start not applied: " + JSON.stringify({ r: g.config.rounds, cash: you.cash, f: you.shares.founder }));
+  if (!(giant.cash > you.cash * 2)) throw new Error("giant handicap not applied");
+  if (!/ROUND 1 \/ 5/.test(doc.querySelector(".topbar .round").textContent)) throw new Error("blitz round count not shown");
+  // Dividend policy in Finance.
+  click('[data-tab="finance"]');
+  if (!/Dividend policy/.test(doc.body.textContent)) throw new Error("dividend policy missing");
+  click('[data-divpol="25"]');
+  if (D.S.draft.dividendPolicy !== 25) throw new Error("dividend policy not set");
+  // A bot asks its board for a loan; you own shares in it, so you get to vote.
+  const bot = D.S.game.companies.find((c) => c.id === "bot1");
+  bot.shares.holders.you = 20; bot.shares.float -= 20;
+  D.S.game.board = [{ id: "l1-bot1", round: D.S.game.round, company: "bot1", kind: "loan", amount: 1000000, votes: {} }];
+  click('[data-tab="boardroom"]');
+  if (!doc.querySelector("#board-votes") || !doc.querySelector('[data-bvote="l1-bot1"]')) throw new Error("board vote card missing");
+  if (!/Board vote/.test(doc.querySelector(".agenda").textContent)) throw new Error("board vote not on the agenda");
+  click('[data-bvote="l1-bot1"][data-yes="0"]');
+  if (D.S.game.board[0].votes.you !== false) throw new Error("vote not cast");
+  if (!/Failing|Passing/.test(doc.querySelector("#board-votes").textContent)) throw new Error("tally missing");
+  playRound();
+  if (D.S.game.round !== 2) throw new Error("round with a board vote did not resolve");
+  click("#btn-menu"); window.localStorage.removeItem("ft-save");
+  // Endless: no limit until you end it.
+  click("#t-new"); click('[data-cs-unl="true"]');
+  click("#btn-start"); skipTv();
+  if (!/ROUND 1 \/ ∞/.test(doc.querySelector(".topbar .round").textContent)) throw new Error("endless round count not shown");
+  playRound(); playRound();
+  click('[data-tab="boardroom"]');
+  if (!doc.querySelector("#btn-endless")) throw new Error("end button missing in an endless game");
+  click("#btn-endless");
+  playRound();
+  if (!D.S.game.finished) throw new Error("endless game should finish after the host ends it");
+  if (doc.querySelector("#btn-close")) click("#btn-close");
+  click("#btn-menu"); window.localStorage.removeItem("ft-save");
+  click("#t-new"); click('[data-cs-preset="normal"]');
 }
 // Weed is 18+: the game asks once; "No" goes back to the menu, "Yes" is remembered.
 click('input[name="industry"][value="weed"]'); click("#btn-start");
@@ -435,7 +496,7 @@ click("#t-new");
 click('input[name="industry"][value="ai"]');
 click('input[name="difficulty"][value="tycoon"]');
 click('input[name="botSkill"][value="hard"]');
-click('input[name="rounds"][value="6"]');
+setRounds(6);
 click("#btn-start");
 if (!/AI/.test(doc.querySelector(".topbar .sub").textContent)) throw new Error("new AI game did not start");
 if (!/ROUND 1 \/ 6/.test(doc.querySelector(".topbar .round").textContent)) throw new Error("rounds setting ignored");

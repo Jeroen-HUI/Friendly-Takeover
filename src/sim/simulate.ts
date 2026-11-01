@@ -2,7 +2,7 @@
 // Usage: npx tsx src/sim/simulate.ts [matches] [industry] [difficulty]
 //        npx tsx src/sim/simulate.ts trace [industry] [seed]   -> one match, round by round
 
-import { INDUSTRIES, teamOutput, createGame, resolveRound, standings, type CeoTrait, type Decisions, type GameState, type IndustryId, type DifficultyId } from "../engine";
+import { INDUSTRIES, teamOutput, createGame, resolveRound, standings, type CeoTrait, type Decisions, type GameState, type IndustryId, type DifficultyId, type HouseRules } from "../engine";
 
 const CEO_TRAITS_LIST: CeoTrait[] = ["ruthless", "visionary", "influencer", "pennyPincher"];
 import { Rng } from "../engine/rng";
@@ -23,7 +23,7 @@ export interface MatchResult {
   state: GameState;
 }
 
-export function runMatch(strategies: BotStrategy[], seed: number, industry: IndustryId = "chocolate", difficulty: DifficultyId = "standard", rounds = 8): MatchResult {
+export function runMatch(strategies: BotStrategy[], seed: number, industry: IndustryId = "chocolate", difficulty: DifficultyId = "standard", rounds = 8, rules?: HouseRules): MatchResult {
   const rng = new Rng(seed ^ 0x9e3779b9);
   const players = strategies.map((s, i) => ({
     id: `p${i}`,
@@ -31,7 +31,7 @@ export function runMatch(strategies: BotStrategy[], seed: number, industry: Indu
     companyName: `${s[0].toUpperCase()}${s.slice(1)} Co ${i}`,
     trait: rng.pick(CEO_TRAITS_LIST),
   }));
-  let state = createGame({ industry, difficulty, rounds, seed }, players);
+  let state = createGame({ industry, difficulty, rounds, seed, ...(rules ? { rules } : {}) }, players);
   while (!state.finished) {
     const decisions: Record<string, Partial<Decisions>> = {};
     state.companies.forEach((c, i) => {

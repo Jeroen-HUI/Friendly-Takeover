@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, BULK, CAMPAIGNS, COSTS, DEALS, ECONOMY, EXCHANGE, GUIDANCE, LIVE_AUCTION, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
-  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, type IndustryConfig,
+  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, UNLIMITED_ROUNDS, START_LEVELS, SCENARIOS, DIVIDENDS, BOARD, RUNNER_UP, MEGA, type IndustryConfig, type DifficultyConfig,
 } from "./config";
 import { Rng } from "./rng";
 import {
@@ -35,6 +35,9 @@ import {
   type PactDealTerms,
   type MergerDealTerms,
   type HouseRules,
+  type ScenarioId,
+  type StartLevel,
+  type BoardProposal,
 } from "./types";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -42,15 +45,79 @@ const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.i
 const deepClone = <T>(v: T): T => (typeof structuredClone === "function" ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
 /** Still running a business: not bankrupt and not merged into another company. */
 export const operating = (c: Company) => !c.bankrupt && !c.merged;
-/** The house rules of a game, with the normal rules filled in. */
-export function rulesOf(state: { config: GameConfig }): Required<HouseRules> {
-  const r = state.config.rules ?? {};
+/** House rules with every setting filled in (null = use the industry's or difficulty's own value). */
+export interface Rules {
+  startCash: number; startDebt: number; startCapacity: number; startQuality: number; startBrand: number | null; startStores: number;
+  founderShares: number; marketSize: number; growth: number | null; takeoverRound: number | null; sharesPerRound: number | null;
+  unlimited: boolean; takeovers: boolean; wildcards: boolean; auctions: boolean; summits: boolean; retail: boolean; mergers: boolean;
+  dividends: boolean; votes: boolean; runnerUp: boolean; mega: boolean;
+  news: "calm" | "normal" | "wild"; scenario: ScenarioId; handicaps: Record<string, StartLevel>;
+}
+/** The house rules of a game, with the normal rules filled in. A scenario's settings fill in what the host didn't set. */
+export function rulesOf(state: { config: GameConfig }): Rules {
+  const own = state.config.rules ?? {};
+  const scenario: ScenarioId = own.scenario && own.scenario in SCENARIOS ? own.scenario : "none";
+  const r: HouseRules = { ...(SCENARIOS[scenario].rules as HouseRules), ...Object.fromEntries(Object.entries(own).filter(([, v]) => v !== undefined && v !== null)) };
+  const H = HOUSE_RULES;
+  const range = (v: unknown, [lo, hi]: [number, number], fb: number) => (typeof v === "number" && Number.isFinite(v) ? clamp(v, lo, hi) : fb);
+  const opt = (v: unknown, rg: [number, number]) => (typeof v === "number" && Number.isFinite(v) ? clamp(v, rg[0], rg[1]) : null);
+  const handicaps: Record<string, StartLevel> = {};
+  for (const [id, lv] of Object.entries(r.handicaps ?? {})) if (lv in START_LEVELS && lv !== "normal") handicaps[id] = lv as StartLevel;
   return {
-    startCash: clamp(num(r.startCash, 0) || 0, 0, HOUSE_RULES.startCashRange[1]),
+    startCash: clamp(num(r.startCash, 0) || 0, 0, H.startCashRange[1]),
+    startDebt: range(r.startDebt, H.startDebtRange, 0),
+    startCapacity: range(r.startCapacity, H.startCapacityRange, 1),
+    startQuality: Math.round(range(r.startQuality, H.startQualityRange, 3)),
+    startBrand: opt(r.startBrand, H.startBrandRange),
+    startStores: Math.round(range(r.startStores, H.startStoresRange, 0)),
+    founderShares: Math.round(range(r.founderShares, H.founderSharesRange, BALANCE.startShares.founder)),
+    marketSize: range(r.marketSize, H.marketSizeRange, 1),
+    growth: opt(r.growth, H.growthRange),
+    takeoverRound: opt(r.takeoverRound, H.takeoverRoundRange) === null ? null : Math.round(r.takeoverRound as number),
+    sharesPerRound: opt(r.sharesPerRound, H.sharesPerRoundRange) === null ? null : Math.round(r.sharesPerRound as number),
+    unlimited: r.unlimited === true,
     takeovers: r.takeovers !== false,
     wildcards: r.wildcards !== false,
+    auctions: r.auctions !== false,
+    summits: r.summits !== false,
+    retail: r.retail !== false,
+    mergers: r.mergers !== false && r.takeovers !== false,
+    dividends: r.dividends !== false,
+    votes: r.votes !== false,
+    runnerUp: r.runnerUp !== false,
+    mega: r.mega !== false,
     news: r.news === "calm" || r.news === "wild" ? r.news : "normal",
+    scenario,
+    handicaps,
   };
+}
+/** The difficulty's settings with the house rules applied (when shares open, how many per round, when retail opens). */
+export function difficultyOf(state: { config: GameConfig }): DifficultyConfig {
+  const d = DIFFICULTIES[state.config.difficulty];
+  const r = rulesOf(state);
+  return {
+    ...d,
+    takeoverUnlockRound: r.takeoverRound ?? d.takeoverUnlockRound,
+    maxSharesPerRound: r.sharesPerRound ?? d.maxSharesPerRound,
+    retailUnlockRound: r.retail ? d.retailUnlockRound : Infinity,
+  };
+}
+/** Market growth per round for this game. */
+export function growthOf(state: { config: GameConfig }): number {
+  return rulesOf(state).growth ?? INDUSTRIES[state.config.industry].growth;
+}
+/** Total market size multiplier for a round: house-rule size times growth (kept within sane bounds in long games). */
+function marketScale(state: { config: GameConfig }, round: number): number {
+  return rulesOf(state).marketSize * clamp(Math.pow(1 + growthOf(state), Math.max(0, round - 1)), 0.25, 40);
+}
+/** Ends an unlimited (or any) game after the round being played: that round becomes the last one. */
+export function endAfterThisRound(input: GameState): GameState {
+  if (input.finished) return input;
+  const state = deepClone(input);
+  state.config = { ...state.config, rounds: Math.max(1, state.round) };
+  state.upcomingNews = [];
+  state.feed.push({ round: state.round, headline: "The host calls it: this is the final round!" });
+  return state;
 }
 /** A small stable hash, for picking review lines without touching the game's random numbers. */
 function hash(str: string): number { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -113,40 +180,56 @@ export function storeCapacity(industry: IndustryConfig): number {
 export function createGame(config: GameConfig, players: PlayerSetup[]): GameState {
   if (players.length < 2 || players.length > 8) throw new Error("A game needs 2 to 8 players");
   const industry = INDUSTRIES[config.industry];
-  const sc = Number(config.rules?.startCash);
-  const startCash = Number.isFinite(sc) && sc > 0 ? clamp(sc, HOUSE_RULES.startCashRange[0], HOUSE_RULES.startCashRange[1]) : industry.start.cash;
-  const companies: Company[] = players.map((p) => ({
-    id: p.id,
-    playerName: p.playerName,
-    companyName: p.companyName,
-    trait: p.trait,
-    cash: startCash,
-    debt: 0,
-    capacity: industry.start.capacity,
-    qualityCap: industry.start.qualityCap,
-    rndProgress: 0,
-    brand: industry.start.brand,
-    hype: industry.start.hype,
-    inventory: 0,
-    stores: 0,
-    originalName: p.companyName,
-    wildcardsUsed: {},
-    sentiment: 0,
-    mission: { id: "volume" },
-    workers: config.difficulty === "tycoon" ? Math.ceil((industry.start.capacity * 0.8) / teamOutput(industry)) : 0,
-    journalistPoints: 0,
-    cumProduced: 0,
-    credibility: 0,
-    materials: Math.round(industry.start.capacity * 0.8) * materialList(industry, industry.start.quality, p.trait),
-    materialPaid: 1,
-    inventoryUnitCost: 0,
-    shares: { founder: BALANCE.startShares.founder, float: BALANCE.startShares.float, treasury: 0, holders: {} },
-    controlledBy: null,
-    takeoverCooldown: 0,
-    bankrupt: false,
-    lastDecisions: defaultDecisions(industry),
-    history: [],
-  }));
+  if (config.rules?.unlimited) config = { ...config, rounds: UNLIMITED_ROUNDS };
+  else config = { ...config, rounds: clamp(Math.round(num(config.rounds, 8)), 1, HOUSE_RULES.roundsRange[1]) };
+  const rules = rulesOf({ config });
+  const startCash = rules.startCash > 0 ? clamp(rules.startCash, HOUSE_RULES.startCashRange[0], HOUSE_RULES.startCashRange[1]) : industry.start.cash;
+  const startCap = Math.round(industry.start.capacity * rules.startCapacity);
+  // Giant vs startups: one company (drawn from the seed) starts as the giant.
+  let scenarioCompany: string | null = null;
+  const handicaps = { ...rules.handicaps };
+  if (rules.scenario === "giant") {
+    scenarioCompany = players[(Math.abs(config.seed) >>> 0) % players.length].id;
+    handicaps[scenarioCompany] = "giant";
+  }
+  const companies: Company[] = players.map((p) => {
+    const lv = START_LEVELS[handicaps[p.id] ?? "normal"];
+    const cap = Math.round(startCap * lv.capacity);
+    return {
+      id: p.id,
+      playerName: p.playerName,
+      companyName: p.companyName,
+      trait: p.trait,
+      cash: Math.round(startCash * lv.cash),
+      debt: rules.startDebt,
+      capacity: cap,
+      qualityCap: Math.max(industry.start.qualityCap, rules.startQuality),
+      rndProgress: rules.startQuality >= 5 ? BALANCE.rndThresholds[5] : rules.startQuality >= 4 ? BALANCE.rndThresholds[4] : 0,
+      brand: clamp((rules.startBrand ?? industry.start.brand) + lv.brand, 0, 100),
+      hype: industry.start.hype,
+      inventory: 0,
+      stores: rules.retail ? rules.startStores : 0,
+      originalName: p.companyName,
+      wildcardsUsed: {},
+      sentiment: 0,
+      mission: { id: "volume" },
+      workers: config.difficulty === "tycoon" ? Math.ceil((cap * 0.8) / teamOutput(industry)) : 0,
+      journalistPoints: 0,
+      cumProduced: 0,
+      credibility: 0,
+      materials: Math.round(cap * 0.8) * materialList(industry, industry.start.quality, p.trait),
+      materialPaid: 1,
+      inventoryUnitCost: 0,
+      shares: { founder: rules.founderShares, float: 100 - rules.founderShares, treasury: 0, holders: {} },
+      controlledBy: null,
+      takeoverCooldown: 0,
+      bankrupt: false,
+      dividendPolicy: 0,
+      lastDividend: null,
+      lastDecisions: { ...defaultDecisions(industry), production: Math.round(cap * 0.8), materialOrder: Math.round(cap * 0.8) },
+      history: [],
+    };
+  });
   // Year 0: every company plays one identical year with the default plan, so round 1 starts with
   // last year's reports to plan from (like TOPSIM's starting position). Resolving it also draws round 1's news.
   // Secret missions, drawn from the seed so the server can reproduce them.
@@ -157,12 +240,17 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     c.mission = id === "stake" ? { id, targetId: mrng.pick(companies.filter((o) => o.id !== c.id)).id } : { id };
   }
   // Two special rounds per game, at fixed but unknown-in-advance moments (announced a round ahead).
-  const lastPlayable = Math.max(3, config.rounds - 1);
-  const pickRound = (from: number) => from + mrng.int(Math.max(1, lastPlayable - from + 1));
-  const bf = pickRound(3);
-  let inv = pickRound(3);
-  if (inv === bf) inv = bf > 3 ? bf - 1 : bf + 1;
-  const specialEvents = [{ round: bf, id: "blackFriday" as const }, { round: inv, id: "investorDay" as const }].filter((e) => e.round <= config.rounds);
+  // Long games get a Black Friday and an Investor Day in every block of 12 rounds.
+  const specialEvents: { round: number; id: "blackFriday" | "investorDay" }[] = [];
+  for (let block = 0; block === 0 || block + 3 <= Math.min(config.rounds, 120); block += 12) {
+    const lastPlayable = block === 0 ? Math.max(3, Math.min(config.rounds, 12) - 1) : Math.min(config.rounds - 1, block + 11);
+    const from = block === 0 ? 3 : block + 1;
+    const pickRound = (f: number) => f + mrng.int(Math.max(1, lastPlayable - f + 1));
+    const bf = pickRound(from);
+    let inv = pickRound(from);
+    if (inv === bf) inv = bf > from ? bf - 1 : bf + 1;
+    specialEvents.push(...[{ round: bf, id: "blackFriday" as const }, { round: inv, id: "investorDay" as const }].filter((e) => e.round <= config.rounds));
+  }
   // Hidden market drivers: one buyer group slowly grows, one shrinks, the rest drift; price sensitivity differs per game.
   const between = ([lo, hi]: [number, number]) => lo + mrng.next() * (hi - lo);
   const order = mrng.shuffle([...SEGMENTS]);
@@ -181,8 +269,12 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
     auction: null,
     summit: null,
     specialEvents,
+    scenarioCompany,
     market: { materialIndex: 1, materialNext: 1, materialOutlook: "flat", bulkPrice: Math.round(industry.start.price * 0.5 * 100) / 100, trend, sensitivity },
   };
+  // Scenario extras: a recession that lasts the first three rounds, or cheap materials in a gold rush.
+  if (rules.scenario === "recession") yearZero.news.push({ event: { id: "scenario-recession", headline: "Recession: bargain hunters rule, luxury buyers hide", effect: { segmentMultiplier: { budget: 1.3, premium: 0.75, hype: 0.85 } }, duration: 4, kind: "economy" }, roundsLeft: 4 });
+  if (rules.scenario === "goldrush") { yearZero.market!.materialIndex = 0.85; yearZero.market!.materialNext = 0.85; }
   return resolveRound(yearZero, {});
 }
 
@@ -215,7 +307,7 @@ export function materialFactor(index: number): number {
 }
 
 /** Company value excluding stakes in other companies. */
-function baseValue(c: Company, industry: IndustryConfig): number {
+function baseValue(c: Company, industry: IndustryConfig, dividendRound = 0): number {
   if (c.bankrupt) return 0;
   // A merged company is only a holding company now: its own cash plus its stakes (added in companyValues).
   if (c.merged) return c.cash - c.debt;
@@ -232,14 +324,17 @@ function baseValue(c: Company, industry: IndustryConfig): number {
     Math.max(0, avgProfit) * BALANCE.earningsMultiple
   );
   // Investor panic after someone dumped shares; investor trust from the investor call.
-  return value > 0 ? value * (1 - (c.sentiment ?? 0)) * (1 + GUIDANCE.valuePerPoint * (c.credibility ?? 0)) : value;
+  // Investors pay more for a company that pays dividends (while the last one is recent).
+  const div = dividendRound && c.lastDividend && c.lastDividend.amount > 0 && dividendRound - c.lastDividend.round <= DIVIDENDS.every ? DIVIDENDS.valuePremium[c.dividendPolicy ?? 0] ?? 0 : 0;
+  return value > 0 ? value * (1 - (c.sentiment ?? 0)) * (1 + GUIDANCE.valuePerPoint * (c.credibility ?? 0)) * (1 + div) : value;
 }
 
 /** Full company values including stakes held in others (one level of cross-holdings). */
 export function companyValues(state: GameState): Record<string, number> {
   const industry = INDUSTRIES[state.config.industry];
   const base: Record<string, number> = {};
-  for (const c of state.companies) base[c.id] = baseValue(c, industry);
+  const divRound = rulesOf(state).dividends ? Math.max(1, state.round) : 0;
+  for (const c of state.companies) base[c.id] = baseValue(c, industry, divRound);
   // Loans between players: money owed to you counts, money you owe doesn't belong to you.
   for (const l of state.playerLoans ?? []) {
     if (base[l.lender] !== undefined) base[l.lender] += l.repay;
@@ -352,6 +447,8 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(d.guidance.units)), profit: Math.round(d.guidance.profit) } : null,
     productName: typeof d.productName === "string" ? cleanName(d.productName) : undefined,
     style: Number.isInteger(d.style) && (d.style as number) >= 0 && (d.style as number) <= 11 ? d.style : undefined,
+    dividendPolicy: d.dividendPolicy === 0 || d.dividendPolicy === 25 || d.dividendPolicy === 50 ? d.dividendPolicy : c.dividendPolicy ?? 0,
+    boardLoan: Math.max(0, Math.min(BALANCE.maxDebt, Math.round(num(d.boardLoan, 0)))),
   };
 }
 /** Names typed by players: no control characters or angle brackets, at most 28 characters. */
@@ -367,7 +464,7 @@ function trendFactor(state: GameState, s: SegmentId, round: number): number {
 export function segmentPotential(state: GameState): Record<SegmentId, number> {
   const industry = INDUSTRIES[state.config.industry];
   const fx = activeNewsEffects(state);
-  const size = industry.potentialPerCompany * state.companies.length * Math.pow(1 + industry.growth, state.round - 1) * fx.demandMultiplier;
+  const size = industry.potentialPerCompany * state.companies.length * marketScale(state, state.round) * fx.demandMultiplier;
   const out = {} as Record<SegmentId, number>;
   for (const s of SEGMENTS) out[s] = Math.round(size * industry.segments[s].weight * fx.segmentMultiplier[s] * trendFactor(state, s, state.round));
   return out;
@@ -403,6 +500,15 @@ function pickRoundNews(state: GameState, rng: Rng, industry: IndustryConfig): Ac
   const items = kinds.map((k) => economyItem(state, rng, k));
   const story = pickNews(state, rng, industry);
   const all = story ? [story, ...items] : items;
+  // Mega events: rare, hit every industry hard, never twice in a row.
+  if (rulesOf(state).mega && state.round + 1 >= MEGA.fromRound && rng.chance(MEGA.chance)) {
+    const recent = new Set([...state.news, ...(state.upcomingNews ?? [])].map((n) => n.event.id));
+    const pool = MEGA.events.filter((e) => !recent.has(e.id) && !state.feed.some((f) => f.headline === e.headline));
+    if (pool.length && !state.news.some((n) => n.event.kind === "mega")) {
+      const e = rng.pick(pool);
+      all.unshift({ event: { ...e, effect: e.effect as NewsEffect, kind: "mega" }, roundsLeft: e.duration });
+    }
+  }
   return level.strength === 1 ? all : all.map((n) => ({ ...n, event: { ...n.event, effect: scaleEffect(n.event.effect, level.strength) } }));
 }
 /** Calm or wild news: every multiplier's distance from 1 (and interest moves) scaled by k. */
@@ -480,7 +586,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   if (input.finished) throw new Error("Game is finished");
   const state = deepClone(input);
   const industry = INDUSTRIES[state.config.industry];
-  const difficulty = DIFFICULTIES[state.config.difficulty];
+  const difficulty = difficultyOf(state);
   const rng = new Rng(state.rngState);
   const fx = activeNewsEffects(state);
   const round = state.round;
@@ -571,6 +677,34 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     note(lender.id, `${borrower.companyName} repaid ${eur0(l.repay)}`);
   }
   const finite = (x: unknown) => typeof x === "number" && Number.isFinite(x);
+  const reportsRef: { r?: Record<string, RoundReport> } = {};
+  // Cash moved by deals, pact penalties and runner-up bonuses: shown in the report as deal cash.
+  const moveCash = (payer: Company, payee: Company, amount: number, payerText: string, payeeText: string) => {
+    payer.cash -= amount; payee.cash += amount;
+    if (reportsRef.r) {
+      const ra = reportsRef.r[payer.id], rv = reportsRef.r[payee.id];
+      if (ra) { ra.dealCash = (ra.dealCash ?? 0) - amount; ra.events.push(payerText); }
+      if (rv) { rv.dealCash = (rv.dealCash ?? 0) + amount; rv.events.push(payeeText); }
+    } else {
+      addDealCash(payer.id, -amount); addDealCash(payee.id, amount);
+      note(payer.id, payerText); note(payee.id, payeeText);
+    }
+  };
+  // Runner-up bonus: whoever takes control pays the largest other shareholder a share of the company's value.
+  const payRunnerUp = (buyer: Company, target: Company) => {
+    if (!rules.runnerUp) return;
+    let best: Company | null = null, bestHeld = 0;
+    for (const [hid, held] of Object.entries(target.shares.holders)) {
+      const h = byIdAll.get(hid);
+      if (!h || h.id === buyer.id || h.id === target.id || h.bankrupt || held <= bestHeld) continue;
+      best = h; bestHeld = held;
+    }
+    if (!best || bestHeld < RUNNER_UP.minShares) return;
+    const amount = Math.round(Math.max(0, startPrices[target.id] * 100) * RUNNER_UP.share);
+    if (amount <= 0) return;
+    moveCash(buyer, best, amount, `Paid ${best.companyName} a runner-up bonus of ${eur0(amount)} for taking over ${target.companyName}`, `Runner-up bonus: ${buyer.companyName} paid you ${eur0(amount)} for your ${bestHeld}% of ${target.companyName}`);
+    state.feed.push({ round, headline: `${best.companyName} cashes a ${eur0(amount)} runner-up bonus from ${buyer.companyName} for its stake in ${target.companyName}` });
+  };
   for (const deal of deals) {
     const from = byIdAll.get(deal.from), to = byIdAll.get(deal.to);
     const done = (ok: boolean, reason: string) => {
@@ -584,9 +718,23 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       const survivor = t.survivor === from.id ? from : t.survivor === to.id ? to : null;
       if (!survivor) { done(false, "the terms don't add up"); continue; }
       const absorbed = survivor === from ? to : from;
+      if (!rules.mergers) { done(false, "mergers are off in this game (house rules)"); continue; }
       if (round < difficulty.takeoverUnlockRound) { done(false, `mergers open in round ${difficulty.takeoverUnlockRound}`); continue; }
       const ruled = [survivor, absorbed].find((c) => c.controlledBy && c.controlledBy !== survivor.id && c.controlledBy !== absorbed.id);
       if (ruled) { done(false, `${ruled.companyName} is controlled by someone else`); continue; }
+      // Big decision: if either company has other shareholders, its board votes on it next round.
+      const boards = [survivor, absorbed].filter((c) => outsideVoters(state, c, c === survivor ? absorbed : survivor).length > 0);
+      if (rules.votes && boards.length && round < state.config.rounds) {
+        const group = `m${round}-${survivor.id}-${absorbed.id}`;
+        state.board = state.board ?? [];
+        for (const b of boards) state.board.push({ id: `${group}-${b.id}`, round: round + 1, company: b.id, kind: "merger", partner: b === survivor ? absorbed.id : survivor.id, survivor: survivor.id, group, votes: {} });
+        state.feed.push({ round, headline: `${survivor.companyName} and ${absorbed.companyName} want to merge. Their shareholders vote next round` });
+        for (const b of boards) for (const v of outsideVoters(state, b, b === survivor ? absorbed : survivor)) note(v, `Board vote next round: ${survivor.companyName} and ${absorbed.companyName} want to merge. You own ${b.shares.holders[v]}% of ${b.companyName}`);
+        note(survivor.id, `Merger with ${absorbed.companyName} agreed: the shareholders vote on it next round`);
+        note(absorbed.id, `Merger with ${survivor.companyName} agreed: the shareholders vote on it next round`);
+        done(true, "agreed: the shareholders vote on it next round");
+        continue;
+      }
       const ok = mergeCompanies(state, survivor, absorbed, round);
       if (!ok) { done(false, "one of the companies has no value left to merge"); continue; }
       survivor.takeoverCooldown = Math.max(survivor.takeoverCooldown, MERGER.cooldown);
@@ -619,6 +767,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         target.controlledBy = buyer.id;
         buyer.takeoverCooldown = difficulty.takeoverCooldown;
         state.feed.push({ round, headline: `${buyer.playerName} now controls ${target.companyName}, sealed with a handshake. A truly friendly takeover.` });
+        payRunnerUp(buyer, target);
         note(buyer.id, `Took control of ${target.companyName}`);
         if (target.id !== seller.id) note(target.id, `Taken over by ${buyer.companyName} in a backroom deal`);
       }
@@ -647,26 +796,51 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       done(true, `no attacks through round ${round + rounds - 1}`);
     } else done(false, "unknown deal");
   }
+  // Board votes due this round: mergers waiting for their shareholders, and extra loans above the credit line.
+  const due = (state.board ?? []).filter((p) => p.round === round);
+  state.board = (state.board ?? []).filter((p) => p.round > round);
+  const tallies = new Map(due.map((p) => [p.id, boardTally(state, p)]));
+  const groups = new Map<string, BoardProposal[]>();
+  for (const p of due) if (p.kind === "merger" && p.group) groups.set(p.group, [...(groups.get(p.group) ?? []), p]);
+  for (const ps of groups.values()) {
+    const first = ps[0];
+    const survivor = byIdAll.get(first.survivor ?? ""), absorbed = byIdAll.get(first.company === first.survivor ? first.partner ?? "" : first.company);
+    if (!survivor || !absorbed || !operating(survivor) || !operating(absorbed)) continue;
+    const blocked = ps.find((p) => !tallies.get(p.id)!.passed);
+    if (blocked) {
+      const t = tallies.get(blocked.id)!, b = byIdAll.get(blocked.company)!;
+      state.feed.push({ round, headline: `Shareholders of ${b.companyName} vote ${t.no}% to ${t.yes}% against the merger of ${survivor.companyName} and ${absorbed.companyName}. Blocked!` });
+      note(survivor.id, `The merger with ${absorbed.companyName} was voted down by ${b.companyName}'s shareholders`);
+      note(absorbed.id, `The merger with ${survivor.companyName} was voted down by ${b.companyName}'s shareholders`);
+      continue;
+    }
+    const ruled = [survivor, absorbed].find((c) => c.controlledBy && c.controlledBy !== survivor.id && c.controlledBy !== absorbed.id);
+    if (ruled || !rules.mergers || !mergeCompanies(state, survivor, absorbed, round)) { note(survivor.id, `The merger with ${absorbed.companyName} couldn't go ahead`); continue; }
+    survivor.takeoverCooldown = Math.max(survivor.takeoverCooldown, MERGER.cooldown);
+    state.feed.push({ round, headline: `The shareholders approve: ${absorbed.originalName ?? absorbed.companyName} merges into ${survivor.companyName}` });
+    note(survivor.id, `Shareholders approved: merged with ${absorbed.originalName ?? absorbed.companyName}, you run the combined company`);
+    note(absorbed.id, `Shareholders approved: merged into ${survivor.companyName}, you now hold ${survivor.shares.holders[absorbed.id] ?? 0}% of it`);
+  }
+  const approvedLoans: Record<string, number> = {};
+  for (const p of due.filter((x) => x.kind === "loan")) {
+    const c = byIdAll.get(p.company), t = tallies.get(p.id)!;
+    if (!c || !operating(c)) continue;
+    if (t.passed) {
+      approvedLoans[c.id] = (approvedLoans[c.id] ?? 0) + (p.amount ?? 0);
+      note(c.id, `Your shareholders approved the extra loan of ${eur0(p.amount ?? 0)} (${t.yes}% to ${t.no}%)`);
+    } else {
+      note(c.id, `Your shareholders voted down the extra loan of ${eur0(p.amount ?? 0)} (${t.no}% against)`);
+      state.feed.push({ round, headline: `${c.companyName}'s shareholders refuse its request for an extra loan. Awkward board meeting` });
+    }
+  }
   // Companies merged away this round stop operating right now.
   alive = alive.filter(operating);
   // A pact is broken by buying the other's shares or aiming a wildcard at them: the attacker pays the penalty.
-  const reportsRef: { r?: Record<string, RoundReport> } = {};
   const breakPact = (attacker: Company, victim: Company, how: string) => {
     const p = (state.pacts ?? []).find((x) => x.until >= round && ((x.a === attacker.id && x.b === victim.id) || (x.a === victim.id && x.b === attacker.id)));
     if (!p) return;
     state.pacts = (state.pacts ?? []).filter((x) => x !== p);
-    attacker.cash -= p.penalty; victim.cash += p.penalty;
-    if (reportsRef.r) {
-      const ra = reportsRef.r[attacker.id], rv = reportsRef.r[victim.id];
-      if (ra) ra.dealCash = (ra.dealCash ?? 0) - p.penalty;
-      if (rv) rv.dealCash = (rv.dealCash ?? 0) + p.penalty;
-      ra?.events.push(`You broke your pact with ${victim.companyName} (${how}) and paid ${eur0(p.penalty)}`);
-      rv?.events.push(`${attacker.companyName} broke your pact (${how}) and paid you ${eur0(p.penalty)}`);
-    } else {
-      addDealCash(attacker.id, -p.penalty); addDealCash(victim.id, p.penalty);
-      note(attacker.id, `You broke your pact with ${victim.companyName} (${how}) and paid ${eur0(p.penalty)}`);
-      note(victim.id, `${attacker.companyName} broke your pact (${how}) and paid you ${eur0(p.penalty)}`);
-    }
+    moveCash(attacker, victim, p.penalty, `You broke your pact with ${victim.companyName} (${how}) and paid ${eur0(p.penalty)}`, `${attacker.companyName} broke your pact (${how}) and paid you ${eur0(p.penalty)}`);
     state.feed.push({ round, headline: `Betrayal! ${attacker.companyName} breaks its pact with ${victim.companyName} and pays ${eur0(p.penalty)}` });
   };
   const shielded = new Set<string>();
@@ -824,6 +998,26 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     // Loans first, so a new loan can pay for this round.
     c.debt += d.loanChange;
     c.cash += d.loanChange;
+    // Extra loans above the credit line: approved by the board this round, or straight away if nobody else owns shares.
+    let extra = approvedLoans[c.id] ?? 0;
+    if (rules.votes && d.boardLoan && d.boardLoan > 0) {
+      const room = Math.max(0, BALANCE.maxDebt * BOARD.maxBoardDebtShare - c.debt - extra);
+      const amount = Math.min(d.boardLoan, room);
+      if (amount >= 10_000) {
+        if (outsideVoters(state, c).length === 0) { extra += amount; special[c.id].events.push(`Extra loan of ${eur0(amount)} above the credit line (you own the whole board)`); }
+        else if (round < state.config.rounds) {
+          state.board = state.board ?? [];
+          state.board.push({ id: `l${round}-${c.id}`, round: round + 1, company: c.id, kind: "loan", amount, votes: {} });
+          special[c.id].events.push(`Asked your shareholders for an extra loan of ${eur0(amount)}: they vote next round`);
+          state.feed.push({ round, headline: `${c.companyName} asks its shareholders for an extra ${eur0(amount)} loan. Vote next round` });
+        }
+      }
+    }
+    if (extra > 0) {
+      extra = Math.min(extra, Math.max(0, BALANCE.maxDebt - c.debt));
+      c.debt += extra; c.cash += extra;
+      d.loanChange += extra;
+    }
     const capMult = shield ? Math.max(1, fx.capacityMultiplier) : fx.capacityMultiplier;
     const staffCap = tycoon ? c.workers * teamOutput(industry) : Infinity;
     const factoryCap = Math.floor(c.capacity * capMult);
@@ -898,7 +1092,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
 
   // 2. Market -----------------------------------------------------------------
   const cheapest = work.length ? work.reduce((a, b) => (b.d.price < a.d.price ? b : a)) : null;
-  const marketSize = industry.potentialPerCompany * n * Math.pow(1 + industry.growth, round - 1) * fx.demandMultiplier;
+  const marketSize = industry.potentialPerCompany * n * marketScale(state, round) * fx.demandMultiplier;
   // Buyers judge every offer against what the others offer: quality, brand and hype count relative to
   // the market average, and their sense of a normal price drifts toward what companies actually charge.
   const offers = work.filter((w) => w.available > 0);
@@ -1148,7 +1342,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     c.capacity = Math.round(c.capacity * (1 - BALANCE.capacityDepreciation) + d.investCapacity / (BALANCE.capacityCostPerUnit * industry.baseUnitCost));
     if (d.productName) c.productName = d.productName;
     if (d.style !== undefined) c.style = d.style;
-    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null, bulkSell: 0, productName: undefined, style: undefined };
+    c.dividendPolicy = d.dividendPolicy ?? 0;
+    c.lastDecisions = { ...d, sellShares: {}, loanChange: 0, buyShares: {}, buyback: 0, research: [], storesOpen: 0, storesClose: 0, wildcard: null, takeoverStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, hire: 0, guidance: null, bulkSell: 0, productName: undefined, style: undefined, boardLoan: 0 };
   }
   // Reviews: what critics and customers say about each product (public, just for fun; no effect on the numbers).
   for (const w of work) {
@@ -1280,6 +1475,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
           target.controlledBy = buyer.id;
           buyer.takeoverCooldown = difficulty.takeoverCooldown;
           state.feed.push({ round, headline: `${buyer.playerName} now owns ${nowHeld}% of ${target.companyName}. A very friendly takeover.` });
+          payRunnerUp(buyer, target);
           w.events.push(`Took control of ${target.companyName}`);
           reports[target.id]?.events.push(`Taken over by ${buyer.companyName}`);
         }
@@ -1303,6 +1499,33 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       const part = (payout * held) / 100;
       holder.cash += part;
       if (reports[holderId]) reports[holderId].dividendsReceived += part;
+    }
+  }
+
+  // Quarterly dividends (every 3 rounds): independent companies pay their policy share of the quarter's profit.
+  // The founder's part stays in the company; other shareholders get cash; the float's part goes to outside investors.
+  if (rules.dividends && round >= DIVIDENDS.every && round % DIVIDENDS.every === 0) {
+    for (const w of work) {
+      const c = w.c, policy = c.dividendPolicy ?? 0;
+      if (!policy || c.controlledBy || !operating(c)) continue;
+      const quarter = c.history.filter((h) => h.round > round - DIVIDENDS.every && h.round < round).reduce((a, h) => a + h.profit, 0) + profitById[c.id];
+      const declared = Math.round((Math.max(0, quarter) * policy) / 100);
+      const outside = 100 - c.shares.founder - c.shares.treasury;
+      const cashOut = Math.min(Math.round((declared * outside) / 100), Math.max(0, c.cash));
+      if (declared <= 0 || cashOut <= 0) { w.events.push(`No quarterly dividend: no profit to share this quarter`); continue; }
+      const scale = cashOut / ((declared * outside) / 100);
+      c.cash -= cashOut;
+      reports[c.id].dividendsPaid += cashOut;
+      c.lastDividend = { round, amount: declared };
+      w.events.push(`Quarterly dividend: ${policy}% of the quarter's profit, ${eur0(cashOut)} paid to shareholders`);
+      for (const [holderId, held] of Object.entries(c.shares.holders)) {
+        const holder = byId.get(holderId);
+        if (!holder || holder.bankrupt) continue;
+        const part = Math.round((declared * held * scale) / 100);
+        holder.cash += part;
+        if (reports[holderId]) { reports[holderId].dividendsReceived += part; reports[holderId].events.push(`Dividend from ${c.companyName}: ${eur0(part)} for your ${held}%`); }
+      }
+      state.feed.push({ round, headline: `${c.companyName} pays a quarterly dividend of ${eur0(cashOut)}. Shareholders cheer` });
     }
   }
 
@@ -1385,12 +1608,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       M.bulkPrice = Math.round(avg * (BULK.priceShare[0] + rng.next() * (BULK.priceShare[1] - BULK.priceShare[0])) * 100) / 100;
     }
     drawNews(state, rng, industry);
-    if (AUCTION.rounds.includes(state.round)) {
+    if (rules.auctions && state.round >= 3 && state.round % 3 === 0) {
       const item = rng.pick(Object.keys(AUCTION.items) as AuctionItemId[]);
       state.auction = { round: state.round, item };
       state.feed.push({ round: state.round, headline: `Auction this round: ${AUCTION.items[item].name}. Live bidding in the Boardroom.` });
     }
-    if (SUMMIT.rounds.includes(state.round)) {
+    if (rules.summits && state.round >= 4 && state.round % 3 === 1) {
       const regs = rng.shuffle(Object.keys(SUMMIT.regulations) as RegulationId[]);
       state.summit = { round: state.round, options: [regs[0], regs[1]] };
       state.feed.push({ round: state.round, headline: `Industry summit: vote on the ${SUMMIT.regulations[regs[0]].name.toLowerCase()} or the ${SUMMIT.regulations[regs[1]].name.toLowerCase()}` });
@@ -1451,6 +1674,80 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   return state;
 }
 
+/** Rounds with an auction / an industry summit in this game (every third round, if the house rules allow them). */
+export function auctionRounds(state: { config: GameConfig }): number[] {
+  if (!rulesOf(state).auctions) return [];
+  const out: number[] = []; for (let r = 3; r <= Math.min(state.config.rounds, 99); r += 3) out.push(r); return out;
+}
+export function summitRounds(state: { config: GameConfig }): number[] {
+  if (!rulesOf(state).summits) return [];
+  const out: number[] = []; for (let r = 4; r <= Math.min(state.config.rounds, 99); r += 3) out.push(r); return out;
+}
+
+// ---------------------------------------------------------------------------
+// Board votes: big decisions need the shareholders (weighted by shares)
+// ---------------------------------------------------------------------------
+
+/** Shareholders of `c` who get a vote: every other company holding its shares (not the partner in a merger, not the float). */
+export function outsideVoters(state: GameState, c: Company, partner?: Company | string): string[] {
+  const pid = typeof partner === "string" ? partner : partner?.id;
+  return Object.entries(c.shares.holders)
+    .filter(([id, held]) => held > 0 && id !== c.id && id !== pid && state.companies.some((o) => o.id === id && !o.bankrupt))
+    .map(([id]) => id);
+}
+
+/** Current count of a board vote. The founder's shares (and a merger partner's) vote yes; not voting counts as yes; ties pass. */
+export function boardTally(state: GameState, p: BoardProposal) {
+  const c = state.companies.find((o) => o.id === p.company);
+  if (!c) return { yes: 0, no: 0, open: 0, passed: false, voters: [] as { id: string; held: number; vote: boolean | null }[] };
+  let yes = c.shares.founder + (p.partner ? c.shares.holders[p.partner] ?? 0 : 0), no = 0, open = 0;
+  const voters = outsideVoters(state, c, p.partner).map((id) => {
+    const held = c.shares.holders[id] ?? 0, vote = p.votes[id] ?? null;
+    if (vote === false) no += held; else { yes += held; if (vote === null) open += held; }
+    return { id, held, vote };
+  });
+  return { yes, no, open, passed: yes >= no, voters };
+}
+
+/** A shareholder votes (live, during the round). Can change their vote until the round closes. */
+export function castVote(input: GameState, voterId: string, proposalId: string, yes: boolean): GameState {
+  if (input.finished) throw new Error("The game is over");
+  const p = (input.board ?? []).find((x) => x.id === proposalId);
+  if (!p || p.round !== input.round) throw new Error("That vote is closed");
+  const c = input.companies.find((o) => o.id === p.company);
+  if (!c || !outsideVoters(input, c, p.partner).includes(voterId)) throw new Error("Only shareholders can vote on this");
+  const state = deepClone(input);
+  const q = state.board!.find((x) => x.id === proposalId)!;
+  q.votes = { ...q.votes, [voterId]: !!yes };
+  return state;
+}
+
+/** Bots vote on every open proposal where they own shares: no when a rival would get stronger or they're circling the company, otherwise yes. */
+export function castBotVotes(input: GameState, botIds: string[]): GameState {
+  const open = (input.board ?? []).filter((p) => p.round === input.round);
+  if (!open.length || !botIds.length) return input;
+  const state = deepClone(input);
+  const values = companyValues(state);
+  for (const p of state.board!.filter((x) => x.round === state.round)) {
+    const c = state.companies.find((o) => o.id === p.company);
+    if (!c) continue;
+    for (const id of outsideVoters(state, c, p.partner)) {
+      if (!botIds.includes(id) || id in p.votes) continue;
+      const held = c.shares.holders[id] ?? 0;
+      const roll = hash(`${state.config.seed}:${p.id}:${id}`) % 100;
+      let yes: boolean;
+      if (p.kind === "loan") yes = c.debt + (p.amount ?? 0) < BALANCE.maxDebt * 0.8 ? roll < 75 : roll < 30;
+      else {
+        // A merger makes the survivor bigger: a bot circling the company (25%+) or bigger than the survivor says no.
+        const sv = values[p.survivor ?? ""] ?? 0, me = values[id] ?? 0;
+        yes = held >= 25 ? roll < 25 : me > sv ? roll < 40 : roll < 70;
+      }
+      p.votes[id] = yes;
+    }
+  }
+  return state;
+}
+
 // ---------------------------------------------------------------------------
 // Live play during a round: the stock exchange and live auctions
 // ---------------------------------------------------------------------------
@@ -1472,7 +1769,7 @@ export function livePrice(state: GameState, id: string): number {
  */
 export function exchangeTrade(input: GameState, traderId: string, targetId: string, qty: number, now = Date.now()): { state: GameState; trade: LiveTrade } {
   const state = deepClone(input);
-  const diff = DIFFICULTIES[state.config.difficulty];
+  const diff = difficultyOf(state);
   const n = Math.trunc(qty);
   const trader = state.companies.find((c) => c.id === traderId), target = state.companies.find((c) => c.id === targetId);
   if (state.finished) throw new Error("The game is over");

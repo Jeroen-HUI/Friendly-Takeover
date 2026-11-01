@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, exchangeTrade, livePrice, liveBid, liveMinBid, liveLotOpen, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
+import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, exchangeTrade, livePrice, liveBid, liveMinBid, liveLotOpen, castVote, castBotVotes, boardTally, endAfterThisRound, rulesOf, segmentPotential, auctionRounds, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
 import { runMatch } from "../src/sim/simulate";
 
 const players = [
@@ -674,4 +674,141 @@ test("reviews: every product gets 1-5 stars and quotes with its name; cheap good
   // Same game, same reviews.
   const again = resolveRound(newGame(41), { a: { productName: "Midnight Crunch", price: 1.6, quality: 3 }, b: { price: 3.5, quality: 1 } });
   assert.deepEqual(again.companies[0].history.at(-1)!.reviews, ra);
+});
+
+// ---------------------------------------------------------------- custom start, shareholders, scenarios
+test("custom start: rounds, unlimited, starting position, market and share settings", () => {
+  const g = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 40, seed: 5, rules: { startCash: 3_000_000, startDebt: 1_000_000, startCapacity: 1.5, startQuality: 5, startBrand: 60, startStores: 2, founderShares: 45, marketSize: 1.5, growth: 0.1, takeoverRound: 1, sharesPerRound: 30 } }, players);
+  const n = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 5 }, players);
+  const c = g.companies[0];
+  assert.equal(g.config.rounds, 40);
+  assert.equal(c.debt, 1_000_000);
+  assert.equal(c.qualityCap, 5);
+  assert.equal(c.stores, 2);
+  assert.equal(c.shares.founder, 45);
+  assert.equal(c.shares.float, 55);
+  assert.ok(c.capacity > n.companies[0].capacity * 1.3, "bigger factory");
+  assert.ok(c.brand > n.companies[0].brand + 20, "famous brand");
+  const pot = (s: GameState) => Object.values(segmentPotential(s)).reduce((a, b) => a + b, 0);
+  assert.ok(pot(g) > pot(n) * 1.4, "bigger market");
+  // Shares open in round 1 with up to 30 per round.
+  const g1 = resolveRound({ ...g, companies: g.companies.map((x) => (x.id === "a" ? { ...x, cash: 50_000_000 } : x)) }, { a: { buyShares: { b: 30 } } });
+  assert.equal(g1.companies[1].shares.holders.a, 30);
+  // Auctions keep coming every third round in long games.
+  assert.deepEqual(auctionRounds(g).slice(0, 5), [3, 6, 9, 12, 15]);
+  assert.deepEqual(auctionRounds(createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 5, rules: { auctions: false } }, players)), []);
+  // Unlimited: runs until the host ends it.
+  let u = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 5, rules: { unlimited: true } }, players);
+  for (let r = 0; r < 14; r++) u = resolveRound(u, {});
+  assert.ok(!u.finished && u.round === 15, "still going after 14 rounds");
+  u = endAfterThisRound(u);
+  u = resolveRound(u, {});
+  assert.ok(u.finished, "ends after the host calls it");
+  // Retail off: no stores even when asked.
+  let nr = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 5, rules: { retail: false, startStores: 3 } }, players);
+  assert.equal(nr.companies[0].stores, 0);
+  for (let r = 0; r < 4; r++) nr = resolveRound(nr, { a: { storesOpen: 2 } });
+  assert.equal(nr.companies[0].stores, 0);
+});
+
+test("handicaps and scenarios: different starting positions", () => {
+  const g = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 7, rules: { handicaps: { a: "weak", b: "giant" } } }, players);
+  const [a, b, c] = g.companies;
+  assert.ok(a.cash < c.cash && b.cash > c.cash * 2, "weak has less, giant has much more");
+  assert.ok(b.capacity > c.capacity * 1.8);
+  const giant = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 9, rules: { scenario: "giant" } }, players);
+  const big = giant.companies.find((x) => x.id === giant.scenarioCompany)!;
+  assert.ok(big && giant.companies.every((x) => x === big || x.cash < big.cash / 2), "one giant");
+  const debt = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 9, rules: { scenario: "debt" } }, players);
+  assert.ok(debt.companies.every((x) => x.debt === 3_000_000));
+  assert.equal(rulesOf({ config: { ...debt.config, rules: { scenario: "debt", startDebt: 500_000 } } }).startDebt, 500_000, "your own setting beats the scenario");
+  const rec = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 9, rules: { scenario: "recession" } }, players);
+  const norm = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 9 }, players);
+  assert.ok(segmentPotential(rec).premium < segmentPotential(norm).premium * 0.85, "luxury buyers hide in a recession");
+});
+
+test("quarterly dividends: policy share of the quarter's profit goes to shareholders every 3 rounds", () => {
+  let g = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 12 }, players);
+  g.companies[1].cash = 50_000_000;
+  g = resolveRound(g, { a: { dividendPolicy: 50 }, b: { buyShares: { a: 20 } } });
+  g = resolveRound(g, {});
+  const bCash = g.companies[1].cash;
+  g = resolveRound(g, {});   // round 3: a quarter is over
+  const ra = g.companies[0].history.at(-1)!, rb = g.companies[1].history.at(-1)!;
+  const quarter = g.companies[0].history.filter((h) => h.round >= 1 && h.round <= 3).reduce((s, h) => s + h.profit, 0);
+  assert.ok(quarter > 0, "a made money");
+  assert.ok(ra.dividendsPaid > 0, "a paid a dividend");
+  assert.ok(Math.abs(rb.dividendsReceived - quarter * 0.5 * 0.2) < 5, `b got its 20%: ${rb.dividendsReceived}`);
+  assert.ok(Math.abs(ra.dividendsPaid - quarter * 0.5 * 0.7) < 5, "founder's 30% stays in the company");
+  assert.ok(g.companies[1].cash > bCash - 5_000_000);
+  assert.equal(g.companies[0].lastDividend!.round, 3);
+  // Off by house rule: nothing is paid.
+  let off = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 12, rules: { dividends: false } }, players);
+  for (let r = 0; r < 3; r++) off = resolveRound(off, { a: { dividendPolicy: 50 } });
+  assert.equal(off.companies[0].history.at(-1)!.dividendsPaid, 0);
+});
+
+test("board votes: mergers and extra loans need the shareholders, weighted by shares", () => {
+  let g = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 14 }, players);
+  g.companies[2].cash = 80_000_000;
+  // c buys 45% of b over three rounds: more than b's founder (30%).
+  g = resolveRound(g, { c: { buyShares: { b: 15 } } });
+  g = resolveRound(g, { c: { buyShares: { b: 15 } } });
+  g = resolveRound(g, { c: { buyShares: { b: 15 } } });
+  assert.equal(g.companies[1].shares.holders.c, 45);
+  g = resolveRound(g, {}, [{ id: "m", from: "a", to: "b", kind: "merger", terms: { survivor: "a" } }]);
+  assert.ok(!g.companies[1].merged, "not merged yet: the vote is next round");
+  const p = g.board!.find((x) => x.company === "b")!;
+  assert.ok(p && p.round === g.round);
+  assert.throws(() => castVote(g, "d", p.id, false), /Only shareholders/);
+  g = castVote(g, "c", p.id, false);
+  assert.equal(boardTally(g, p.id ? g.board!.find((x) => x.id === p.id)! : p).passed, false, "45% no beats 30% yes");
+  g = resolveRound(g, {});
+  assert.ok(!g.companies[1].merged, "blocked");
+  assert.ok(g.feed.some((f) => f.headline.includes("Blocked!")));
+  // Same again, but c doesn't vote: not voting counts as yes.
+  g = resolveRound(g, {}, [{ id: "m2", from: "a", to: "b", kind: "merger", terms: { survivor: "a" } }]);
+  g = resolveRound(g, {});
+  assert.ok(g.companies[1].merged, "approved and merged");
+  // Extra loan above the credit line: straight away when nobody else owns shares.
+  const d0 = g.companies[3].debt;
+  g = resolveRound(g, { d: { boardLoan: 1_000_000 } });
+  assert.ok(g.companies[3].debt >= d0 + 1_000_000 - 1);
+});
+
+test("bots vote on board proposals; the runner-up shareholder gets a bonus at a takeover", () => {
+  let g = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 15 }, players);
+  g.companies[0].cash = 80_000_000;
+  g.companies[2].cash = 80_000_000;
+  g = resolveRound(g, { a: { buyShares: { b: 20 } }, c: { buyShares: { b: 15 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 20 } } });
+  g = resolveRound(g, { a: { buyShares: { b: 15 } } });
+  assert.equal(g.companies[1].controlledBy, "a");
+  const r = g.companies[2].history.at(-1)!;
+  assert.ok(r.events.some((e) => e.startsWith("Runner-up bonus")), "c got the runner-up bonus");
+  assert.ok((r.dealCash ?? 0) > 0);
+  // Bot votes fill in for shareholders that are bots.
+  let h = createGame({ industry: "chocolate", difficulty: "cutthroat", rounds: 8, seed: 16 }, players);
+  h.companies[2].cash = 80_000_000;
+  h = resolveRound(h, { c: { buyShares: { d: 15 } } });
+  h = resolveRound(h, { d: { boardLoan: 2_000_000 } });
+  assert.equal(h.board!.length, 1);
+  h = castBotVotes(h, ["c"]);
+  assert.ok(typeof h.board![0].votes.c === "boolean");
+});
+
+test("mega events: rare, big, never two at once, and switchable", () => {
+  let found = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    let s = createGame({ industry: "ai", difficulty: "standard", rounds: 12, seed }, players);
+    for (let r = 0; r < 11 && !s.finished; r++) { s = resolveRound(s, {}); assert.ok(s.news.filter((n) => n.event.kind === "mega").length <= 1); found += s.news.filter((n) => n.event.kind === "mega" && n.roundsLeft === n.event.duration).length; }
+  }
+  assert.ok(found >= 5 && found <= 60, "mega events happen now and then: " + found);
+  let off = 0;
+  for (let seed = 1; seed <= 15; seed++) {
+    let s = createGame({ industry: "ai", difficulty: "standard", rounds: 12, seed, rules: { mega: false } }, players);
+    for (let r = 0; r < 11 && !s.finished; r++) { s = resolveRound(s, {}); off += s.news.filter((n) => n.event.kind === "mega").length; }
+  }
+  assert.equal(off, 0);
+  assert.ok(INDUSTRIES.chocolate.news.length >= 30 && INDUSTRIES.ai.news.length >= 30 && INDUSTRIES.weed.news.length >= 30, "lots of news");
 });
