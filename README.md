@@ -6,7 +6,7 @@ This repository holds the game engine, a bot simulator to test balance, the play
 
 ## Play it
 
-The whole game is one HTML file. Open `index.html` in a browser, or play the hosted version on GitHub Pages (repo Settings → Pages → Deploy from a branch → `main`; folder `/ (root)` or `/docs` both work): `https://jeroen-hui.github.io/Friendly-Takeover/`.
+The whole game is one HTML file. Play it at **https://friendlytakeovers.com** (GitHub Pages with a custom domain; DNS at Namecheap: four A records to GitHub Pages and `www` → `jeroen-hui.github.io`), or open `index.html` in a browser. Hosting setup (repo Settings → Pages → Deploy from a branch → `main`; folder `/ (root)` or `/docs` both work): `https://jeroen-hui.github.io/Friendly-Takeover/`.
 
 **Single-player:** New game, against bots. Your game saves in your browser.
 

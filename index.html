@@ -1763,10 +1763,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ======================================================================
   const SB_URL = "https://jdtoluouqkaughquyjqx.supabase.co", SB_KEY = "sb_publishable_2pgQZ8LpIh2roQxnhbl9uA_BZBB2qN9";
   // Online play needs a normal web page; some previews (like the Claude artifact viewer) block outside connections.
-  const PLAY_URL = "https://jeroen-hui.github.io/Friendly-Takeover/";
+  const PLAY_URL = "https://friendlytakeovers.com/";
   // Email links come back to this page (the hosted game when we're anywhere else).
-  const backUrl = () => { try { return /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin + location.pathname : PLAY_URL; } catch (e) { return PLAY_URL; } };
-  const onHostedPage = () => { try { return /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === "file:"; } catch (e) { return false; } };
+  const backUrl = () => { try { return /(github\.io|friendlytakeovers\.com)$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin + location.pathname : PLAY_URL; } catch (e) { return PLAY_URL; } };
+  const onHostedPage = () => { try { return /(github\.io|friendlytakeovers\.com)$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === "file:"; } catch (e) { return false; } };
   const OFFLINE = "Couldn't reach the online service from this page.";
   // Plain REST calls (no extra library): auth, database (row-level security does the guarding) and the game server.
   let AUTH = null;
@@ -2830,7 +2830,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       r.titles.length ? "Titles: " + r.titles.join(", ") : "",
     ].filter(Boolean);
     g.fillStyle = ink; font(24, 400); lines.forEach((t, i) => g.fillText(t.slice(0, 44), 56, 610 + i * 44));
-    g.fillStyle = gold; font(18, 400); g.fillText("jeroen-hui.github.io/Friendly-Takeover", 56, 846);
+    g.fillStyle = gold; font(18, 400); g.fillText("friendlytakeovers.com", 56, 846);
     return cv;
   }
   async function saveRecap() {
