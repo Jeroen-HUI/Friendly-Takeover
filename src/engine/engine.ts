@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, BULK, CAMPAIGNS, COSTS, DEALS, ECONOMY, EXCHANGE, GUIDANCE, LIVE_AUCTION, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
-  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, UNLIMITED_ROUNDS, START_LEVELS, SCENARIOS, DIVIDENDS, BOARD, RUNNER_UP, MEGA, STREET, type IndustryConfig, type DifficultyConfig,
+  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, UNLIMITED_ROUNDS, START_LEVELS, SCENARIOS, DIVIDENDS, BOARD, RUNNER_UP, MEGA, STREET, STREET_TRAITS, type IndustryConfig, type DifficultyConfig,
 } from "./config";
 import { Rng } from "./rng";
 import {
@@ -200,7 +200,8 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
       id: p.id,
       playerName: p.playerName,
       companyName: p.companyName,
-      trait: p.trait,
+      // Weed-only traits play as Visionary in industries without the street.
+      trait: STREET_TRAITS.includes(p.trait) && !(STREET.industries as readonly string[]).includes(config.industry) ? "visionary" : p.trait,
       cash: Math.round(startCash * lv.cash),
       debt: rules.startDebt,
       capacity: cap,
@@ -460,10 +461,16 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     dividendPolicy: d.dividendPolicy === 0 || d.dividendPolicy === 25 || d.dividendPolicy === 50 ? d.dividendPolicy : c.dividendPolicy ?? 0,
     boardLoan: Math.max(0, Math.min(BALANCE.maxDebt, Math.round(num(d.boardLoan, 0)))),
     ...(hasStreet(state) ? {
-      security: ([0, 1, 2, 3] as const).includes(d.security as 0) ? d.security : c.security ?? 0,
+      securityBudget: (() => {
+        const sc = streetScale(state, c), max = STREET.guard.maxBudget * sc;
+        if (Number.isFinite(d.securityBudget)) return Math.round(clamp(d.securityBudget as number, 0, max));
+        if (([0, 1, 2, 3] as const).includes(d.security as 0)) return Math.round(sc * STREET.legacyLevels[d.security as number]);
+        return Math.round(clamp(num(prev.securityBudget, sc * STREET.legacyLevels[c.security ?? 0]), 0, max));
+      })(),
       lawyer: typeof d.lawyer === "boolean" ? d.lawyer : !!c.lawyer,
       streetMove: d.streetMove && typeof d.streetMove === "object" && (d.streetMove.kind === "tipoff" || d.streetMove.kind === "heist") && typeof d.streetMove.target === "string" && d.streetMove.target !== c.id
-        && state.companies.some((o) => o.id === d.streetMove!.target && !o.bankrupt && !o.merged) && !state.legal ? { kind: d.streetMove.kind, target: d.streetMove.target } : null,
+        && state.companies.some((o) => o.id === d.streetMove!.target && !o.bankrupt && !o.merged) && !state.legal
+        ? { kind: d.streetMove.kind, target: d.streetMove.target, ...(d.streetMove.kind === "heist" ? { budget: Math.round(clamp(num(d.streetMove.budget ?? d.goonBudget, streetScale(state, c) * 0.035), streetScale(state, c) * STREET.heist.minBudget, streetScale(state, c) * STREET.heist.maxBudget)) } : {}) } : null,
       launder: state.legal ? 0 : Math.max(0, Math.min(launderCap(state, c), Math.round(num(d.launder, 0)))),
       legalVote: isReferendumRound(state) ? d.legalVote === true : null,
     } : {}),
@@ -482,8 +489,18 @@ export function isReferendumRound(state: GameState, round = state.round): boolea
 }
 /** Yes votes a legalization referendum needs: three in four of the companies still in business (5 → 4, 4 → 3, 3 → 3). */
 export const referendumNeeded = (voters: number) => Math.max(1, Math.ceil(voters * STREET.referendum.needed - 1e-9));
-/** How much cash a company can launder this round: a car wash plus every store. */
-export const launderCap = (state: GameState, c: Company) => Math.round(streetScale(state, c) * STREET.launder.perFront * (1 + c.stores));
+/** How much cash a company can launder this round: a car wash plus every store (a Smooth Operator twice as much). */
+export const launderCap = (state: GameState, c: Company) => Math.round(streetScale(state, c) * STREET.launder.perFront * (1 + c.stores) * (c.trait === "smoothOperator" ? STREET.traits.smoothOperator.launderCap : 1));
+/** Protection 0..1 a security budget buys, and the tier rivals see. */
+export const guardFor = (state: GameState, c: Company, budget: number) => 1 - Math.exp(-Math.max(0, budget) / (STREET.guard.perUnit * streetScale(state, c)));
+export const securityTier = (guard: number): 0 | 1 | 2 | 3 => { let t = 0; STREET.security.forEach((x, i) => { if (guard >= x.from) t = i; }); return t as 0 | 1 | 2 | 3; };
+/** Goon raid: chance it works and the share of their stock it takes. */
+export function goonOdds(state: GameState, attacker: Company, target: Company, budget: number) {
+  const H = STREET.heist, enf = attacker.trait === "enforcer" ? STREET.traits.enforcer : null;
+  const strength = (Math.max(0, budget) / (H.perUnit * streetScale(state, attacker))) * (enf ? enf.goons : 1);
+  const f = strength / (strength + 1);
+  return { chance: f * (1 - 0.95 * (target.guard ?? 0)), steal: H.baseSteal + H.extraSteal * f + (enf ? enf.steal : 0) };
+}
 /** Chance of a police raid at a given heat. */
 export const raidChance = (heat: number, mult = 1) => Math.min(STREET.raidMax, Math.max(0, (heat - STREET.raidFloor) * STREET.raidPerPoint) * mult);
 /** Names typed by players: no control characters or angle brackets, at most 28 characters. */
@@ -1149,20 +1166,21 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const S = STREET;
     for (const w of work) {
       const { c, d } = w, scale = streetScale(state, c);
-      c.security = d.security ?? 0; c.lawyer = !!d.lawyer;
-      const sec = S.security[c.security];
-      const securityCost = Math.round(scale * sec.upkeep), lawyerCost = c.lawyer ? Math.round(scale * S.lawyer.upkeep) : 0;
+      const securityCost = Math.round(d.securityBudget ?? 0);
+      c.guard = Math.round(guardFor(state, c, securityCost) * 1000) / 1000; c.security = securityTier(c.guard); c.lawyer = !!d.lawyer;
+      const lawyerCost = c.lawyer ? Math.round(scale * S.lawyer.upkeep) : 0;
       c.cash -= securityCost + lawyerCost; special[c.id].street += securityCost + lawyerCost;
-      street[c.id] = { heatStart: Math.round(c.heat ?? 0), heatEnd: 0, raidChance: 0, raided: false, seized: 0, seizedValue: 0, fine: 0, security: c.security, securityCost, lawyer: c.lawyer, lawyerCost, moveCost: 0, robbed: 0, stolen: 0, cashSeized: 0, laundered: 0, launderFee: 0, auditFine: 0, turf: [] };
+      street[c.id] = { heatStart: Math.round(c.heat ?? 0), heatEnd: 0, raidChance: 0, raided: false, seized: 0, seizedValue: 0, fine: 0, security: c.security, guard: c.guard, securityCost, lawyer: c.lawyer, lawyerCost, moveCost: 0, robbed: 0, stolen: 0, cashSeized: 0, laundered: 0, launderFee: 0, auditFine: 0, turf: [] };
       // Laundering through the car wash and your stores: the money is clean (safe from raids) from now on.
       const amount = Math.max(0, Math.min(d.launder ?? 0, launderCap(state, c), c.cash - (c.cleanCash ?? 0)));
       if (amount > 0) {
-        const fee = Math.round(amount * S.launder.fee);
+        const smooth = c.trait === "smoothOperator" ? S.traits.smoothOperator : null;
+        const fee = Math.round(amount * S.launder.fee * (smooth ? smooth.launderFee : 1));
         c.cash -= fee; special[c.id].street += fee;
         c.cleanCash = Math.min(c.cash, (c.cleanCash ?? 0) + amount - fee);
         Object.assign(street[c.id], { laundered: Math.round(amount), launderFee: fee });
         w.events.push(`Laundered ${Math.round(amount / 1000)}k through your fronts (fee ${Math.round(fee / 1000)}k). That money is safe from raids now`);
-        if (rng.chance(S.launder.auditChance * amount / Math.max(1, launderCap(state, c)))) {
+        if (rng.chance(S.launder.auditChance * (smooth ? smooth.audit : 1) * amount / Math.max(1, launderCap(state, c)))) {
           const fine = Math.round(amount * S.launder.auditFine);
           c.cash -= fine; special[c.id].street += fine; street[c.id].auditFine = fine;
           c.heat = clamp((c.heat ?? 0) + S.launder.auditHeat, 0, 100);
@@ -1190,25 +1208,26 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
           w.events.push(`Tip-off sent: the police are taking a closer look at ${t.c.companyName}`);
         }
       } else {
-        const cost = Math.round(scale * S.heist.cost);
+        const cost = Math.round(m.budget ?? scale * 0.035);
         c.cash -= cost; special[c.id].street += cost; street[c.id].moveCost += cost;
-        const guard = S.security[t.c.security ?? 0];
+        // Their guards this round (security is paid before anyone moves).
+        const guard = S.security[t.c.security ?? 0], odds = goonOdds(state, c, t.c, cost);
         const stash = Math.max(0, t.available);
-        if (stash > 0 && !rng.chance(guard.stopHeist)) {
-          const take = Math.floor(stash * S.heist.steal);
+        if (stash > 0 && rng.chance(odds.chance)) {
+          const take = Math.floor(stash * odds.steal);
           t.available -= take;
           // The stolen goods join your stock at what they cost the victim.
           w.avgCost = (w.available * w.avgCost + take * t.avgCost) / Math.max(1, w.available + take);
           w.available += take;
           seizedCost[t.c.id] = (seizedCost[t.c.id] ?? 0) + take * t.avgCost;
           street[t.c.id].robbed += take; street[c.id].stolen += take;
-          w.events.push(`Heist on ${t.c.companyName}: your crew came back with ${take.toLocaleString("en")} ${INDUSTRIES[state.config.industry].labels.unit}`);
+          w.events.push(`Goon raid on ${t.c.companyName}: your goons came back with ${take.toLocaleString("en")} ${INDUSTRIES[state.config.industry].labels.unit}`);
           t.events.push(`Your stash was hit overnight: ${take.toLocaleString("en")} ${INDUSTRIES[state.config.industry].labels.unit} gone. Nobody saw a thing`);
           state.feed.push({ round, headline: `Masked crew empties a ${t.c.companyName} storeroom; police find only a half-eaten sandwich` });
         } else {
-          c.heat = clamp((c.heat ?? 0) + S.heist.failHeat, 0, 100);
+          c.heat = clamp((c.heat ?? 0) + S.heist.failHeat * (c.trait === "enforcer" ? S.traits.enforcer.failHeat : 1), 0, 100);
           c.brand = clamp(c.brand - S.heist.failBrand, 0, 100);
-          w.events.push(`Heist on ${t.c.companyName} failed: ${t.c.security === 3 ? "your crew ran at the sight of their armed guards" : "the alarm went off and your crew dropped everything"}. The police noticed`);
+          w.events.push(`Goon raid on ${t.c.companyName} failed: ${t.c.security === 3 ? "your goons ran at the sight of their armed guards" : t.c.security ? "the alarm went off and your goons dropped everything" : "your goons got lost on the way"}. The police noticed`);
           t.events.push(`Someone tried to rob your stash. ${guard.short === "None" ? "They tripped over a bucket and fled" : "Your " + guard.name.toLowerCase() + " scared them off"}`);
           state.feed.push({ round, headline: `Botched break-in at ${t.c.companyName}: getaway scooter traced to ${c.companyName}` });
         }
@@ -1216,11 +1235,11 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     }
     // Police raids.
     for (const w of work) {
-      const { c } = w, rep = street[c.id], sec = S.security[c.security ?? 0];
+      const { c } = w, rep = street[c.id], sec = S.security[c.security ?? 0], cut = S.guard.seizeCut * (c.guard ?? 0);
       if (c.lawyer) c.heat = clamp((c.heat ?? 0) + S.lawyer.heat, 0, 100);
       rep.raidChance = raidChance(c.heat ?? 0, fx.raidMultiplier);
       if (!rng.chance(rep.raidChance)) continue;
-      const seized = Math.floor(Math.max(0, w.available) * S.seizeShare * (1 - sec.seizeCut));
+      const seized = Math.floor(Math.max(0, w.available) * S.seizeShare * (1 - cut));
       const fine = Math.round(streetScale(state, c) * S.fineRate * (c.lawyer ? 1 - S.lawyer.fineCut : 1));
       // They also empty the safe: unlaundered cash only.
       // The safe holds all your cash; only the unlaundered part of what they find can be taken.
@@ -1234,7 +1253,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       c.heat = clamp((c.heat ?? 0) - S.raidCoolDown, 0, 100);
       Object.assign(rep, { raided: true, seized, seizedValue: Math.round(seized * w.avgCost), fine });
       const unit = INDUSTRIES[state.config.industry].labels.unit;
-      w.events.push(`🚨 Police raid! They took ${seized.toLocaleString("en")} ${unit}${cashSeized ? `, ${Math.round(cashSeized / 1000)}k from the safe` : ""}${fine ? ` and fined you ${Math.round(fine / 1000)}k` : ""}.${sec.seizeCut ? ` Your ${sec.name.toLowerCase()} saved most of the stash.` : ""}${c.lawyer ? " Your lawyer talked the fine down." : ""}`);
+      w.events.push(`🚨 Police raid! They took ${seized.toLocaleString("en")} ${unit}${cashSeized ? `, ${Math.round(cashSeized / 1000)}k from the safe` : ""}${fine ? ` and fined you ${Math.round(fine / 1000)}k` : ""}.${cut > 0.2 ? ` Your ${sec.name.toLowerCase()} saved ${cut > 0.45 ? "most" : "part"} of the stash.` : ""}${c.lawyer ? " Your lawyer talked the fine down." : ""}`);
       state.feed.push({ round, headline: rng.pick([
         `Police raid ${c.companyName}'s grow rooms; officers leave with ${seized.toLocaleString("en")} ${unit} and a "for evidence" bag of snacks`,
         `Sirens at ${c.companyName}! Raid ends with a fine, a confiscated lava lamp and one very calm guard dog`,
@@ -1486,12 +1505,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       const runs = SEGMENTS.filter((s) => holders[s]?.id === c.id);
       if (reports[c.id]?.street) reports[c.id].street!.turf = runs;
       c.cleanCash = Math.max(0, Math.min(c.cleanCash ?? 0, c.cash));
-      if (state.legal) { c.heat = 0; c.security = 0; c.lawyer = false; c.cleanCash = 0; continue; }
+      if (state.legal) { c.heat = 0; c.security = 0; c.guard = 0; c.lawyer = false; c.cleanCash = 0; continue; }
       const share = total > 0 ? revOf(w) / total : 0;
       let gain = S.salesHeat * share * work.length;
       if (avgP > 0 && d.price < avgP * 0.9) gain += S.cheapHeat;
       if (d.campaign === "viral" && d.marketingBudget > 0) gain += S.viralHeat;
-      gain += c.stores * S.storeHeat + S.security[c.security ?? 0].heat + runs.length * T.heat;
+      gain += c.stores * S.storeHeat + S.guard.heatMax * Math.max(0, ((c.guard ?? 0) - S.guard.heatFrom) / (1 - S.guard.heatFrom)) + runs.length * T.heat;
       c.heat = clamp(Math.round(((c.heat ?? 0) * (1 - S.decay) + gain) * 10) / 10, 0, 100);
       if (reports[c.id]?.street) reports[c.id].street!.heatEnd = Math.round(c.heat);
     }

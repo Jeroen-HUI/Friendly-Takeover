@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, exchangeTrade, livePrice, liveBid, liveMinBid, liveLotOpen, castVote, castBotVotes, boardTally, endAfterThisRound, rulesOf, segmentPotential, auctionRounds, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
+import { createGame, resolveRound, standings, sanitizeDecisions, companyValues, sharePrices, renameCompany, experienceFactor, exchangeTrade, livePrice, liveBid, liveMinBid, liveLotOpen, castVote, castBotVotes, boardTally, endAfterThisRound, rulesOf, segmentPotential, auctionRounds, goonOdds, launderCap, INDUSTRIES, type GameState, type Decisions } from "../src/engine";
 import { runMatch } from "../src/sim/simulate";
 
 const players = [
@@ -901,13 +901,13 @@ test("weed: tip-offs heat up a rival, heists steal stock unless armed guards are
     const g = weed(seed);
     const open = resolveRound(g, { a: { streetMove: { kind: "heist", target: "b" } }, b: { security: 0 } });
     stolen += open.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.stolen;
-    const armed = resolveRound(g, { a: { streetMove: { kind: "heist", target: "b" } }, b: { security: 3 } });
+    const armed = resolveRound(g, { a: { streetMove: { kind: "heist", target: "b" } }, b: { securityBudget: 10_000_000 } });
     blocked += armed.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.stolen;
     const rb = armed.companies.find((c) => c.id === "b")!.history.at(-1)!;
     assert.ok(rb.streetCost! > 0 && rb.street!.securityCost > 0, "guards cost money every round");
   }
   assert.ok(stolen > 0, "unguarded stashes get robbed");
-  assert.equal(blocked, 0, "armed guards stop every heist");
+  assert.ok(blocked < stolen * 0.2, `a big security budget stops almost every goon raid (${blocked} vs ${stolen})`);
   // Bots play the street too.
   const m = runMatch(["smart-premium", "hype", "smart-raider", "mainstream"] as never, 11, "weed", "standard", 8);
   assert.ok(m.state.companies.some((c) => c.history.some((h) => (h.street?.security ?? 0) > 0)), "bots hire security");
@@ -962,4 +962,30 @@ test("weed: laundered cash is safe in a raid; districts go to the biggest seller
   const r = resolveRound(g, { a: { price: 4, marketingBudget: 600_000, campaign: "discount" } });
   assert.equal(r.turf!.holders.budget!.id, "a", "the cheap big spender runs Campus");
   assert.deepEqual(r.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.turf.includes("budget"), true);
+});
+
+test("weed: security is a budget, goons are a budget, and the two weed CEOs bend the rules", () => {
+  const weed = (seed: number, trait = "ruthless") => createGame({ industry: "weed", difficulty: "standard", rounds: 8, seed }, players.map((p, i) => (i === 0 ? { ...p, trait: trait as never } : p)));
+  // More security money: more protection, a visible tier, and it shows up as a cost.
+  const g = weed(2);
+  const r = resolveRound(g, { a: { securityBudget: 5_000 }, b: { securityBudget: 30_000 }, c: { securityBudget: 75_000 }, d: { security: 2 } });
+  const [a, b, c, d] = ["a", "b", "c", "d"].map((id) => r.companies.find((x) => x.id === id)!);
+  assert.ok(a.guard! < b.guard! && b.guard! < c.guard!, "protection grows with the budget");
+  assert.ok(c.security! > a.security!, "rivals see a higher tier");
+  assert.equal(c.history.at(-1)!.street!.securityCost, 75_000);
+  assert.ok(d.guard! > 0.5, "old clients sending a level still get guards");
+  assert.equal(r.companies.find((x) => x.id === "b")!.lastDecisions.securityBudget, 30_000, "the budget is kept as the default");
+  // Goons: more money, better odds; an Enforcer does better still.
+  const odds = (trait: string, budget: number) => goonOdds(g, { ...g.companies[0], trait: trait as never }, g.companies[1], budget);
+  assert.ok(odds("ruthless", 40_000).chance > odds("ruthless", 10_000).chance);
+  assert.ok(odds("enforcer", 20_000).chance > odds("ruthless", 20_000).chance && odds("enforcer", 20_000).steal > odds("ruthless", 20_000).steal);
+  // Smooth Operator: twice the laundering room and half the fee.
+  const sm = weed(3, "smoothOperator"), plain = weed(3);
+  assert.equal(launderCap(sm, sm.companies[0]), 2 * launderCap(plain, plain.companies[0]));
+  const rs = resolveRound(sm, { a: { launder: 10_000_000 } }), rp = resolveRound(plain, { a: { launder: 10_000_000 } });
+  const ss = rs.companies[0].history.at(-1)!.street!, sp = rp.companies[0].history.at(-1)!.street!;
+  assert.ok(ss.laundered > sp.laundered && ss.launderFee / ss.laundered < sp.launderFee / sp.laundered * 0.6);
+  // Outside weed the weed CEOs play as Visionary.
+  const choco = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 1 }, players.map((p, i) => (i === 0 ? { ...p, trait: "enforcer" as never } : p)));
+  assert.equal(choco.companies[0].trait, "visionary");
 });

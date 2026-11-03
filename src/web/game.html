@@ -335,6 +335,10 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .turf-roofs { position: absolute; left: 0; right: 0; top: 0; height: 26px; background:
   linear-gradient(90deg, transparent 0 6%, var(--tc) 6% 18%, transparent 18% 24%, var(--tc) 24% 31%, transparent 31% 38%, var(--tc) 38% 55%, transparent 55% 61%, var(--tc) 61% 70%, transparent 70% 76%, var(--tc) 76% 92%, transparent 92%) bottom / 100% 70% no-repeat,
   linear-gradient(90deg, transparent 0 10%, var(--tc) 10% 14%, transparent 14% 42%, var(--tc) 42% 50%, transparent 50% 80%, var(--tc) 80% 86%, transparent 86%) bottom / 100% 100% no-repeat; opacity: 0.85; }
+.secread { font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 7px; background: var(--panel-3); }
+:root[data-theme="light"] .turf { background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 30%, #fff), color-mix(in srgb, var(--tc) 14%, #fff)); }
+:root[data-theme="light"] .turf-owner { color: var(--ink); text-shadow: none; }
+:root[data-theme="light"] .turf.mine { box-shadow: inset 0 0 0 3px var(--gold), 0 0 12px rgba(192, 134, 0, 0.35); }
 .heatbar { position: relative; height: 22px; border-radius: 6px; background: var(--bg-deep); overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
 .heatbar i { position: absolute; inset: 0 auto 0 0; transition: width .4s; }
 .heatbar span { position: relative; display: block; text-align: center; line-height: 22px; font-family: var(--font-display); font-size: 12px; text-shadow: 0 1px 0 #000; }
@@ -940,17 +944,23 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const $ = (s, r = document) => r.querySelector(s);
   const app = $("#app"), modal = $("#modal");
   const COLORS = ["--c0", "--c1", "--c2", "--c3", "--c4", "--c5"];
-  const TRAITS = { ruthless: ["Ruthless", "Takeovers 15% cheaper"], visionary: ["Visionary", "R&D 15% more effective"], influencer: ["Influencer", "Hype gains 15% higher"], pennyPincher: ["Penny-Pincher", "Production 8% cheaper"] };
+  const TRAITS = { ruthless: ["Ruthless", "Takeovers 15% cheaper"], visionary: ["Visionary", "R&D 15% more effective"], influencer: ["Influencer", "Hype gains 15% higher"], pennyPincher: ["Penny-Pincher", "Production 8% cheaper"], smoothOperator: ["Smooth Operator", "Weed: launder 2× as much, half the fee"], enforcer: ["Enforcer", "Weed: goon raids hit harder"] };
+  const WEED_TRAITS = ["smoothOperator", "enforcer"];
   // What each trait means for a new player: who it suits, in plain words.
   const TRAIT_FIT = {
     ruthless: "For raiders: buying rivals' shares and taking companies over costs less.",
     visionary: "For quality: every euro of R&D goes further, so better products sooner. A safe all-round pick.",
     influencer: "For hype: viral stunts and campaigns pull in more hype buyers.",
     pennyPincher: "For cheap and lots of it: lower cost per unit, so you can undercut on price.",
+    smoothOperator: "Weed only: your car wash and stores clean twice as much cash, at half the fee, with fewer tax audits. Elsewhere it plays as Visionary.",
+    enforcer: "Weed only: your goons win more raids, take more stock and get caught less. Elsewhere it plays as Visionary.",
   };
   // CEO trait picker in the game's own card style (radio cards with the pixel icon).
-  function traitPicker(name, cur) {
-    return `<div class="choices traits" role="radiogroup" aria-label="CEO trait">${Object.entries(TRAITS).map(([k, [n, t]]) => `<label class="choice trait-card"><input type="radio" name="${name}" value="${k}" ${cur === k ? "checked" : ""}><span><canvas data-trait="${k}" width="8" height="8" aria-hidden="true"></canvas><b>${n}</b><em>${t}</em><small>${TRAIT_FIT[k]}</small></span></label>`).join("")}</div>
+  // industry: "weed" shows the weed CEOs, another industry hides them, undefined (online, industry not chosen yet) shows them marked "Weed only".
+  function traitPicker(name, cur, industry) {
+    const list = Object.entries(TRAITS).filter(([k]) => !WEED_TRAITS.includes(k) || industry !== "chocolate" && industry !== "ai");
+    if (!list.some(([k]) => k === cur)) cur = "visionary";
+    return `<div class="choices traits" role="radiogroup" aria-label="CEO trait" id="${name}-wrap">${list.map(([k, [n, t]]) => `<label class="choice trait-card"><input type="radio" name="${name}" value="${k}" ${cur === k ? "checked" : ""}><span><canvas data-trait="${k}" width="8" height="8" aria-hidden="true"></canvas><b>${n}${WEED_TRAITS.includes(k) && !industry ? ' <span class="tag">Weed</span>' : ""}</b><em>${t}</em><small>${TRAIT_FIT[k]}</small></span></label>`).join("")}</div>
       <div class="hint" style="margin-top:6px">Your trait is a small permanent bonus for the whole game. Not sure? Pick the one that matches how you want to play.</div>`;
   }
   const CAMPAIGNS = { discount: ["Discount promo", "Strong with budget shoppers"], tv: ["TV ad", "Steady boost in mainstream"], luxury: ["Luxury sponsor", "Wins premium buyers, builds brand"], viral: ["Viral stunt", "Huge hype, 35% chance it flops"] };
@@ -1091,6 +1101,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     visionary: ["..yyyy..", ".yywwyy.", ".ywwwwy.", ".ywwwwy.", "..yyyy..", "...gg...", "..gggg..", "...gg..."],
     influencer: [".....yy.", "...yyyy.", "rryyyyy.", "rryyyyy.", "rryyyyy.", "...yyyy.", ".rr..yy.", ".rr....."],
     pennyPincher: ["..yyyy..", ".yyddyy.", "yydyyyyy", "yyyddyyy", "yyyyydyy", "yyddyyyy", ".yyddyy.", "..yyyy.."],
+    smoothOperator: ["..bbbb..", ".b.yy.b.", "b.yyyy.b", "b.yy...b", "b..yyy.b", "b...yy.b", ".byyyyb.", "..bbbb.."],
+    enforcer: ["........", ".wwwwww.", "wwgwgwgw", "wwwwwwww", "wwwwwwrr", ".wwwwwr.", "..wwww..", "..rrrr.."],
   };
   function drawTrait(cv, key) {
     const g = cv.getContext && cv.getContext("2d");
@@ -5346,20 +5358,24 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${m.mult !== 1 ? `<div class="note ${m.mult < 1 ? "pos" : "neg"}">News: police raids ${m.mult < 1 ? "down" : "up"} ${Math.abs(Math.round((m.mult - 1) * 100))}% this round</div>` : ""}
       <div class="hint">Heat goes up when you sell a lot (your share of the market), sell clearly cheaper than the rest, go viral, run stores or hire armed guards. A lawyer cools you down a little every round. After a raid the police leave you alone for a while.</div>
       ${last ? `<div class="sumline"><span class="muted">Last round</span><b class="${last.raided || last.robbed ? "neg" : "pos"}">${last.raided ? `Raided: ${units(last.seized)} ${u} seized${last.cashSeized ? `, ${eur(last.cashSeized)} from the safe` : ""}, fine ${eur(last.fine)}` : "No raid"}${last.robbed ? ` · robbed of ${units(last.robbed)} ${u}` : ""}${last.stolen ? ` · your crew took ${units(last.stolen)} ${u}` : ""}</b></div>` : ""}</div>`;
-    const secCards = ST.security.map((x, k) => `<label class="choice"><input type="radio" name="st-sec" value="${k}" ${sec === k ? "checked" : ""}><span><b>${x.icon} ${x.name}</b><em class="cost num">${k ? eur(Math.round(scale * x.upkeep)) + " / round" : "free"}</em>
-      <small>${k ? `Police take ${Math.round(x.seizeCut * 100)}% less in a raid · stops ${Math.round(x.stopHeist * 100)}% of heists${x.heat ? ` · <b>+${x.heat} heat</b> a round` : ""}` : `A raid takes ${Math.round(ST.seizeShare * 100)}% of your stock. Easy to rob.`}</small></span></label>`).join("");
-    const secCard = `<div class="card"><h3>Security</h3><div class="choices">${secCards}</div><div class="hint">Everyone can see your guards. Rivals think twice before hitting a guarded stash.</div></div>`;
+    const secBudget = Math.round(d.securityBudget ?? Math.round(scale * ST.legacyLevels[c.security || 0])), secMax = Math.round(scale * ST.guard.maxBudget);
+    const secCard = `<div class="card"><h3>🛡 Security</h3>
+      ${stepper("f-sec", "Security budget per round", Math.min(secBudget, secMax), 0, secMax, 1000, eur)}
+      <div class="secread" id="sec-note">${secNote(secBudget)}</div>
+      <div class="hint">Cameras, alarms, guards: the more you spend, the less the police take in a raid and the harder you are to rob. Above about ${Math.round(ST.guard.heatFrom * 100)}% protection it starts to look like a private army, and that draws heat. Everyone can see roughly how guarded you are.</div></div>`;
     const lawCard = `<div class="card"><h3>⚖️ Lawyer</h3><label class="choice gtoggle"><input type="checkbox" id="st-lawyer" ${law ? "checked" : ""}><span><b>Keep a lawyer on retainer</b><em class="cost num">${eur(Math.round(scale * ST.lawyer.upkeep))} / round</em></span></label>
       <div class="hint">Fines ${Math.round(ST.lawyer.fineCut * 100)}% lower (a raid without one costs about ${eur(Math.round(scale * ST.fineRate))}), and ${-ST.lawyer.heat} heat less every round. Nobody else knows you have one.</div></div>`;
     const mv = d.streetMove, tg = (mv && mv.target) || (rivals[0] && rivals[0].id);
     const opt = (k, title, cost, text) => `<label class="choice"><input type="radio" name="st-move" value="${k}" ${(mv ? mv.kind : "") === k ? "checked" : ""}><span><b>${title}</b>${cost ? `<em class="cost num">${eur(cost)}</em>` : ""}<small>${text}</small></span></label>`;
     const tSec = (o) => ST.security[o.security || 0];
+    const H = ST.heist, goonMin = Math.round(scale * H.minBudget), goonMax = Math.round(scale * H.maxBudget), goons = Math.max(goonMin, Math.min(goonMax, Math.round(d.goonBudget ?? scale * 0.035)));
     const moveCard = `<div class="card"><h3>Street move <small class="muted">optional, one a round</small></h3><div class="choices">
         ${opt("", "Keep it clean", 0, "No moves this round.")}
         ${opt("tipoff", "🕵️ Anonymous tip-off", Math.round(scale * ST.tipoff.cost), `Tell the police about a rival: +${ST.tipoff.heat} heat for them right away. ${Math.round(ST.tipoff.backfire * 100)}% chance it's traced back to you.`)}
-        ${opt("heist", "🎭 Hit their stash", Math.round(scale * ST.heist.cost), `Send a crew to take ${Math.round(ST.heist.steal * 100)}% of their stock. Guards stop most crews; if it fails you get heat and a bad name.`)}
+        ${opt("heist", "👊 Send goons", 0, `Hire goons to raid a rival's stash and bring back part of their stock. More goons, better odds. Their security fights back; if it fails you get heat and a bad name.${c.trait === "enforcer" ? " <b>Enforcer: your goons hit harder.</b>" : ""}`)}
       </div>
-      <div class="ctl" ${mv ? "" : "hidden"}><label for="st-target">Target</label><select id="st-target" class="sel">${rivals.map((o) => `<option value="${o.id}" ${tg === o.id ? "selected" : ""}>${esc(o.companyName)} · ${tSec(o).icon} ${tSec(o).short}${mv && mv.kind === "heist" ? ` (${Math.round((1 - tSec(o).stopHeist) * 100)}% chance)` : ""}</option>`).join("")}</select></div></div>`;
+      <div class="ctl" ${mv ? "" : "hidden"}><label for="st-target">Target</label><select id="st-target" class="sel">${rivals.map((o) => `<option value="${o.id}" ${tg === o.id ? "selected" : ""}>${esc(o.companyName)} · ${tSec(o).icon} ${tSec(o).short}</option>`).join("")}</select></div>
+      ${mv && mv.kind === "heist" ? `${stepper("f-goons", "Goons (one-off, this round)", goons, goonMin, goonMax, 1000, eur)}<div class="secread" id="goon-note">${goonNote(goons)}</div>` : ""}</div>`;
     const crew = `<div class="card"><h3>Who's guarding what</h3>${rivals.map((o) => `<div class="sumline"><span>${esc(o.companyName)}</span><b>${tSec(o).icon} ${tSec(o).name}</b></div>`).join("")}<div class="hint">Raids and robberies make the news, so you'll hear when a rival gets hit.</div></div>`;
     const cap = FT.launderCap(g, c), clean = Math.min(c.cleanCash || 0, Math.max(0, c.cash)), L = ST.launder;
     const launderCard = `<div class="card"><h3>🧼 Laundering</h3>
@@ -5394,16 +5410,26 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="card"><h3>🗺 The turf <small class="muted">who runs which part of town</small></h3><div class="turfmap">${tiles}</div>
       <div class="hint">Each district is a buyer group. Sell the most to that group (at least ${Math.round(T.minShare * 100)}% of it) and you run the district: a little more pull with those buyers next round${g.legal ? "" : `, but +${T.heat} heat per district`}. ${mine ? `You run ${mine} district${mine > 1 ? "s" : ""}.` : "You don't run a district yet."}</div></div>`;
   }
+  function secNote(budget) {
+    const g = S.game, c = me(), ST = FT.STREET, p = FT.guardFor(g, c, budget), tier = ST.security[FT.securityTier(p)];
+    const heat = ST.guard.heatMax * Math.max(0, (p - ST.guard.heatFrom) / (1 - ST.guard.heatFrom));
+    return `<b>${tier.icon} ${tier.name}</b> · protection ${Math.round(p * 100)}% · a raid takes ${Math.round(ST.seizeShare * (1 - ST.guard.seizeCut * p) * 100)}% of your stock instead of ${Math.round(ST.seizeShare * 100)}%${heat >= 0.5 ? ` · <span class="neg">+${heat.toFixed(heat < 3 ? 1 : 0)} heat a round</span>` : ""}`;
+  }
+  function goonNote(budget) {
+    const g = S.game, mv = S.draft.streetMove, t = mv && byId(mv.target);
+    if (!t) return "";
+    const o = FT.goonOdds(g, me(), t, budget);
+    return `Chance it works against <b>${esc(t.companyName)}</b>: <b>${Math.round(o.chance * 100)}%</b> · they'd lose about <b>${Math.round(o.steal * 100)}%</b> of their stock`;
+  }
   function bindStreet() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
-    on('input[name="st-sec"]', "change", (e) => { S.draft.security = Number(e.target.value); sfx("click"); render(); });
     on("#st-lawyer", "change", (e) => { S.draft.lawyer = e.target.checked; sfx("click"); render(); });
     on('input[name="st-move"]', "change", (e) => {
       const k = e.target.value, sel = $("#st-target");
       S.draft.streetMove = k ? { kind: k, target: (S.draft.streetMove && S.draft.streetMove.target) || (sel && sel.value) || (S.game.companies.find((o) => o.id !== "you" && live(o)) || {}).id } : null;
       sfx("click"); render();
     });
-    on("#st-target", "change", (e) => { if (S.draft.streetMove) S.draft.streetMove.target = e.target.value; });
+    on("#st-target", "change", (e) => { if (S.draft.streetMove) S.draft.streetMove.target = e.target.value; const gn = $("#goon-note"); if (gn) gn.innerHTML = goonNote(S.draft.goonBudget ?? Number(($("#f-goons") || {}).value || 0)); });
     on('input[name="legal-vote"]', "change", (e) => { S.draft.legalVote = e.target.value === "yes"; sfx("click"); render(); });
   }
   function tabRetail() {
@@ -6241,7 +6267,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       </div>
       <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
       <div class="ctl"><span class="lbl">Game setup</span>${customStart(setupCtx())}</div>
-      <div class="ctl"><span class="lbl">CEO trait</span>${traitPicker("trait", o.trait)}</div>
+      <div class="ctl"><span class="lbl">CEO trait</span><div id="trait-slot">${traitPicker("trait", o.trait, okIndustry(o.industry || "chocolate"))}</div></div>
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="btn-start" data-autofocus>Start game</button></div>
     </div></div>`;
   }
@@ -6422,11 +6448,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- events ----------------
-  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire", "f-morder": "materialOrder", "f-bulk": "bulkSell", "f-bloan": "boardLoan", "f-launder": "launder" };
+  const RANGES = { "f-sopen": "storesOpen", "f-sclose": "storesClose", "f-rprice": "retailPrice", "f-price": "price", "f-prod": "production", "f-cap": "investCapacity", "f-rnd": "investRnd", "f-mkt": "marketingBudget", "f-brand": "investBrand", "f-loan": "loanChange", "f-buyback": "buyback", "f-bid": "auctionBid", "f-tstake": "takeoverStake", "f-dstake": "defenseStake", "f-hire": "hire", "f-morder": "materialOrder", "f-bulk": "bulkSell", "f-bloan": "boardLoan", "f-launder": "launder", "f-sec": "securityBudget", "f-goons": "goonBudget" };
   function fmtFor(id) {
     const i = ind();
     if (id.startsWith("f-bk-")) return eur;
-    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x > 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams", "f-morder": units, "f-bulk": units, "f-bloan": (x) => (x ? "+" + eur(x) : "none"), "f-launder": eur }[id];
+    return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-rprice": eur, "f-price": eur, "f-prod": units, "f-cap": eur, "f-rnd": eur, "f-mkt": eur, "f-brand": eur, "f-loan": (x) => (x > 0 ? "+" : "") + eur(x), "f-buyback": (x) => x + " shares", "f-bid": eur, "f-tstake": eur, "f-dstake": eur, "f-hire": (x) => (x > 0 ? "+" : "") + x + " teams", "f-morder": units, "f-bulk": units, "f-bloan": (x) => (x ? "+" + eur(x) : "none"), "f-launder": eur, "f-sec": eur, "f-goons": eur }[id];
   }
   function exactFor(id) {
     return { "f-sopen": (x) => x + " stores", "f-sclose": (x) => x + " stores", "f-prod": (x) => unitsX(x) + " " + ind().labels.unit, "f-buyback": (x) => x + " shares", "f-loan": (x) => (x >= 0 ? "Borrow " : "Repay ") + eurX(Math.abs(x)), "f-hire": (x) => (x >= 0 ? "Hire " : "Lay off ") + Math.abs(x) + " teams", "f-morder": (x) => unitsX(x) + " " + ind().labels.unit, "f-bulk": (x) => unitsX(x) + " " + ind().labels.unit }[id] || eurX;
@@ -6448,6 +6474,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }); }
 
     const cn = $("#cap-note"); if (cn) cn.textContent = capNote();
+    const secEl = $("#sec-note"); if (secEl && S.draft) secEl.innerHTML = secNote(S.draft.securityBudget || 0);
+    const goonEl = $("#goon-note"); if (goonEl && S.draft) goonEl.innerHTML = goonNote(S.draft.goonBudget || 0);
     const mn = $("#morder-note"); if (mn) mn.textContent = morderNote();
     const sn = $("#staff-note"); if (sn) sn.textContent = staffNote();
   }
@@ -6643,6 +6671,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
       bindSetupCs();
       // Defaults shown in the editor follow the industry, difficulty and number of bots.
       modal.querySelectorAll('input[name="industry"], input[name="difficulty"], input[name="bots"]').forEach((el) => el.addEventListener("change", () => { const root = document.querySelector('[data-cs-root="setup"]'); if (root) { root.outerHTML = customStart(setupCtx()); bindSetupCs(); } }));
+      // The weed CEOs only show up for a weed game.
+      modal.querySelectorAll('input[name="industry"]').forEach((el) => el.addEventListener("change", () => {
+        const slot = modal.querySelector("#trait-slot"), cur = (modal.querySelector('input[name="trait"]:checked') || {}).value;
+        if (slot) { slot.innerHTML = traitPicker("trait", cur, el.value); slot.querySelectorAll("canvas[data-trait]").forEach((cv) => drawTrait(cv, cv.dataset.trait)); }
+      }));
     }
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S && S.modal && !["final", "show", "board"].includes(S.modal)) { if (S.modal === "tv") S.tvQueue = []; S.modal = null; renderModal(); } });

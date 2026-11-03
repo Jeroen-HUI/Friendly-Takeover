@@ -5,7 +5,7 @@ export type SegmentId = "budget" | "mainstream" | "premium" | "hype";
 export const SEGMENTS: SegmentId[] = ["budget", "mainstream", "premium", "hype"];
 
 export type CampaignType = "discount" | "tv" | "luxury" | "viral";
-export type CeoTrait = "ruthless" | "visionary" | "influencer" | "pennyPincher";
+export type CeoTrait = "ruthless" | "visionary" | "influencer" | "pennyPincher" | "smoothOperator" | "enforcer";
 export type IndustryId = "chocolate" | "ai" | "weed";
 export type DifficultyId = "standard" | "tycoon" | "cutthroat";
 export type WildcardId = "crazy" | "poach" | "spy" | "lobby" | "scandal" | "lawsuit";
@@ -75,11 +75,15 @@ export interface Decisions {
   dividendPolicy?: 0 | 25 | 50;
   /** Extra loan above the bank's credit line: needs the board's approval (house rule "votes"), voted on next round. */
   boardLoan?: number;
-  /** Weed: security level 0..3 and a lawyer on retainer. Kept until changed. */
+  /** Weed: euros a round on security (cameras, guards...) and a lawyer on retainer. Kept until changed.
+   *  (Old clients may still send a level 0..3 as `security`.) */
+  securityBudget?: number;
   security?: 0 | 1 | 2 | 3;
   lawyer?: boolean;
-  /** Weed: one street move a round against a rival: tip off the police, or hit their stash. */
-  streetMove?: { kind: "tipoff" | "heist"; target: string } | null;
+  /** Weed: one street move a round against a rival: tip off the police, or send goons to raid their stash (budget = what you spend on goons). */
+  streetMove?: { kind: "tipoff" | "heist"; target: string; budget?: number } | null;
+  /** Weed: goon budget for a raid (same as streetMove.budget; handy for sliders). */
+  goonBudget?: number;
   /** Weed: cash to launder through your stores and fronts this round (safe from raids afterwards). */
   launder?: number;
   /** Weed: your secret ballot in a legalization referendum (no vote counts as no). */
@@ -96,6 +100,8 @@ export interface StreetReport {
   seizedValue: number;
   fine: number;
   security: number;
+  /** Protection 0..1 bought with the security budget. */
+  guard: number;
   securityCost: number;
   lawyer: boolean;
   lawyerCost: number;
@@ -235,6 +241,8 @@ export interface Company {
   lastDividend?: { round: number; amount: number } | null;
   /** Weed: police attention 0..100 (private), security level (everyone sees the guards) and lawyer (private). */
   heat?: number;
+  /** Weed: how well guarded you are (0..1, from your security budget) and the matching visible tier 0..3. */
+  guard?: number;
   security?: 0 | 1 | 2 | 3;
   lawyer?: boolean;
   /** Weed: cash that's been laundered (part of cash, can't be seized). */

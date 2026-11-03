@@ -310,7 +310,12 @@ export const TRAITS: Record<CeoTrait, { name: string; description: string }> = {
   visionary: { name: "Visionary", description: "R&D 15% more effective" },
   influencer: { name: "Influencer", description: "Hype gains 15% higher" },
   pennyPincher: { name: "Penny-Pincher", description: "Production costs 8% lower" },
+  smoothOperator: { name: "Smooth Operator", description: "Weed: launder twice as much, half the fee, fewer audits" },
+  enforcer: { name: "Enforcer", description: "Weed: goon raids hit harder and get caught less" },
 };
+/** Traits that only mean something in an industry with the street (Weed). Elsewhere they play as Visionary. */
+export const STREET_TRAITS: CeoTrait[] = ["smoothOperator", "enforcer"];
+export const BASE_TRAITS: CeoTrait[] = ["ruthless", "visionary", "influencer", "pennyPincher"];
 
 export const TRAIT_EFFECTS = {
   ruthlessPremiumFactor: 0.85,
@@ -667,15 +672,24 @@ export const STREET = {
   raidBrand: 3,
   /** The police are satisfied for a while after a raid. */
   raidCoolDown: 35,
+  /** Security is a budget: protection = 1 - e^(-budget / (perUnit x scale)). Protection cuts what a raid takes (up to
+   *  seizeCut) and stops goons; above heatFrom it looks like an army and draws heat (up to heatMax a round). */
+  guard: { perUnit: 0.03, seizeCut: 0.8, heatFrom: 0.6, heatMax: 8, maxBudget: 0.15 },
+  /** What rivals see, by protection. */
   security: [
-    { name: "No security", short: "None", upkeep: 0, seizeCut: 0, stopHeist: 0, heat: 0, icon: "🚪" },
-    { name: "Cameras & alarm", short: "Cameras", upkeep: 0.012, seizeCut: 0.3, stopHeist: 0.35, heat: 0, icon: "📹" },
-    { name: "Security guards", short: "Guards", upkeep: 0.03, seizeCut: 0.55, stopHeist: 0.7, heat: 0, icon: "💂" },
-    { name: "Armed guards", short: "Armed", upkeep: 0.055, seizeCut: 0.7, stopHeist: 1, heat: 6, icon: "🔫" },
+    { from: 0, name: "No security", short: "None", icon: "🚪" },
+    { from: 0.15, name: "Cameras & alarm", short: "Cameras", icon: "📹" },
+    { from: 0.45, name: "Security guards", short: "Guards", icon: "💂" },
+    { from: 0.75, name: "Armed guards", short: "Armed", icon: "🔫" },
   ],
+  /** Old fixed levels, as budgets (scale share): for old clients and saves. */
+  legacyLevels: [0, 0.012, 0.03, 0.055],
   lawyer: { name: "Lawyer on retainer", upkeep: 0.02, fineCut: 0.7, heat: -6 },
   tipoff: { name: "Anonymous tip-off", cost: 0.025, heat: 30, backfire: 0.15, backfireHeat: 20, backfireBrand: 4 },
-  heist: { name: "Stash heist", cost: 0.035, steal: 0.18, failHeat: 20, failBrand: 3 },
+  /** Goons: strength = budget / (perUnit x scale); success = strength / (strength + 1) x (1 - 0.95 x their protection).
+   *  They take baseSteal plus up to extraSteal of the stock. */
+  heist: { name: "Goon raid", perUnit: 0.03, minBudget: 0.005, maxBudget: 0.15, baseSteal: 0.08, extraSteal: 0.17, failHeat: 20, failBrand: 3 },
+  traits: { smoothOperator: { launderCap: 2, launderFee: 0.5, audit: 0.4 }, enforcer: { goons: 1.6, steal: 0.05, failHeat: 0.5 } },
   /** In a raid the police also empty the safe: a share of your unlaundered cash, capped by the grow rooms' scale. */
   cashSeize: 0.15,
   cashSeizeCap: 0.6,
