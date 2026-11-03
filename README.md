@@ -199,6 +199,11 @@ Row-level security was tested with three simulated users (host, friend, outsider
 - **Legalization referendum**: round 3 and every 4 rounds after, secret ballot, needs 3 in 4 companies (5 players: 4). Voting is required before you submit. Once legal: no heat, raids, security or street moves; 20% more buyers (mostly mainstream and premium) and a 25% tax on profit (none in a loss-making round).
 - Costs scale with your grow rooms; they're in the income statement and cash flow. Bots play it too. Chocolate and AI are unchanged.
 
+## Chat, pop-ups and the censor
+
+- New messages and deal offers sent to you pop up in the bottom-right corner (click to open that conversation), unless that conversation is already open.
+- Slurs and hate are replaced with `#####`; ordinary swearing stays. One list (`scripts/censor-list.mjs`) feeds both the game and the database trigger (`node scripts/build-censor.mjs` regenerates both).
+
 ## Accounts
 
 - Everyone starts as a quiet guest (anonymous Supabase user), so the game works instantly.

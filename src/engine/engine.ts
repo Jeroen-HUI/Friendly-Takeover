@@ -331,6 +331,24 @@ function baseValue(c: Company, industry: IndustryConfig, dividendRound = 0): num
   return value > 0 ? value * (1 - (c.sentiment ?? 0)) * (1 + GUIDANCE.valuePerPoint * (c.credibility ?? 0)) * (1 + div) : value;
 }
 
+/** What a company's value is made of (for the "what moved your value" card). Parts add up to its value. */
+export function valueParts(state: GameState, c: Company): { cash: number; assets: number; brand: number; earnings: number; mood: number; stakes: number } {
+  const industry = INDUSTRIES[state.config.industry];
+  const total = companyValues(state)[c.id] ?? 0;
+  if (c.bankrupt || c.merged) return { cash: c.cash - c.debt, assets: 0, brand: 0, earnings: 0, mood: 0, stakes: total - (c.cash - c.debt) };
+  const last = c.history.slice(-2).map((h) => h.profit);
+  const avgProfit = last.length ? last.reduce((a, b) => a + b, 0) / last.length : 0;
+  const cash = c.cash - c.debt;
+  const assets = c.capacity * BALANCE.capacityBookValue * industry.baseUnitCost + (c.stores ?? 0) * RETAIL.bookValue + c.inventory * c.inventoryUnitCost * BALANCE.inventoryValueRate + (c.materials ?? 0) * (c.materialPaid ?? 1) * COSTS.materialBookValue;
+  const brand = c.brand * BALANCE.brandValuePerPoint;
+  const earnings = Math.max(0, avgProfit) * BALANCE.earningsMultiple;
+  const raw = cash + assets + brand + earnings;
+  const divRound = rulesOf(state).dividends ? Math.max(1, state.round) : 0;
+  const base = baseValue(c, industry, divRound);
+  const mood = raw > 0 ? base - raw : 0;
+  return { cash, assets, brand, earnings, mood, stakes: total - raw - mood };
+}
+
 /** Full company values including stakes held in others (one level of cross-holdings). */
 export function companyValues(state: GameState): Record<string, number> {
   const industry = INDUSTRIES[state.config.industry];
@@ -689,6 +707,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     retailSold: number;
     storesOpened: number;
     storesClosed: number;
+    mktPull?: Partial<Record<SegmentId, number>>;
   }
   // 2. Specials before the market: staff, wildcards, auction, summit vote, journalists. ------------
   const tycoon = state.config.difficulty === "tycoon";
@@ -1294,7 +1313,10 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       if (d.marketingBudget > 0) {
         const camp = CAMPAIGNS[d.campaign];
         const weight = w.viralFlop ? -0.2 : camp.segment[s];
-        u += weight * Math.log(1 + d.marketingBudget / BALANCE.marketingScale);
+        const m = weight * Math.log(1 + d.marketingBudget / BALANCE.marketingScale);
+        u += m;
+        // For the report: how much marketing multiplied your pull with this buyer group.
+        (w.mktPull ??= {})[s] = Math.round(Math.exp(m) * 100) / 100;
       }
       const boost = fx.companyBoost[c.id] ?? 0;
       if (boost) u += Math.log(1 + boost);
@@ -1486,6 +1508,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       credibility: c.credibility ?? 0,
       ...(street[c.id] ? { street: street[c.id], streetCost: sp.street + Math.round(seizedCost[c.id] ?? 0) } : {}),
       ...(exciseTax ? { exciseTax } : {}),
+      ...(w.mktPull ? { marketingPull: w.mktPull } : {}),
     };
   }
 
@@ -1784,6 +1807,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     r.debtEnd = w.c.debt;
     r.value = finalValues[w.c.id];
     r.sharePrice = Math.max(0, finalValues[w.c.id]) / 100;
+    const vp = valueParts(state, w.c);
+    r.valueParts = Object.fromEntries(Object.entries(vp).map(([k, v]) => [k, Math.round(v)])) as RoundReport["valueParts"];
   }
 
   // 9. Next round's news. -------------------------------------------------------------------

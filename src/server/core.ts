@@ -150,7 +150,7 @@ export function viewFor(state: GameState, playerId: string): GameState {
       cleanCash: 0,
       lastDecisions: { ...last, lawyer: false, streetMove: null, launder: 0, legalVote: null, production: 0, marketingBudget: 0, investRnd: 0, investBrand: 0, investCapacity: 0, campaign: "tv", loanChange: 0, buyShares: {}, sellShares: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, defenseStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, journalistTarget: null, hire: 0, storesOpen: 0, storesClose: 0, guidance: null },
       // Rivals' investor calls: everyone hears whether they hit, not what they promised.
-      history: c.history.map((h) => ({ ...h, ...HIDDEN_REPORT, events: [], research: undefined, street: undefined, streetCost: 0, guidance: h.guidance ? { units: 0, profit: 0, unitsErr: 0, profitErr: 0, result: h.guidance.result } : undefined }) as RoundReport),
+      history: c.history.map((h) => ({ ...h, ...HIDDEN_REPORT, events: [], research: undefined, street: undefined, streetCost: 0, marketingPull: undefined, valueParts: undefined, guidance: h.guidance ? { units: 0, profit: 0, unitsErr: 0, profitErr: 0, result: h.guidance.result } : undefined }) as RoundReport),
     };
     (hidden as Company & { missionHidden?: boolean }).missionHidden = true;
     return hidden;

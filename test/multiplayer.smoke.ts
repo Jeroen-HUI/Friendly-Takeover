@@ -417,6 +417,19 @@ for (let r = 1; r <= 6; r++) {
     if (!(st.pacts || []).some((p: any) => p.a === myIdNow() || p.b === myIdNow()) && !st.feed.some((f: any) => /pact/.test(f.headline))) throw new Error("accepted bot pact was not carried out");
   }
   if (r === 2) {
+    // A private message and a deal offer pop up while the chat is closed; slurs are censored, ordinary swearing stays.
+    const gid2 = HG().id, me2 = db.players.find((p) => p.user_id === HOST && p.game_id === gid2)!.id;
+    const slur = ["n", "1", "g", "g", "a"].join("");
+    server.message(gid2, 2, friend.player_id, me2, "damn, you " + slur + ", fuck this round");
+    server.offer(gid2, 2, friend.player_id, me2, "pact", { rounds: 2, penalty: 300000 });
+    await until("message pop-up", () => /fuck this round/.test($(".popstack")?.textContent || ""), 8000);
+    const popTxt = $(".popstack")!.textContent!;
+    if (popTxt.includes(slur) || !popTxt.includes("#####") || !/damn/.test(popTxt)) throw new Error("censor in pop-up: " + popTxt);
+    await until("deal pop-up", () => /Deal offer from/.test($(".popstack")?.textContent || ""), 8000);
+    $(".popmsg.deal").click();
+    await until("chat opened on the friend's thread", () => !$("#talkwin")!.hidden && $("[data-deal-accept]"));
+    if (($("#tlog")?.textContent || "").includes(slur)) throw new Error("slur shown in the chat");
+    click("#talk-close");
     const mine = D().game.companies[0].history.at(-1);
     if (db.deals[0].status !== "done" || mine.dealCash !== 200000) throw new Error("loan deal should be done with +200k: " + JSON.stringify([db.deals[0], mine.dealCash]));
   }

@@ -578,6 +578,17 @@ button[data-tip] { cursor: pointer; }
 .ach-ico { font-size: 30px; text-align: center; }
 .toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -140%); z-index: 70; display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-radius: 10px; background: linear-gradient(#f0d898, #e2c27a); color: #2b1d00; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 3px #8a6420; transition: transform 300ms cubic-bezier(.2, 1.3, .4, 1); pointer-events: none; }
 .toast.show { transform: translate(-50%, 0); }
+.vm { display: grid; gap: 4px; }
+.vm-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 8px; border-radius: 6px; background: var(--panel-3); font-weight: 800; font-size: 13.5px; }
+.vm-row b { font-family: var(--font-display); letter-spacing: 0.05em; }
+.popstack { position: fixed; right: 16px; bottom: 16px; z-index: 65; display: grid; gap: 8px; width: min(340px, calc(100vw - 32px)); }
+.popmsg { position: relative; display: grid; gap: 3px; padding: 10px 30px 10px 12px; border-radius: 10px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px var(--frame-dark), inset 4px 0 0 var(--pc, var(--gold)); animation: popslide 260ms cubic-bezier(.2, 1.3, .4, 1); }
+.popmsg.deal { box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px var(--gold), inset 4px 0 0 var(--pc, var(--gold)); }
+.popmsg b { font-size: 13.5px; } .popmsg div { word-break: break-word; }
+.popmsg .pm-foot { font-size: 11px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.popmsg .pm-x { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border: 0; border-radius: 5px; background: var(--panel-3); color: var(--ink); cursor: pointer; font-weight: 900; line-height: 1; }
+@keyframes popslide { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+:root[data-motion="off"] .popmsg { animation: none; }
 .toast small { display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: #7a5716; }
 .toast b { font-family: var(--font-display); font-size: 16px; }
 input[type="email"] { padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); font: inherit; font-weight: 800; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
@@ -965,6 +976,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   const CAMPAIGNS = { discount: ["Discount promo", "Strong with budget shoppers"], tv: ["TV ad", "Steady boost in mainstream"], luxury: ["Luxury sponsor", "Wins premium buyers, builds brand"], viral: ["Viral stunt", "Huge hype, 25% chance it flops"] };
   const SEG = { budget: "Budget", mainstream: "Mainstream", premium: "Premium", hype: "Hype" };
+  // Chat censor: slurs and hate become #####; ordinary swearing stays. The list lives in scripts/censor-list.mjs (also used by the database).
+  /*CENSOR*/const CENSOR_PATTERNS = ["n+[._*~\\-]*[i1!|l]+[._*~\\-]*[g9]+[._*~\\-]*[g9]+(?!l)(?:[._*~\\-]*\\w)*","\\bn+[._*~\\-]*[i1!|l]+[._*~\\-]*k+[._*~\\-]*k+[._*~\\-]*[e3]+[._*~\\-]*r+(?:[._*~\\-]*\\w)*","n+[._*~\\-]*[i1!|l]+[._*~\\-]*[g9]+[._*~\\-]*l+[._*~\\-]*[e3]+[._*~\\-]*[t7]+","\\bn+[._*~\\-]*[e3]+[._*~\\-]*[g9]+[._*~\\-]*r+[._*~\\-]*[o0]+(es)?\\b","\\bc+[._*~\\-]*h+[._*~\\-]*[i1!|l]+[._*~\\-]*n+[._*~\\-]*k+s?\\b","\\b[g9]+[._*~\\-]*[o0]+[._*~\\-]*[o0]+[._*~\\-]*k+s?\\b","\\b[s5$]+[._*~\\-]*p+[._*~\\-]*[i1!|l]+[._*~\\-]*c+s?\\b","\\bk+[._*~\\-]*[i1!|l]+[._*~\\-]*k+[._*~\\-]*[e3]+s?\\b","w+[._*~\\-]*[e3]+[._*~\\-]*[t7]+[._*~\\-]*[b8]+[._*~\\-]*[a4@]+[._*~\\-]*c+[._*~\\-]*k+s?","\\bc+[._*~\\-]*[o0]+[._*~\\-]*[o0]+[._*~\\-]*n+s?\\b","\\bp+[._*~\\-]*[a4@]+[._*~\\-]*k+[._*~\\-]*[i1!|l]+s?\\b","[t7]+[._*~\\-]*[o0]+[._*~\\-]*w+[._*~\\-]*[e3]+[._*~\\-]*l+[._*~\\-]*h+[._*~\\-]*[e3]+[._*~\\-]*[a4@]+[._*~\\-]*d+s?","r+[._*~\\-]*[a4@]+[._*~\\-]*[g9]+[._*~\\-]*h+[._*~\\-]*[e3]+[._*~\\-]*[a4@]+[._*~\\-]*d+s?","j+[._*~\\-]*[i1!|l]+[._*~\\-]*[g9]+[._*~\\-]*[a4@]+[._*~\\-]*[b8]+[._*~\\-]*[o0]+[._*~\\-]*[o0]+s?","\\b[b8]+[._*~\\-]*[e3]+[._*~\\-]*[a4@]+[._*~\\-]*n+[._*~\\-]*[e3]+[._*~\\-]*r+s?\\b","p+[._*~\\-]*[o0]+[._*~\\-]*r+[._*~\\-]*c+[._*~\\-]*h+[._*~\\-]*\\s*[._*~\\-]*m+[._*~\\-]*[o0]+[._*~\\-]*n+[._*~\\-]*k+[._*~\\-]*[e3]+[._*~\\-]*y+s?","j+[._*~\\-]*u+[._*~\\-]*n+[._*~\\-]*[g9]+[._*~\\-]*l+[._*~\\-]*[e3]+[._*~\\-]*\\s*[._*~\\-]*[b8]+[._*~\\-]*u+[._*~\\-]*n+[._*~\\-]*n+[._*~\\-]*y+","[s5$]+[._*~\\-]*[a4@]+[._*~\\-]*n+[._*~\\-]*d+[._*~\\-]*\\s*[._*~\\-]*m+[._*~\\-]*[o0]+[._*~\\-]*n+[._*~\\-]*k+[._*~\\-]*[e3]+[._*~\\-]*y+","[z2]+[._*~\\-]*[i1!|l]+[._*~\\-]*p+[._*~\\-]*p+[._*~\\-]*[e3]+[._*~\\-]*r+[._*~\\-]*h+[._*~\\-]*[e3]+[._*~\\-]*[a4@]+[._*~\\-]*d+s?","f+[._*~\\-]*[a4@]+[._*~\\-]*[g9]+[._*~\\-]*[g9]+[._*~\\-]*[o0]+[._*~\\-]*[t7]+s?","\\bf+[._*~\\-]*[a4@]+[._*~\\-]*[g9]+[._*~\\-]*[o0]+[._*~\\-]*[t7]+s?\\b","\\bf+[._*~\\-]*[a4@]+[._*~\\-]*[g9]+s?\\b","\\b[t7]+[._*~\\-]*r+[._*~\\-]*[a4@]+[._*~\\-]*n+[._*~\\-]*n+[._*~\\-]*y+\\b","\\b[t7]+[._*~\\-]*r+[._*~\\-]*[a4@]+[._*~\\-]*n+[._*~\\-]*n+[._*~\\-]*[i1!|l]+[._*~\\-]*[e3]+[._*~\\-]*[s5$]+\\b","n[e3]g[e3]r(?!en|end)\\w*","n+[._*~\\-]*[e3]+[._*~\\-]*[g9]+[._*~\\-]*[e3]+[._*~\\-]*r+[._*~\\-]*[i1!|l]+[._*~\\-]*n+","\\bm+[._*~\\-]*[a4@]+[._*~\\-]*k+[._*~\\-]*[a4@]+[._*~\\-]*[a4@]+[._*~\\-]*k+(en)?\\b","\\bf+[._*~\\-]*l+[._*~\\-]*[i1!|l]+[._*~\\-]*k+[._*~\\-]*k+[._*~\\-]*[e3]+[._*~\\-]*r+s?\\b","(kanker|kut|vuile|rot|tering)\\s*(jo+de?n?|marok\\w*|turk\\w*|zigeuner\\w*|homo\\w*)","h+[._*~\\-]*[e3]+[._*~\\-]*[i1!|l]+[._*~\\-]*l+[._*~\\-]*\\s*[._*~\\-]*h+[._*~\\-]*[i1!|l]+[._*~\\-]*[t7]+[._*~\\-]*l+[._*~\\-]*[e3]+[._*~\\-]*r+","[s5$]+[._*~\\-]*[i1!|l]+[._*~\\-]*[e3]+[._*~\\-]*[g9]+[._*~\\-]*\\s*[._*~\\-]*h+[._*~\\-]*[e3]+[._*~\\-]*[i1!|l]+[._*~\\-]*l+","gas\\s+(the|de|alle)\\s+jo?(ews|oden)","white\\s+power","\\b1488\\b"];/*/CENSOR*/
+  const CENSOR_RE = CENSOR_PATTERNS.map((p) => new RegExp(p, "gi"));
+  const censor = (t) => CENSOR_RE.reduce((s, r) => s.replace(r, "#####"), String(t ?? ""));
   const BOT_NAMES = ["Barbara", "Kees", "Ingrid", "Mo", "Fenna", "Sem"];
   const COMPANY_NAMES = {
     chocolate: ["Cocoa Loco", "Bar None", "Truffle Shuffle", "Meltdown Inc.", "Nibs & Co"],
@@ -2440,7 +2455,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const chip = (id, label, color) => { const u = unread(id); return `<button type="button" class="tchip ${TALK.thread === id ? "on" : ""}" data-thread="${id}">${color ? `<span class="dot" style="background:${color}"></span>` : ""}${esc(label)}${u ? `<span class="badge">${u}</span>` : ""}</button>`; };
     const chips = chip("all", "Everyone") + list.map((id) => chip(id, byId(id).playerName.replace(/ \(bot\)$/, ""), colVar(id))).join("");
     const items = [
-      ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread && !mutedIds().includes(m.from)).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}${S.mp && m.from !== "you" && /^m\d+$/.test(m.id || "") && byId(m.from) && !/^bot-/.test(m.from) ? `<button type="button" class="tm-flag" data-report="${m.id.slice(1)}" data-report-from="${m.from}" title="Report or hide" aria-label="Report this message">⚑</button>` : ""}</b><span>${esc(m.text)}</span></div>` })),
+      ...talkList().filter((m) => m.kind === "chat" && threadOf(m) === TALK.thread && !mutedIds().includes(m.from)).map((m) => ({ t: m.t, html: `<div class="tmsg ${m.from === "you" ? "me" : ""}"><b style="color:${colVar(m.from)}">${m.from === "you" ? "You" : esc(byId(m.from) ? byId(m.from).playerName : "?")}${S.mp && m.from !== "you" && /^m\d+$/.test(m.id || "") && byId(m.from) && !/^bot-/.test(m.from) ? `<button type="button" class="tm-flag" data-report="${m.id.slice(1)}" data-report-from="${m.from}" title="Report or hide" aria-label="Report this message">⚑</button>` : ""}</b><span>${esc(censor(m.text))}</span></div>` })),
       ...(TALK.thread === "all" ? [] : dealList().filter((d) => (d.from === TALK.thread && d.to === "you") || (d.to === TALK.thread && d.from === "you")).map((d) => ({ t: d.t, html: dealCard(d) }))),
     ].sort((a, b) => a.t - b.t);
     readMark()[TALK.thread] = Date.now() + 1e6;
@@ -2562,6 +2577,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (rn && $("#r-note")) $("#r-note").value = rn;
       const log = $("#tlog"); if (log) log.scrollTop = log.scrollHeight;
     }
+    notifyIncoming();
     const b = $("#btn-chat");
     if (b) { const u = TALK.open ? 0 : unreadTotal(); b.innerHTML = "Chat" + (u ? `<span class="badge">${u}</span>` : ""); b.setAttribute("aria-pressed", String(TALK.open)); }
   }
@@ -2585,8 +2601,46 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (d) answerDeal(d.dataset.dealDecline, false);
     if (c) withdrawDeal(c.dataset.dealCancel);
   }
+  // Pop-ups for new messages and deal offers sent to you (not when that conversation is already open in front of you).
+  const POPS = { seen: new Set(), game: null, el: null };
+  function notifyIncoming() {
+    if (!S || S.screen !== "game" || !S.game) return;
+    const gid = S.mp ? MP.gameId : S.seed;
+    const items = [
+      ...talkList().filter((m) => m.kind === "chat" && m.from !== "you" && !mutedIds().includes(m.from)).map((m) => ({ key: "m" + (m.id || m.t), thread: threadOf(m), from: m.from, kind: "msg", text: censor(m.text), pub: threadOf(m) === "all" })),
+      ...dealList().filter((d) => d.to === "you" && d.status === "offered" && d.round === S.game.round).map((d) => ({ key: "d" + d.id, thread: d.from, from: d.from, kind: "deal", deal: d })),
+    ];
+    if (POPS.game !== gid) { POPS.game = gid; POPS.seen = new Set(items.map((x) => x.key)); return; }
+    for (const it of items) {
+      if (POPS.seen.has(it.key)) continue;
+      POPS.seen.add(it.key);
+      if (TALK.open && TALK.thread === it.thread) continue;
+      popIncoming(it);
+    }
+  }
+  function popIncoming(it) {
+    if (!POPS.el) {
+      POPS.el = document.createElement("div"); POPS.el.className = "popstack"; POPS.el.setAttribute("aria-live", "polite");
+      document.body.appendChild(POPS.el);
+      POPS.el.addEventListener("click", (e) => {
+        const card = e.target.closest(".popmsg"); if (!card) return;
+        if (!e.target.closest(".pm-x")) { TALK.thread = card.dataset.thread; TALK.form = null; toggleTalk(true); }
+        card.remove();
+      });
+    }
+    const c = byId(it.from), who = c ? (it.from === "you" ? "You" : c.playerName) : "?";
+    const body = it.kind === "deal" ? `<b>🤝 Deal offer from ${esc(who)}</b><div>${dealText(it.deal)}</div>` : `<b>${it.pub ? "💬" : "✉️"} ${esc(who)}${it.pub ? " (to everyone)" : ""}</b><div>${esc(it.text.length > 140 ? it.text.slice(0, 137) + "…" : it.text)}</div>`;
+    const card = document.createElement("div");
+    card.className = "popmsg" + (it.kind === "deal" ? " deal" : ""); card.dataset.thread = it.thread; card.style.setProperty("--pc", colVar(it.from));
+    card.innerHTML = `${body}<span class="pm-foot">${it.kind === "deal" ? "Click to answer" : "Click to reply"}</span><button type="button" class="pm-x" aria-label="Dismiss">×</button>`;
+    POPS.el.appendChild(card);
+    while (POPS.el.children.length > 3) POPS.el.firstElementChild.remove();
+    sfx(it.kind === "deal" ? "profit" : "click");
+    setTimeout(() => card.remove(), it.kind === "deal" ? 12000 : 7000);
+  }
   function toggleTalk(open) { TALK.open = open === undefined ? !TALK.open : open; if (TALK.open) CALC.open = false, renderCalc(); renderTalk(); }
   async function sendTalk(text) {
+    text = censor(text);
     const to = TALK.thread === "all" ? null : TALK.thread;
     TALK.err = "";
     if (S.mp && to && /^bot-/.test(to)) {
@@ -4277,7 +4331,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       return;
     }
     if (calcEl || CALC.open) renderCalc();
-    if (talkEl || TALK.open) renderTalk();
+    if (talkEl || TALK.open) renderTalk(); else if (S.screen === "game") notifyIncoming();
     if (S && S.tab === "market" && S.screen === "game") S.coachMarket = true;
     if (coachEl || (S && S.coach != null)) setTimeout(coachTick, 0);
     if (S.screen === "lobby") {
@@ -5798,7 +5852,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (m.round !== last) { out += `<div class="feed-round"><span>${m.round === 0 ? "Before the game" : "Round " + m.round}</span></div>`; last = m.round; }
       if (m.kind === "chat") {
         const c = byId(m.who);
-        out += `<div class="msg"><canvas data-avatar="${m.who}" width="12" height="12" aria-hidden="true"></canvas><div><b class="who" style="color:${colVar(m.who)}">${esc(c ? c.playerName : "")}:</b> ${esc(m.text)}</div></div>`;
+        out += `<div class="msg"><canvas data-avatar="${m.who}" width="12" height="12" aria-hidden="true"></canvas><div><b class="who" style="color:${colVar(m.who)}">${esc(c ? c.playerName : "")}:</b> ${esc(censor(m.text))}</div></div>`;
       } else out += `<div class="msg"><span class="icon ${m.kind === "news" ? "news" : ""}">${m.kind === "news" ? "NEWS" : "FT"}</span><div>${esc(m.text)}</div></div>`;
     }
     return out;
@@ -5961,10 +6015,38 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${r.research && r.research.boardSeats ? boardSeatCard(r.research.boardSeats, r.round) : ""}
         ${c.mission && !c.bankrupt && !S.game.finished ? missionCard(false) : ""}
         ${investorResultCard(r)}
+        ${valueMovesCard(c)}
+        ${buyersCard(c)}
         <div class="card"><h3>What happened</h3>${r.events.length || heads.length ? `<div class="feed" style="max-height:none">${r.events.map((e) => `<div class="msg"><span class="icon">YOU</span><div>${esc(e)}</div></div>`).join("")}${heads.map((t) => `<div class="msg"><span class="icon news">NEWS</span><div>${esc(t)}</div></div>`).join("")}</div>` : `<div class="hint">A quiet round. Suspiciously quiet.</div>`}</div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">${emojiBar()}<button class="btn go" type="button" id="btn-continue" data-autofocus>Plan round ${S.game.round}</button></div>
     </div></div>`;
+  }
+
+  // What moved your value: arrows per part, no exact euros (working out the why is part of the game).
+  function valueMovesCard(c) {
+    const now = c.history.at(-1), prev = c.history.at(-2);
+    if (!now || !prev || !now.valueParts || !prev.valueParts) return "";
+    const scale = Math.max(250000, Math.abs(prev.value || 0));
+    const PARTS = [["earnings", "Profit outlook", "Investors value your recent profits (the last two rounds)"], ["cash", "Cash minus debt", "Money in the bank minus what you owe"],
+      ["assets", "Factory, stores and stock", "What your " + ind().labels.capacity + ", stores, stock and materials are worth"], ["brand", "Brand", "Your reputation is worth money"],
+      ["mood", "Investor mood", "Share dumps scare investors; accurate investor calls and dividends please them"], ["stakes", "Shares in others", "Your stakes in other companies (and loans between players)"]];
+    const arrow = (d) => { const x = d / scale; return x > 0.08 ? ["▲▲", "pos"] : x > 0.02 ? ["▲", "pos"] : x < -0.08 ? ["▼▼", "neg"] : x < -0.02 ? ["▼", "neg"] : ["—", "muted"]; };
+    const rows = PARTS.map(([k, n, tip]) => { const d = (now.valueParts[k] || 0) - (prev.valueParts[k] || 0), [a, cls] = arrow(d); return `<div class="vm-row"${tipAttr(tip)}><span>${n}</span><b class="${cls}">${a}</b></div>`; }).join("");
+    return `<div class="card"><h3>What moved your value</h3><div class="vm">${rows}</div><div class="hint">▲▲ / ▼▼ = a big move. The exact sums are yours to work out from the reports.</div></div>`;
+  }
+  // Your buyers: your share per buyer group (and the change), and how much your marketing pulled there.
+  function buyersCard(c) {
+    const now = c.history.at(-1), prev = c.history.at(-2);
+    if (!now || !now.segments) return "";
+    const mp = now.marketingPull || {};
+    const rows = ["budget", "mainstream", "premium", "hype"].map((s) => {
+      const sh = (now.segments[s] || {}).share || 0, sh0 = prev && prev.segments ? (prev.segments[s] || {}).share || 0 : sh, ch = (sh - sh0) * 100;
+      const m = mp[s];
+      return `<tr><td>${SEG[s]}</td><td class="num">${(sh * 100).toFixed(0)}%</td><td class="num ${Math.abs(ch) < 0.5 ? "muted" : ch > 0 ? "pos" : "neg"}">${Math.abs(ch) < 0.5 ? "—" : (ch > 0 ? "+" : "") + ch.toFixed(0) + " pt"}</td><td class="num ${m === undefined ? "muted" : m >= 1 ? "pos" : "neg"}">${m === undefined ? "—" : "×" + m.toFixed(2)}</td></tr>`;
+    }).join("");
+    return `<div class="card"><h3>Your buyers</h3><table class="tbl compact"><thead><tr><th>Buyers</th><th class="num">Share</th><th class="num">Change</th><th class="num"${tipAttr("Marketing pull: how much your marketing multiplied your pull with this group this round. ×1 = no effect. It's always relative: your rivals' marketing pulls too.")}>Marketing</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="hint">Every doubling of the budget adds less, and it only counts against what your rivals do.</div></div>`;
   }
 
   // Celebration layers: coins for a profit, a little rain for a loss, confetti for a win.

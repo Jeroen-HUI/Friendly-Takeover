@@ -998,3 +998,15 @@ test("repaying the whole loan leaves no cents behind; crumbs of debt are cleared
   assert.equal(r.companies[0].debt, 0, "repaying the rounded amount clears it");
   assert.equal(r.companies[1].debt, 0, "under €1 is paid automatically");
 });
+
+test("value parts add up to the company value; marketing pull is reported", () => {
+  let g = newGame(8);
+  g = resolveRound(g, { a: { marketingBudget: 300_000, campaign: "tv" } });
+  for (const c of g.companies) {
+    const h = c.history.at(-1)!, p = h.valueParts!;
+    assert.ok(Math.abs(p.cash + p.assets + p.brand + p.earnings + p.mood + p.stakes - h.value) < 6, c.id);
+  }
+  const pull = g.companies[0].history.at(-1)!.marketingPull!;
+  assert.ok(Math.abs(pull.mainstream! - Math.pow(3, 0.6)) < 0.02, "TV at 300k: ×1.93 with mainstream buyers");
+  assert.ok(g.companies[0].history[0].valueParts, "year 0 has parts too");
+});

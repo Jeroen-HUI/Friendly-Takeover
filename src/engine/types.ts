@@ -347,6 +347,10 @@ export interface RoundReport {
   /** Weed: heat, raids, security and street moves (private). Its costs are in streetCost. */
   street?: StreetReport;
   streetCost?: number;
+  /** What your value was made of at the end of the round (private): cash minus debt, factory/stores/stock, brand, profit outlook, investor mood, stakes. */
+  valueParts?: { cash: number; assets: number; brand: number; earnings: number; mood: number; stakes: number };
+  /** How much marketing multiplied your pull with each buyer group this round (1 = no effect; private). */
+  marketingPull?: Partial<Record<SegmentId, number>>;
   /** Weed after legalization: the cannabis tax (a share of the round's profit). */
   exciseTax?: number;
 }
