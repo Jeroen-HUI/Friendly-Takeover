@@ -1383,8 +1383,10 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const sp = special[c.id];
     // Same array as w.events, so share trades and takeovers added later still show up in the report.
     w.events.unshift(...sp.events);
-    const exciseTax = state.legal && hasStreet(state) ? Math.round(revenue * STREET.legal.tax) : 0;
-    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction - sp.street - (seizedCost[c.id] ?? 0) - exciseTax;
+    // Legal weed: a tax on this round's profit (nothing in a loss-making round).
+    const preTax = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction - sp.street - (seizedCost[c.id] ?? 0);
+    const exciseTax = state.legal && hasStreet(state) ? Math.round(Math.max(0, preTax) * STREET.legal.tax) : 0;
+    const profit = preTax - exciseTax;
     c.cash += -exciseTax + revenue - productionCost - materialOrderCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
     c.cumProduced = (c.cumProduced ?? 0) + w.produced;
     // Investor call: compare the guidance with what actually happened.
@@ -1522,7 +1524,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
         state.legal = { since: round + 1 };
         state.feed.push({ round, headline: `IT'S LEGAL! Referendum passes ${yes} to ${voters - yes}. Police dogs reassigned to "emotional support"; the tax office opens a new department` });
       } else state.feed.push({ round, headline: `Legalization falls short: ${yes} of ${voters} voted yes, ${needed} needed. ${isReferendumRound(state, round + STREET.referendum.every) ? `Next try in round ${round + STREET.referendum.every}` : "Maybe next game"}` });
-      for (const w of work) w.events.push(passed ? "Legalization passed! From next round: no more raids, more customers, and a 15% excise tax on revenue" : `Legalization vote failed (${yes} of ${voters} yes, ${needed} needed)`);
+      for (const w of work) w.events.push(passed ? "Legalization passed! From next round: no more raids, more customers, and a ${Math.round(STREET.legal.tax * 100)}% tax on profit" : `Legalization vote failed (${yes} of ${voters} yes, ${needed} needed)`);
     }
   }
 

@@ -196,7 +196,7 @@ Row-level security was tested with three simulated users (host, friend, outsider
 - **Weed CEOs**: *Smooth Operator* (launders 2× as much at half the fee, fewer audits) and *Enforcer* (goons 60% stronger, take more, half the heat when caught). Outside weed they play as Visionary.
 - **Laundering**: a raid also empties part of the safe (15% of cash, capped). Cash laundered through your car wash and stores (each launders up to 40% of the grow-room scale a round, 10% fee, small audit risk) can't be seized.
 - **The turf**: four districts, one per buyer group (Campus, Main Street, Uptown, Club District). Whoever sells the most to that group (30%+) runs it: a little more pull there next round, +3 heat per district.
-- **Legalization referendum**: round 3 and every 4 rounds after, secret ballot, needs 3 in 4 companies (5 players: 4). Voting is required before you submit. Once legal: no heat, raids, security or street moves; 20% more buyers (mostly mainstream and premium) and a 15% excise tax on revenue.
+- **Legalization referendum**: round 3 and every 4 rounds after, secret ballot, needs 3 in 4 companies (5 players: 4). Voting is required before you submit. Once legal: no heat, raids, security or street moves; 20% more buyers (mostly mainstream and premium) and a 25% tax on profit (none in a loss-making round).
 - Costs scale with your grow rooms; they're in the income statement and cash flow. Bots play it too. Chocolate and AI are unchanged.
 
 ## Accounts

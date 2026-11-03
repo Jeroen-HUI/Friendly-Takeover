@@ -697,8 +697,8 @@ export const STREET = {
   launder: { perFront: 0.4, fee: 0.1, auditChance: 0.12, auditFine: 0.25, auditHeat: 10 },
   /** Legalization referendum: from round 3, every 4 rounds while it's still illegal. Needs 3 in 4 voters (5 players: 4). */
   referendum: { first: 3, every: 4, needed: 0.75 },
-  /** Once legal: no raids, heat or street moves; more buyers, but an excise tax on revenue. */
-  legal: { tax: 0.15, demand: 1.2, segment: { budget: 1, mainstream: 1.2, premium: 1.2, hype: 1.05 } },
+  /** Once legal: no raids, heat or street moves; more buyers, but a tax on profit (none in a loss-making round). */
+  legal: { tax: 0.25, demand: 1.2, segment: { budget: 1, mainstream: 1.2, premium: 1.2, hype: 1.05 } },
   /** Districts: whoever sells most to a buyer group (at least 30%) runs that district: a bit more pull there next round, and some heat. */
   turf: { minShare: 0.3, pull: 0.04, heat: 3, names: { budget: "Campus", mainstream: "Main Street", premium: "Uptown", hype: "Club District" } },
 } as const;

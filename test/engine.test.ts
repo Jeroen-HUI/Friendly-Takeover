@@ -914,7 +914,7 @@ test("weed: tip-offs heat up a rival, heists steal stock unless armed guards are
   assert.ok(m.state.companies.some((c) => c.history.some((h) => h.street?.raided)), "someone gets raided in a full match");
 });
 
-test("weed: legalization needs 3 in 4 votes; once legal there are no raids, more buyers and an excise tax", () => {
+test("weed: legalization needs 3 in 4 votes; once legal there are no raids, more buyers and a tax on profit", () => {
   const five = [...players, { id: "e", playerName: "Sam", companyName: "High Five", trait: "ruthless" as const }];
   let g = createGame({ industry: "weed", difficulty: "standard", rounds: 12, seed: 4 }, five);
   g = resolveRound(g, {}); g = resolveRound(g, {});
@@ -932,7 +932,8 @@ test("weed: legalization needs 3 in 4 votes; once legal there are no raids, more
   for (const c of next.companies) {
     const h = c.history.at(-1)!;
     assert.ok(!h.street, "no street once it's legal");
-    assert.ok(h.exciseTax! > 0 && Math.abs(h.exciseTax! - h.revenue * 0.15) < 1, "15% excise tax");
+    const pre = h.profit + (h.exciseTax ?? 0);
+    assert.ok(Math.abs((h.exciseTax ?? 0) - Math.max(0, pre) * 0.25) < 1, "25% tax on profit, none on a loss");
     assert.equal(c.heat, 0);
   }
   // Bigger market once legal.

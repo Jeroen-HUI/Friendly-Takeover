@@ -347,7 +347,7 @@ export interface RoundReport {
   /** Weed: heat, raids, security and street moves (private). Its costs are in streetCost. */
   street?: StreetReport;
   streetCost?: number;
-  /** Weed after legalization: excise tax on revenue. */
+  /** Weed after legalization: the cannabis tax (a share of the round's profit). */
   exciseTax?: number;
 }
 
