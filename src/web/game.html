@@ -4492,7 +4492,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     Y: ["101", "101", "010", "010", "010"], Z: ["111", "001", "010", "100", "111"], "0": ["111", "101", "101", "101", "111"], "1": ["010", "110", "010", "010", "111"],
     "2": ["110", "001", "010", "100", "111"], "3": ["110", "001", "010", "001", "110"], "4": ["101", "101", "111", "001", "001"], "5": ["111", "100", "110", "001", "110"],
     "6": ["011", "100", "111", "101", "111"], "7": ["111", "001", "010", "010", "010"], "8": ["111", "101", "111", "101", "111"], "9": ["111", "101", "111", "001", "110"],
-    " ": ["000", "000", "000", "000", "000"], "!": ["010", "010", "010", "000", "010"], "%": ["101", "001", "010", "100", "101"], "+": ["000", "010", "111", "010", "000"], "-": ["000", "000", "111", "000", "000"],
+    " ": ["000", "000", "000", "000", "000"], "!": ["010", "010", "010", "000", "010"], "?": ["110", "001", "010", "000", "010"], "€": ["011", "110", "100", "110", "011"], "%": ["101", "001", "010", "100", "101"], "+": ["000", "010", "111", "010", "000"], "-": ["000", "000", "111", "000", "000"],
   };
   function ptext(g, str, x, y, color, scale) {
     const k = scale || 1;
@@ -4566,6 +4566,64 @@ details.howto[open] summary::after { content: "▾ hide"; }
         goat() { R(g, 82, 20, 22, 10, "#e9e2d0"); R(g, 101, 13, 9, 9, "#e9e2d0"); R(g, 102, 10, 2, 3, "#8a7a5a"); R(g, 107, 10, 2, 3, "#8a7a5a"); R(g, 104, 22, 3, 4, "#d0c6ae"); R(g, 84, 30, 2, 7, "#e9e2d0"); R(g, 99, 30, 2, 7, "#e9e2d0"); R(g, 106, 16, 1, 1, "#111"); R(g, 108, 19 + (f % 2), 3, 2, "#3a7a2a"); },
         shop() { R(g, 82, 18, 28, 18, "#e9e1d0"); for (let k = 0; k < 7; k++) R(g, 81 + k * 4, 13, 4, 5, k % 2 ? "#fff" : "#d62828"); R(g, 85, 22, 9, 8, "#7fe3ff"); R(g, 98, 22, 7, 14, "#5a3417"); R(g, 86, 23, 3, 3, f % 2 ? "#fff" : "#c9f4ff"); ptext(g, "OPEN", 84, 31, f % 2 ? "#d62828" : "#2f8a4a"); },
         cocoa() { R(g, 90, 12, 12, 24, "#c46a1e"); R(g, 93, 14, 1, 20, "#8a4512"); R(g, 98, 14, 1, 20, "#8a4512"); },
+        // Icons for the newer stories (all drawn in the anchor's screen, about 50x30 pixels).
+        heart() { const b = f % 2; R(g, 86 - b, 14, 9, 8, "#ff5c9a"); R(g, 97, 14, 9 + b, 8, "#ff5c9a"); R(g, 84 - b, 18, 24 + 2 * b, 8, "#ff5c9a"); R(g, 88, 26, 16, 5, "#ff5c9a"); R(g, 92, 31, 8, 4, "#ff5c9a"); R(g, 88, 16, 3, 3, "#ffc2da"); },
+        dumbbell() { const y = 20 - (f % 2) * 4; R(g, 84, y + 4, 24, 3, "#9aa3b5"); R(g, 80, y, 6, 11, "#3a4160"); R(g, 106, y, 6, 11, "#3a4160"); R(g, 92, y + 8, 8, 6, "#c46a1e"); },
+        hat() { R(g, 82, 26, 28, 4, "#e0c070"); R(g, 88, 14, 16, 12, "#e0c070"); R(g, 88, 22, 16, 3, "#d62828"); R(g, 84, 34, 24, 6, "#fff"); ptext(g, "STRIKE", 85, 35, "#d62828"); },
+        tag() { R(g, 84, 14, 22, 18, "#ffd166"); R(g, 80, 18, 4, 10, "#ffd166"); R(g, 82, 22, 2, 2, "#0a0f24"); ptext(g, f % 2 ? "-50" : "-70", 88, 20, "#d62828"); R(g, 84, 34, 22, 2, "#d62828"); },
+        medal() { R(g, 90, 10, 4, 10, "#3d8bff"); R(g, 98, 10, 4, 10, "#d62828"); R(g, 88, 20, 16, 14, "#ffd166"); R(g, 91, 23, 10, 8, "#f0b429"); R(g, 95, 24, 2, 6, "#fff3b0"); for (let k = 0; k < 3; k++) R(g, 80 + k * 14, 36 + ((f + k) % 2) * 2, 2, 3, "#7fe3ff"); },
+        bread() { R(g, 82, 18, 28, 14, "#e0b47a"); R(g, 84, 15, 24, 4, "#f0cf9a"); for (let x = 87; x < 106; x += 6) R(g, x, 17, 3, 2, "#c4904a"); R(g, 82, 32, 28, 2, "#a0642f"); },
+        squirrel() { const x = 84 + (f % 2) * 4; R(g, x, 20, 14, 10, "#b8642a"); R(g, x + 12, 14, 8, 8, "#b8642a"); R(g, x + 17, 16, 1, 1, "#111"); R(g, x - 6, 10, 8, 14, "#d07a3a"); R(g, x - 4, 8, 4, 4, "#d07a3a"); R(g, x + 18, 22, 5, 5, "#8a4512"); R(g, x + 2, 30, 3, 4, "#b8642a"); R(g, x + 10, 30, 3, 4, "#b8642a"); },
+        tvkid() { R(g, 80, 12, 32, 22, "#3a4160"); R(g, 82, 14, 28, 18, "#7fe3ff"); R(g, 90, 16, 10, 14, "#c46a1e"); R(g, 92, 20, 2, 2, "#111"); R(g, 96, 20, 2, 2, "#111"); R(g, 93, 25, 4, f % 2 ? 2 : 1, "#5a2a12"); R(g, 86, 34, 4, 4, "#3a4160"); R(g, 102, 34, 4, 4, "#3a4160"); },
+        ribbon() { R(g, 86, 16, 22, 16, "#5a3417"); R(g, 95, 16, 4, 16, "#d62828"); R(g, 86, 22, 22, 4, "#d62828"); R(g, 90, 11, 6, 6, "#d62828"); R(g, 98, 11, 6, 6, "#d62828"); ptext(g, "?", 112, 12 + (f % 2), "#ffd166", 2); },
+        bus() { const x = 76 + (f % 4) * 3; R(g, x, 14, 34, 18, "#ffd166"); for (let k = 0; k < 4; k++) R(g, x + 3 + k * 8, 17, 6, 6, "#7fe3ff"); R(g, x + 4, 31, 6, 6, "#222"); R(g, x + 24, 31, 6, 6, "#222"); R(g, x, 26, 34, 2, "#d62828"); },
+        cat() { R(g, 74, 30, 48, 4, "#596079"); for (let x = 76 + (f % 2) * 2; x < 122; x += 6) R(g, x, 34, 3, 3, "#3a4160"); R(g, 88, 20, 18, 10, "#ff9f43"); R(g, 102, 15, 9, 9, "#ff9f43"); R(g, 102, 12, 3, 3, "#ff9f43"); R(g, 108, 12, 3, 3, "#ff9f43"); R(g, 104, 19, 2, 1, "#111"); R(g, 108, 19, 2, 1, "#111"); R(g, 82, 22, 6, 3, "#ff9f43"); ptext(g, "Z", 114, 6 + (f % 3) * 2, "#fff"); },
+        piggy() { R(g, 84, 16, 24, 16, "#ff9fc4"); R(g, 106, 20, 5, 6, "#ff7ab0"); R(g, 108, 22, 1, 1, "#7a2a4a"); R(g, 100, 19, 2, 2, "#111"); R(g, 90, 12, 3, 4, "#ff7ab0"); R(g, 88, 32, 3, 4, "#ff7ab0"); R(g, 102, 32, 3, 4, "#ff7ab0"); R(g, 93, 8 + (f % 3) * 2, 6, 3, "#ffd166"); R(g, 94, 15, 5, 1, "#7a2a4a"); },
+        house() { R(g, 84, 22, 24, 14, "#e8d8b0"); for (let k = 0; k < 6; k++) R(g, 82 + k * 2, 22 - k * 2, 28 - k * 4, 2, "#b8642a"); R(g, 93, 28, 6, 8, "#7a4a24"); R(g, 86, 25, 4, 4, "#7fe3ff"); R(g, 102, 25, 4, 4, "#7fe3ff"); },
+        egg() { R(g, 90, 12, 12, 24, "#f4e3c1"); R(g, 88, 16, 16, 16, "#f4e3c1"); R(g, 88, 20, 16, 3, "#ff5c9a"); R(g, 88, 26, 16, 3, "#3d8bff"); R(g, 80 + (f % 2) * 2, 28, 6, 8, "#fff"); R(g, 81, 24, 2, 5, "#fff"); R(g, 84, 24, 2, 5, "#fff"); },
+        bowl() { R(g, 82, 24, 28, 10, "#3d8bff"); R(g, 86, 34, 20, 2, "#2a5fb0"); for (let k = 0; k < 6; k++) R(g, 85 + k * 4, 18 + ((k + f) % 3), 3, 6, ["#c46a1e", "#ffd166", "#d62828"][k % 3]); },
+        tree() { R(g, 94, 24, 4, 14, "#5a3417"); R(g, 84, 8, 24, 18, "#2f8a4a"); for (let k = 0; k < 6; k++) R(g, 86 + (k % 3) * 8, 12 + Math.floor(k / 3) * 7 + ((f + k) % 2), 4, 6, "#c46a1e"); },
+        bug() { R(g, 80, 14, 32, 20, "#6b7389"); R(g, 84, 18, 24, 10, f % 2 ? "#ff4d4d" : "#2a3466"); ptext(g, "ERR", 86, 20, "#fff"); R(g, 92, 30, 8, 6, "#3a4160"); R(g, 96, 6 + (f % 2), 2, 6, "#ffd166"); },
+        moon() { R(g, 86, 10, 22, 24, "#ffd166"); R(g, 84, 14, 26, 16, "#ffd166"); R(g, 90, 15, 4, 4, "#f0b429"); R(g, 99, 23, 5, 5, "#f0b429"); R(g, 94, 28, 3, 3, "#f0b429"); R(g, 76, 34, 4, 4, "#fff"); },
+        plug() { R(g, 82, 18, 14, 12, "#e9e2d0"); R(g, 96, 21, 6, 2, "#9aa3b5"); R(g, 96, 25, 6, 2, "#9aa3b5"); R(g, 72, 23, 10, 2, "#222"); R(g, 104 + (f % 2) * 4, 18, 4, 4, "#ffd166"); R(g, 110, 26, 4, 4, "#ffd166"); },
+        book() { R(g, 82, 14, 28, 20, "#3d8bff"); R(g, 95, 14, 2, 20, "#2a5fb0"); R(g, 85, 18, 8, 1, "#fff"); R(g, 85, 21, 8, 1, "#fff"); R(g, 99, 18, 8, 1, "#fff"); ptext(g, "A+", 99, 24, "#ffd166"); R(g, 84, 34, 28, 2, "#d62828"); },
+        dog() { const y = 18 + (f % 2); R(g, 84, y + 4, 20, 10, "#c98b5e"); R(g, 100, y - 2, 10, 10, "#c98b5e"); R(g, 108, y + 2, 4, 3, "#222"); R(g, 104, y, 2, 2, "#111"); R(g, 100, y - 4, 3, 5, "#8a5a2b"); R(g, 86, y + 14, 3, 5, "#c98b5e"); R(g, 98, y + 14, 3, 5, "#c98b5e"); R(g, 80, y + 2, 5, 2, "#c98b5e"); },
+        speaker() { R(g, 88, 10, 16, 26, "#2a3466"); R(g, 92, 14, 8, 8, "#111"); R(g, 92, 26, 8, 6, "#111"); R(g, 95, 17, 2, 2, "#7fe3ff"); R(g, 108, 14 + (f % 2) * 2, 2, 6, "#ffd166"); R(g, 106, 20 + (f % 2) * 2, 3, 2, "#ffd166"); },
+        gavel() { R(g, 80, 30, 32, 6, "#7a4a24"); R(g, 92 + (f % 2) * 2, 10, 14, 7, "#a0642f"); R(g, 98, 17, 3, 12, "#5a3417"); },
+        film() { R(g, 80, 12, 32, 22, "#222"); for (let k = 0; k < 6; k++) { R(g, 82 + k * 5, 13, 3, 2, "#ddd"); R(g, 82 + k * 5, 31, 3, 2, "#ddd"); } R(g, 84, 16, 24, 14, f % 2 ? "#7fe3ff" : "#c9f4ff"); R(g, 92, 19, 8, 8, "#d62828"); },
+        fan() { R(g, 82, 10, 28, 26, "#3a4160"); for (let y = 13; y < 34; y += 4) R(g, 85, y, 22, 2, "#2a3466"); const a = f % 2; R(g, 92, 18 + a, 8, 2, "#7fe3ff"); R(g, 95 + a, 15, 2, 8, "#7fe3ff"); R(g, 104, 12, 4, 2, f % 2 ? "#4fd987" : "#ff4d4d"); },
+        bill() { R(g, 84, 10, 24, 28, "#fff"); for (let y = 14; y < 32; y += 4) R(g, 87, y, 16 - (y % 8), 1, "#888"); R(g, 87, 32, 18, 3, "#d62828"); ptext(g, "€€€", 88, 32, "#fff"); },
+        truck() { const x = 74 + (f % 4) * 3; R(g, x, 14, 26, 18, "#9aa3b5"); R(g, x + 26, 20, 10, 12, "#d62828"); R(g, x + 28, 22, 6, 5, "#7fe3ff"); R(g, x + 4, 31, 6, 6, "#222"); R(g, x + 26, 31, 6, 6, "#222"); ptext(g, "GPU", x + 4, 20, "#2f8a4a"); },
+        robotrain() { person(g, 92, 14, PEOPLE.robot, f, false); for (let k = 0; k < 7; k++) R(g, 74 + k * 7, ((f * 5 + k * 9) % 30) + 8, 1, 4, "#7fe3ff"); },
+        ball() { R(g, 88, 14, 18, 18, "#ff5c9a"); R(g, 86, 18, 22, 10, "#ff5c9a"); R(g, 92, 19, 2, 2, "#111"); R(g, 99, 19, 2, 2, "#111"); R(g, 93, 25, 7, f % 2 ? 2 : 1, "#7a2a4a"); },
+        scissors() { R(g, 82, 14, 8, 8, "#d62828"); R(g, 82, 26, 8, 8, "#d62828"); R(g, 90, 18 + (f % 2), 22, 2, "#9aa3b5"); R(g, 90, 28 - (f % 2), 22, 2, "#9aa3b5"); ptext(g, "AI", 98, 22, "#ffd166"); },
+        globe() { R(g, 86, 12, 22, 22, "#3d8bff"); R(g, 90, 15, 8, 6, "#4fd987"); R(g, 99, 22, 6, 8, "#4fd987"); R(g, 74, 22, 8, 2, "#d62828"); R(g, 110, 22, 8, 2, "#d62828"); ptext(g, "%", 112, 12 + (f % 2), "#ffd166", 2); },
+        sunny() { R(g, 84, 12, 14, 14, "#ffe066"); for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + (f % 2) * 0.3; R(g, 90 + Math.cos(a) * 11, 18 + Math.sin(a) * 11, 2, 2, "#ffe066"); } for (let x = 100; x < 120; x += 6) { R(g, x + 2, 26, 2, 10, "#2f8a4a"); R(g, x, 24, 6, 4, "#4fd987"); } },
+        leaf() { R(g, 88, 14, 16, 18, "#4fd987"); R(g, 92, 10, 8, 4, "#4fd987"); R(g, 95, 14, 2, 22, "#2f8a4a"); R(g, 104, 20 + (f % 2), 8, 10, "#9ff0c0"); R(g, 104, 18 + (f % 2), 8, 2, "#fff"); },
+        bulb() { R(g, 89, 10, 14, 16, f % 2 ? "#ffe066" : "#fff3b0"); R(g, 92, 26, 8, 6, "#9aa3b5"); R(g, 94, 32, 4, 2, "#6b7389"); R(g, 104, 14, 6, 2, "#ff4d4d"); ptext(g, "€", 108, 18, "#ff4d4d", 2); },
+        burger() { R(g, 86, 12, 20, 6, "#d99a00"); R(g, 84, 18, 24, 3, "#4fd987"); R(g, 84, 21, 24, 5, "#7a3a1a"); R(g, 84, 26, 24, 3, "#ffd166"); R(g, 86, 29, 20, 5, "#d99a00"); ptext(g, "24H", 76, 34, f % 2 ? "#ff5c9a" : "#7fe3ff"); },
+        moth() { for (let k = 0; k < 3; k++) { const x = 80 + k * 13, y = 12 + ((f + k) % 3) * 4; R(g, x, y + 3, 2, 6, "#5a4a3a"); R(g, x - 5, y + (f % 2), 5, 6, "#c9b28a"); R(g, x + 2, y + (f % 2), 5, 6, "#c9b28a"); } for (let x = 78; x < 120; x += 8) { R(g, x + 3, 30, 2, 8, "#2f8a4a"); R(g, x, 30, 8, 3, "#4fd987"); } },
+        books() { R(g, 82, 14, 8, 22, "#d62828"); R(g, 91, 12, 8, 24, "#3d8bff"); R(g, 100, 16, 8, 20, "#ffd166"); R(g, 76, 34, 40, 2, "#a0642f"); ptext(g, "WEEK", 104, 6 + (f % 2), "#4fd987"); },
+        backpack() { R(g, 86, 12, 20, 24, "#4fd987"); R(g, 89, 18, 14, 8, "#2f8a4a"); R(g, 90, 8, 12, 4, "#2f8a4a"); R(g, 108, 14 + (f % 2), 10, 6, "#fff"); ptext(g, "€", 110, 15 + (f % 2), "#d62828"); },
+        trophy() { R(g, 88, 12, 16, 12, "#ffd166"); R(g, 84, 14, 4, 6, "#ffd166"); R(g, 104, 14, 4, 6, "#ffd166"); R(g, 94, 24, 4, 6, "#f0b429"); R(g, 89, 30, 14, 4, "#a0642f"); R(g, 91, 15, 3, 6, "#fff3b0"); R(g, 78 + (f % 2) * 30, 10, 2, 2, "#fff"); },
+        smoothie() { R(g, 88, 12, 16, 24, "#9ff0c0"); R(g, 88, 12, 16, 4, "#fff"); R(g, 99, 4, 2, 10, "#ff5c9a"); R(g, 90, 22 + (f % 2), 3, 3, "#4fd987"); R(g, 97, 27, 3, 3, "#4fd987"); },
+        gummy() { const b = f % 2; R(g, 88, 16 - b, 16, 16, "#ff5c9a"); R(g, 87, 12 - b, 6, 6, "#ff5c9a"); R(g, 99, 12 - b, 6, 6, "#ff5c9a"); R(g, 89, 19 - b, 14, 3, "#111"); R(g, 92, 26 - b, 8, 2, "#c43a7a"); R(g, 86, 32 - b, 6, 5, "#ff5c9a"); R(g, 100, 32 - b, 6, 5, "#ff5c9a"); },
+        sheet() { R(g, 84, 10, 24, 26, "#fff"); for (let y = 13; y < 34; y += 4) for (let x = 86; x < 106; x += 6) R(g, x, y, 5, 3, (x + y) % 3 ? "#cfe8cf" : "#4fd987"); R(g, 104, 6 + (f % 2), 8, 6, "#d62828"); ptext(g, "x2", 104, 7 + (f % 2), "#fff"); },
+        flask() { R(g, 92, 10, 8, 8, "#c9f4ff"); R(g, 86, 18, 20, 16, "#c9f4ff"); R(g, 88, 24, 16, 10, "#4fd987"); R(g, 92, 26 + (f % 2), 2, 2, "#fff"); ptext(g, "MEH", 84, 36, "#ffd166"); },
+        sofa() { R(g, 80, 18, 32, 8, "#7a1f3d"); R(g, 78, 22, 6, 12, "#5a1730"); R(g, 108, 22, 6, 12, "#5a1730"); R(g, 82, 26, 28, 6, "#a02a52"); R(g, 82, 32, 3, 4, "#3a2010"); R(g, 107, 32, 3, 4, "#3a2010"); ptext(g, "z", 96, 8 + (f % 3) * 2, "#fff"); },
+        roll() { R(g, 84, 12, 16, 22, "#fff"); R(g, 84, 12, 16, 4, "#e6e6e6"); R(g, 90, 13, 4, 2, "#bbb"); R(g, 100, 18, 12, 14, "#4fd987"); ptext(g, "1g", 101, 22, "#fff"); R(g, 80, 34, 34, 2, "#a0642f"); },
+        parrot() { const b = f % 2; R(g, 90, 12, 12, 14, "#4fd987"); R(g, 94, 8, 10, 8, "#d62828"); R(g, 104, 11, 4, 3, "#ffd166"); R(g, 100, 10, 2, 2, "#111"); R(g, 86, 16 + b, 6, 10, "#3d8bff"); R(g, 92, 26, 4, 10, "#3d8bff"); R(g, 80, 30, 26, 2, "#7a4a24"); R(g, 108, 18 - b, 10, 8, "#ffd166"); ptext(g, "%", 110, 19 - b, "#d62828"); },
+        cake() { R(g, 86, 24, 20, 12, "#fff"); R(g, 89, 16, 14, 8, "#fff"); R(g, 92, 10, 8, 6, "#fff"); R(g, 86, 28, 20, 2, "#ff9fc4"); R(g, 89, 20, 14, 2, "#ff9fc4"); R(g, 95, 6 - (f % 2), 2, 4, "#ffd166"); },
+        plane() { const x = 74 + (f % 5) * 6; R(g, x, 20, 30, 6, "#e6e6e6"); R(g, x + 12, 12, 6, 20, "#e6e6e6"); R(g, x + 2, 16, 4, 6, "#d62828"); R(g, x + 28, 21, 4, 4, "#7fe3ff"); for (let k = 0; k < 4; k++) R(g, x + 8 + k * 5, 22, 2, 2, "#3d8bff"); },
+        drop() { R(g, 94, 10, 4, 4, "#7fe3ff"); R(g, 92, 14, 8, 6, "#7fe3ff"); R(g, 90, 20, 12, 10, "#7fe3ff"); R(g, 92, 30, 8, 3, "#7fe3ff"); R(g, 76, 34, 40, 3, "#b8864a"); R(g, 84 + (f % 2) * 20, 30, 6, 3, "#ff9f43"); },
+        stock() { for (let k = 0; k < 6; k++) R(g, 80 + k * 6, 14 + k * 3 + ((f + k) % 2), 5, 3, "#ff6262"); R(g, 110, 30, 6, 6, "#ff6262"); R(g, 80, 38, 36, 1, "#3a4680"); },
+        coins() { for (let k = 0; k < 5; k++) { R(g, 84 + k * 5, 30 - k * 4 - (f % 2), 10, 4, "#f0b429"); R(g, 85 + k * 5, 30 - k * 4 - (f % 2), 8, 1, "#ffe066"); } R(g, 104, 8, 12, 8, "#4fd987"); ptext(g, "€", 108, 9, "#fff"); },
+        ship() { R(g, 74, 34, 48, 6, "#3d8bff"); R(g, 78 + (f % 2), 20, 40, 10, "#d62828"); R(g, 82, 14, 8, 6, "#ffd166"); R(g, 92, 14, 8, 6, "#4fd987"); R(g, 102, 14, 8, 6, "#3d8bff"); R(g, 76, 30, 44, 4, "#7a1f3d"); R(g, 74, 28, 4, 8, "#4fd987"); R(g, 118, 28, 4, 8, "#4fd987"); },
+        bolt() { R(g, 70, 8, 52, 34, "#05070f"); R(g, 98, 10, 6, 8, "#ffd166"); R(g, 94, 18, 10, 4, "#ffd166"); R(g, 92, 22, 6, 8, "#ffd166"); R(g, 90, 30, 4, 6, "#ffd166"); const x = 80 + (f % 4) * 2; R(g, x, 26, 8, 8, "#9aa3b5"); R(g, x + 2, 28, 4, 4, "#05070f"); },
+        wifi() { R(g, 90, 28, 6, 6, "#9aa3b5"); R(g, 86, 20, 14, 2, "#9aa3b5"); R(g, 82, 14, 22, 2, "#9aa3b5"); R(g, 80, 10, 30, 30, "rgba(0,0,0,0)"); for (let k = 0; k < 18; k++) R(g, 82 + k * 1.5, 12 + k * 1.3, 2, 2, "#d62828"); R(g, 106, 22 + (f % 2), 10, 12, "#e9e1d0"); },
+        machine() { R(g, 82, 12, 28, 22, "#6b7389"); R(g, 86, 16, 8, 8, "#7fe3ff"); R(g, 98, 16, 8, 8, "#7fe3ff"); R(g, 76, 30, 6, 4, "#c9d2f0"); for (let k = 0; k < 3; k++) R(g, 110 + k * 3, 28 - ((f + k) % 3) * 3, 3, 3, ["#c46a1e", "#ffd166", "#9aa3b5"][k]); },
+        lock() { R(g, 88, 20, 16, 14, "#ffd166"); R(g, 90, 12, 2, 8, "#9aa3b5"); R(g, 100, 12, 2, 8, "#9aa3b5"); R(g, 90, 10, 12, 2, "#9aa3b5"); R(g, 95, 25, 2, 4, "#5a3417"); ptext(g, "?", 108, 14 + (f % 2), "#ff5c9a", 2); },
+        gold() { R(g, 84, 22, 24, 10, "#ffd166"); R(g, 88, 16, 16, 6, "#f0b429"); R(g, 90, 18, 4, 2, "#fff3b0"); R(g, 104, 8 + (f % 2), 2, 2, "#fff"); R(g, 80, 12, 2, 2, "#fff"); ptext(g, "VIBES", 84, 34, "#ffd166"); },
       }[v] || (() => {});
       ic();
       person(g, 30, 20, PEOPLE.anchor, f, false);
@@ -4704,6 +4762,39 @@ details.howto[open] summary::after { content: "▾ hide"; }
     "snack-shortage": ["anchor", "chips", "NATIONAL SNACK SHORTAGE"], festival: ["crowd", "stage", "FESTIVAL SELLS OUT"], connoisseur: ["anchor", "wine", "CRAFT STRAINS ARE THE NEW WINE"],
     fertilizer: ["anchor", "goat", "GOAT EATS THE FERTILIZER"], "rates-weed": ["press", "banker", "RATES UP: HE JUST FELT LIKE IT"], "budget-hunt": ["chart", "down", "STUDENT LOANS LATE"],
     "boom-weed": ["chart", "up", "ECONOMY BOOMS"], celebrity: ["crowd", "stage", "{co} NAME-DROPPED IN HIT SONG"],
+    // Newer chocolate stories
+    valentines: ["anchor", "heart", "VALENTINE'S DAY EVERY DAY"], "gym-craze": ["anchor", "dumbbell", "MARATHON WITH A CHOCOLATE BAR"], "cocoa-strike": ["anchor", "hat", "COCOA PICKERS STRIKE FOR HATS"],
+    "cheap-wars": ["anchor", "tag", "SUPERMARKET PRICE WAR"], "food-critic": ["anchor", "medal", "FOOD CRITIC CRIES ON LIVE TV"], "diet-trend": ["anchor", "bread", "ONLY-BEIGE-FOOD DIET"],
+    squirrel: ["anchor", "squirrel", "SQUIRREL GANG RAIDS WAREHOUSE"], "kids-show": ["anchor", "tvkid", "TALKING CHOCOLATE BAR ON TV"], "luxury-scandal": ["anchor", "ribbon", "ARTISAN = REGULAR + RIBBON"],
+    "random-viral": ["crowd", "phone", "GRANDMA REVIEW OF {co} VIRAL"], "cheapest-tourists": ["anchor", "bus", "3,000 TOURISTS WANT IT CHEAP"], "factory-cat": ["anchor", "cat", "CAT NAPS ON CONVEYOR BELT"],
+    "rate-cut-choc": ["anchor", "piggy", "RATES CUT FOR A SAD INTERN"], "sugar-cheap": ["anchor", "house", "HOUSES MADE OF SUGAR BEETS"], "unboxing-ban": ["anchor", "film", "UNBOXING VIDEOS BANNED"],
+    easter: ["anchor", "egg", "EASTER MOVED A MONTH EARLY"], "office-snacks": ["anchor", "bowl", "BONUSES BECOME SNACK BOWLS"], "cocoa-flood": ["anchor", "tree", "COCOA TREES PRODUCE DOUBLE"],
+    "influencer-quit": ["crowd", "phone", "SNACK INFLUENCER QUITS"], "chocolate-day": ["press", "minister", "CHOCOLATE DAY BY ACCIDENT"], "machine-bug": ["anchor", "bug", "MACHINES WRAP EVERYTHING TWICE"],
+    "rich-kids": ["anchor", "gold", "RICH KIDS PAY IN TRUFFLES"], "bank-panic-choc": ["press", "banker", "BANK STUCK IN 1982 RATES"], "cheap-lovers": ["anchor", "book", "CHOCOLATE COUNTS AS A MEAL"],
+    // Newer AI stories
+    "chip-glut": ["anchor", "gpu", "CHIP FACTORY MAKES TEN TIMES"], "grandma-ai": ["anchor", "speaker", "GRANDMAS LOVE CHATBOTS"], hallucination: ["anchor", "moon", "CHATBOT: MOON IS CHEESE"],
+    "power-cut-ai": ["anchor", "plug", "CITY UNPLUGGED FOR A SCOOTER"], "ai-homework": ["anchor", "book", "AI HOMEWORK BANNED (USED)"], "ceo-keynote": ["press", "robot", "ROBOT DOG BITES TECH CEO"],
+    "privacy-panic": ["anchor", "speaker", "SPEAKERS HEARD YOU SING"], "lawyers-ai": ["anchor", "gavel", "LAWYERS VS AI CONTRACTS"], "free-ai": ["anchor", "tag", "FREE AI FOREVER (9 DAYS)"],
+    "random-ai-viral": ["crowd", "stage", "{co}'S AI TOPS THE CHARTS"], cooling: ["anchor", "fan", "SERVERS WEAR TINY FANS"], "rates-down-ai": ["press", "banker", "RATES CUT: CHATBOT SAID SO"],
+    "office-mandate": ["press", "minister", "AN AI BUDDY FOR EVERYONE"], "luxury-ai": ["anchor", "gold", "AI BUTLERS FOR BILLIONAIRES"], "ai-flop": ["anchor", "film", "AI MOVIE: REFUNDS + BLANKETS"],
+    "cheap-phones": ["crowd", "phone", "€20 PHONE RUNS AI"], "energy-tax": ["anchor", "bill", "ENERGY TAX ON DATA CENTERS"], "ai-friend": ["anchor", "speaker", "AI BEATS THE IN-LAWS"],
+    "gpu-thief": ["anchor", "truck", "GPU THIEVES GET LOST"], "robot-strike": ["anchor", "robotrain", "ROBOTS REFUSE THE RAIN"], "ai-fair": ["anchor", "ball", "FREE AI STRESS BALLS"],
+    "budget-cuts-ai": ["anchor", "scissors", "THE EXPENSIVE AI GOES FIRST"], "bank-glitch-ai": ["chart", "up", "TRADING BOT BUYS ALL BONDS"], "students-free": ["anchor", "book", "EXAM SEASON AI RUSH"],
+    "chip-tariff": ["anchor", "globe", "MICROCHIP TARIFF WAR"],
+    // Newer weed stories
+    "rain-perfect": ["anchor", "sunny", "SUSPICIOUSLY CHILL WEATHER"], wellness: ["anchor", "leaf", "CBD IS THE NEW KALE"], "power-bill": ["anchor", "bulb", "GROW LIGHTS COST TRIPLE"],
+    munchies: ["anchor", "burger", "FAST FOOD MIDNIGHT MENU"], moth: ["anchor", "moth", "POLITE MOTHS EAT THE PLANTS"], "students-week": ["anchor", "books", "FRESHERS' MONTH"],
+    docu: ["anchor", "film", "CRAFT GROWER DOCUMENTARY HIT"], "cheapest-weed": ["anchor", "backpack", "BACKPACKERS FIND CHEAP SHOP"], "random-weed": ["anchor", "trophy", "{co} WINS SNACK OF THE YEAR"],
+    "rates-down-weed": ["press", "banker", "RATES CUT: CHAIR SMILES"], "health-scare": ["anchor", "lock", "EDIBLES ERASE PASSWORDS?"], "influencer-detox": ["anchor", "smoothie", "INFLUENCERS POST SMOOTHIES"],
+    "gummies-trend": ["anchor", "gummy", "GUMMY BEARS IN SUNGLASSES"], "rent-rise": ["anchor", "sheet", "LANDLORD FINDS SPREADSHEETS"], "lab-test": ["anchor", "flask", "PREMIUM? FINE. JUST FINE."],
+    "stoner-film": ["anchor", "sofa", "SOFA MOVIE TOPS BOX OFFICE"], "bargain-bin": ["anchor", "roll", "GRAMS NEXT TO TOILET PAPER"], "seed-shortage": ["anchor", "parrot", "PARROT RAIDS SEED STORE"],
+    "wedding-season": ["anchor", "cake", "WEDDING GIFT BAGS"], "rates-weed-up": ["chart", "up", "RATES UP FOR A COOLER GRAPH"], "tourist-boom": ["anchor", "plane", "CHILLEST PLACE ON EARTH"],
+    "grow-tech": ["anchor", "bulb", "SINGING LED LAMPS"], "dry-spell": ["anchor", "drop", "FISH QUEUE FOR WATER"], "pet-ban": ["anchor", "dog", "DOGS DISAGREE WITH VETS"],
+    // Mega events (shown with the red "Mega event" tag)
+    "mega-crash": ["chart", "down", "STOCK MARKET CRASH!"], "mega-boom": ["anchor", "coins", "HALF THE COUNTRY WINS LOTTO"], "mega-supply": ["anchor", "ship", "SHIP STUCK IN THE CANAL"],
+    "mega-heat": ["heat", "", "THE SUMMER THAT NEVER ENDS"], "mega-rates": ["anchor", "parrot", "PARROT RUNS THE CENTRAL BANK"], "mega-free": ["anchor", "coins", "€500 FOR EVERYONE"],
+    "mega-blackout": ["anchor", "bolt", "CONTINENT-WIDE BLACKOUT"], "mega-offline": ["anchor", "wifi", "THE INTERNET IS OFFLINE"], "mega-cheap": ["anchor", "machine", "MATERIALS MADE FROM AIR"],
+    "mega-luxury": ["anchor", "gold", "BILLIONAIRE BUYS ALL GOLD"], "mega-trend": ["crowd", "phone", "ONE GIANT ONLINE CHALLENGE"],
   };
 
   function effectChips(e, targetName) {
@@ -4722,7 +4813,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function newsItem(n) {
     const map = NEWS_TV[n.event.id] || ["anchor", "cocoa", n.event.headline.toUpperCase()];
     const target = n.targetCompanyId ? byId(n.targetCompanyId).companyName : "";
-    if (n.event.kind === "mega") return { scene: "crowd", variant: "phone", short: n.event.headline.replace(/^MEGA EVENT:\s*/, "").toUpperCase().slice(0, 40), full: n.event.headline, chips: effectChips(n.event.effect, ""), rounds: n.roundsLeft, tag: "⚠ Mega event", mega: true };
+    if (n.event.kind === "mega") return { scene: map[0], variant: map[1], short: NEWS_TV[n.event.id] ? map[2] : n.event.headline.replace(/^MEGA EVENT:\s*/, "").toUpperCase().slice(0, 40), full: n.event.headline, chips: effectChips(n.event.effect, ""), rounds: n.roundsLeft, tag: "⚠ Mega event", mega: true };
     return { scene: map[0], variant: map[1], short: map[2].replace("{co}", target.toUpperCase()), full: n.event.headline + (target ? " (it's " + target + ")" : ""), chips: effectChips(n.event.effect, target), rounds: n.roundsLeft };
   }
 
@@ -5996,7 +6087,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   try { document.fonts && document.fonts.ready.then(() => S && drawCity(1)); } catch (e) {}
 
   // Test hook (only in the automated smoke test).
-  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick(), mountMinigame: (el) => mountMinigame(el), MG };
+  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick(), mountMinigame: (el) => mountMinigame(el), MG, SCENES, NEWS_TV };
   window.claude?.hot?.snapshot?.(() => (S ? { S: JSON.parse(JSON.stringify({ ...S, anim: null })) } : {}));
   function start(data) {
     if (data && data.S && data.S.screen === "title") { S = data.S; render(); return; }
