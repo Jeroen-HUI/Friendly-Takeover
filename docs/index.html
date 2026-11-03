@@ -146,10 +146,24 @@ button, input { font: inherit; color: inherit; }
 .w-left { font-size: 9px !important; letter-spacing: 0.04em !important; text-transform: none !important; margin-top: 2px; }
 :root[data-theme="light"] .wallet { background: #fffaf0; }
 :root[data-theme="light"] .w-cash b { text-shadow: none; }
-@media (max-width: 1500px) { .topbar .logo h1 { font-size: 24px; } .topbar .sub { font-size: 12px; } .topbar .round { font-size: 17px; } .w-cash b { font-size: 24px; } .w-debt b { font-size: 17px; } .wallet > span { padding: 5px 11px; } .topbar .tools .btn { padding-left: 8px; padding-right: 8px; } }
+.topbar { container: topbar / inline-size; }
+/* Compact sizes whenever the bar itself is narrow (the page caps its width, so screen width alone can't tell). */
+@container topbar (max-width: 1400px) { .topbar .logo h1 { font-size: 24px; } .topbar .sub { font-size: 12px; } .topbar .round { font-size: 17px; } .w-cash b { font-size: 24px; } .w-debt b { font-size: 17px; } .wallet > span { padding: 5px 11px; } .topbar .tools .btn { padding-left: 8px; padding-right: 8px; } }
 @media (max-width: 1180px) { .topbar .sub { display: none; } }
 /* Between phone and wide desktop the name would be cut to "FRIE…": show just the logo icon instead. */
-@media (min-width: 1200px) and (max-width: 1560px) { .topbar .logo > div { display: none; } }
+/* The full name and subtitle only on wide screens; otherwise the stacked wordmark, which never gets cut off. */
+.topbar .logo-full { display: none; }
+.wordmark { display: grid; line-height: 1; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+.wordmark b:first-child { font-size: 11px; color: var(--ink); }
+.wordmark b:last-child { font-size: 13px; color: #f3902f; text-shadow: 0 2px 0 #7a3e14; margin-top: 2px; }
+.wordmark b { white-space: nowrap; }
+.topbar > .logo { flex-shrink: 0 !important; }
+/* One-line bar (wide screens): drop the wordmark when the bar is tight; when the bar wraps there's room for it. */
+@media (min-width: 1200px) {
+  @container topbar (max-width: 1190px) { .topbar .wordmark { display: none; } }
+  @container topbar (max-width: 1500px) { .topbar.has-mp .wordmark { display: none; } }
+}
+.topbar .logo { gap: 8px; }
 @media (min-width: 1200px) { .topbar { flex-wrap: nowrap; } .topbar .logo { min-width: 0; flex: 0 1 auto; } .topbar .logo > div { min-width: 0; } .topbar .logo h1, .topbar .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .topbar > * { flex-shrink: 0; } .topbar > .logo { flex-shrink: 1; } .topbar .spacer { flex: 1 1 0; min-width: 0; } }
 @media (max-width: 760px) { .wallet { order: 5; width: 100%; } .wallet > span { flex: 1; } .w-cash b { font-size: 24px; } }
 .cashchip span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -164,7 +178,7 @@ button, input { font: inherit; color: inherit; }
 .btn:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35), 0 0 0 2px var(--frame-dark); }
 .btn.go { background: linear-gradient(#ffad55, var(--accent)); color: var(--accent-ink); font-family: var(--font-display); font-size: 15px; font-weight: 700; padding: 12px 20px; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), 0 0 0 2px var(--frame-dark), 0 0 16px rgba(243,144,47,0.35); }
 .btn.snd { font-family: var(--font-display); font-weight: 700; font-size: 11px; padding: 8px 10px; }
-.btn.snd[aria-pressed="false"] { opacity: 0.6; }
+
 .btn.blue { background: linear-gradient(#3e72e6, var(--blue)); font-family: var(--font-display); font-weight: 700; font-size: 14px; padding: 12px 18px; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), 0 0 0 2px #142a63; }
 
 /* Player cards */
@@ -1013,7 +1027,34 @@ details.howto[open] summary::after { content: "▾ hide"; }
     cv.width = 8; cv.height = 8;
     TRAIT_ICONS[key].forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") { g.fillStyle = IC[ch]; g.fillRect(x, y, 1, 1); } }));
   }
+  // The game's logo: two towers on an orange badge, the smaller one handing over, with a gold arrow going up.
+  const LOGO = [
+    "..dddddddddddd..",
+    ".dooooooooooood.",
+    "doooonoooooooood",
+    "doooonoooooyyyod",
+    "doonnnnnooooyyod",
+    "doonynynoooyoyod",
+    "doonnnnnooyooood",
+    "doonynynoyoooood",
+    "doonnnnnowwwwood",
+    "doonynynowywwood",
+    "doonnnnnowwwwood",
+    "doonynynowywwood",
+    "doonnnnnowwwwood",
+    "doggggggggggggod",
+    ".dooooooooooood.",
+    "..dddddddddddd..",
+  ];
+  const LOGO_C = { d: "#7a3e14", o: "#f3902f", n: "#1d2550", y: "#ffd166", w: "#fff6e3", g: "#2a3466" };
+  function drawLogo(cv) {
+    const g = cv.getContext && cv.getContext("2d");
+    if (!g) return;
+    cv.width = 16; cv.height = 16;
+    LOGO.forEach((row, y) => [...row.padEnd(16, ".")].slice(0, 16).forEach((ch, x) => { if (LOGO_C[ch]) { g.fillStyle = LOGO_C[ch]; g.fillRect(x, y, 1, 1); } }));
+  }
   function drawIcon(cv, key) {
+    if (key === "logo") { drawLogo(cv); return; }
     const g = cv.getContext && cv.getContext("2d");
     if (!g) return;
     cv.width = 12; cv.height = 12;
@@ -3928,8 +3969,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const g = S.game;
     const r = Math.min(g.round, g.config.rounds);
     const industryLine = { chocolate: "Chocolate company tycoon", ai: "AI company tycoon", weed: "Weed company tycoon (18+)" }[g.config.industry];
-    return `<header class="win topbar">
-      <div class="logo"><canvas data-icon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly Takeover</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
+    return `<header class="win topbar ${S.mp && !g.finished ? "has-mp" : ""}">
+      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeover</b></div><div class="logo-full"><h1>Friendly Takeover</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
       ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
