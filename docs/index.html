@@ -974,7 +974,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="choices traits" role="radiogroup" aria-label="CEO trait" id="${name}-wrap">${list.map(([k, [n, t]]) => `<label class="choice trait-card"><input type="radio" name="${name}" value="${k}" ${cur === k ? "checked" : ""}><span><canvas data-trait="${k}" width="8" height="8" aria-hidden="true"></canvas><b>${n}${WEED_TRAITS.includes(k) && !industry ? ' <span class="tag">Weed</span>' : ""}</b><em>${t}</em><small>${TRAIT_FIT[k]}</small></span></label>`).join("")}</div>
       <div class="hint" style="margin-top:6px">Your trait is a small permanent bonus for the whole game. Not sure? Pick the one that matches how you want to play.</div>`;
   }
-  const CAMPAIGNS = { discount: ["Discount promo", "Strong with budget shoppers"], tv: ["TV ad", "Steady boost in mainstream"], luxury: ["Luxury sponsor", "Wins premium buyers, builds brand"], viral: ["Viral stunt", "Huge hype, 35% chance it flops"] };
+  const CAMPAIGNS = { discount: ["Discount promo", "Strong with budget shoppers"], tv: ["TV ad", "Steady boost in mainstream"], luxury: ["Luxury sponsor", "Wins premium buyers, builds brand"], viral: ["Viral stunt", "Huge hype, 25% chance it flops"] };
   const SEG = { budget: "Budget", mainstream: "Mainstream", premium: "Premium", hype: "Hype" };
   const BOT_NAMES = ["Barbara", "Kees", "Ingrid", "Mo", "Fenna", "Sem"];
   const COMPANY_NAMES = {
