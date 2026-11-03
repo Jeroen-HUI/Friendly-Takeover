@@ -421,6 +421,8 @@ export interface GameState {
   playerLoans?: { lender: string; borrower: string; repay: number; due: number }[];
   /** What happened to each deal in the round just played. */
   dealLog?: { id: string; round: number; ok: boolean; reason: string; from: string; to: string }[];
+  /** Online: deals players made with bots this round (bots answer at once; carried out when the round resolves). */
+  botDeals?: (DealOrder & { round: number })[];
   /** Hidden market drivers (server only online): raw material price index for the coming round, slow trends per buyer group, and this game's price sensitivity per group. */
   market?: {
     materialIndex: number;

@@ -6,7 +6,7 @@
 import { JSDOM, VirtualConsole } from "jsdom";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound } from "../src/server/core";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound, botDealOnline } from "../src/server/core";
 
 // ---------------------------------------------------------------- fake backend
 type Row = Record<string, any>;
@@ -87,12 +87,21 @@ const server = {
       if (!deadlinePassed && !(allReady && g.host_user_id === userId)) fail(409, allReady ? "Only the host can skip the timer" : "Waiting for everyone to submit");
       const deals = db.deals.filter((d) => d.game_id === g.id && d.round === round && d.status === "accepted").map((d) => ({ id: String(d.id), from: d.from_player_id, to: d.to_player_id, kind: d.kind, terms: d.terms }));
       const next = resolveOnlineRound(state, decisions, deals);
-      for (const l of next.dealLog ?? []) { const d = db.deals.find((x) => String(x.id) === l.id)!; d.status = l.ok ? "done" : "failed"; d.note = l.reason; }
+      for (const l of next.dealLog ?? []) { const d = db.deals.find((x) => String(x.id) === l.id); if (!d) continue; d.status = l.ok ? "done" : "failed"; d.note = l.reason; }
       for (const d of db.deals.filter((x) => x.game_id === g.id && x.round === round && x.status === "offered")) d.status = "cancelled";
       Object.assign(g, { current_round: next.finished ? round : round + 1, status: next.finished ? "finished" : "playing", round_deadline: next.finished ? null : new Date(Date.now() + g.round_seconds * 1000).toISOString() });
       publish(g.id, round, next);
       notify(g.id);
       return { ok: true, resolved: round };
+    }
+    if (action === "botdeal") {
+      const state = db.states.get(g.id);
+      try {
+        const r = botDealOnline(state, me.id, body.bot, body.kind, body.terms);
+        if (r.accept) db.states.set(g.id, r.state);
+        (db as any).botDeals = [...((db as any).botDeals ?? []), { ...body, accept: r.accept }];
+        return { ok: true, accept: r.accept, line: r.line, id: r.id };
+      } catch (e) { fail(400, (e as Error).message); }
     }
     if (action === "trade" || action === "bid" || action === "vote" || action === "end") {
       const state = db.states.get(g.id);
@@ -304,6 +313,7 @@ closeIntro();
   if (!$(".mpchip") || !$(".mpchip")!.textContent!.includes(code)) throw new Error("online chip missing");
 }
 
+const dealCount = (botId: string) => { const S = D(); return [...(S.mpBotDealsDebug || [])].length || (JSON.parse(window.localStorage.getItem("ft-botdeals-" + HG().id) || "[]") as any[]).filter((d) => d.to === botId).length; };
 for (let r = 1; r <= 6; r++) {
   const S = D();
   if (S.game.round !== r) throw new Error(`expected round ${r}, page is on ${S.game.round}`);
@@ -362,6 +372,23 @@ for (let r = 1; r <= 6; r++) {
     await until("vote on the server", () => db.states.get(HG().id).board[0].votes[myIdNow()] === false);
     await until("vote shown", () => D().game.board.find((p: any) => p.id === "l3-" + friend.player_id)?.votes.you === false);
   }
+  if (r === 4) {
+    // Deals with bots work online too: offer the bot a pact in its private chat; the server answers for it.
+    const botId = D().game.companies.find((c: any) => /^bot-/.test(c.id) && !c.bankrupt)?.id;
+    if (!botId) throw new Error("no bot left to deal with");
+    click("#btn-chat");
+    await until("bot thread", () => $(`[data-thread="${botId}"]`));
+    click(`[data-thread="${botId}"]`); click("#t-newdeal"); click('[data-dkind="pact"]');
+    ($("#d-penalty") as any).value = "300k";
+    click("#d-send");
+    await until("bot answered the deal", () => ((db as any).botDeals || []).length === 1 && D().game && dealCount(botId) === 1, 6000);
+    (globalThis as any).__botDealAccepted = (db as any).botDeals[0].accept;
+    click("#talk-close");
+  }
+  if (r === 5 && (globalThis as any).__botDealAccepted) {
+    const st = db.states.get(HG().id);
+    if (!(st.pacts || []).some((p: any) => p.a === myIdNow() || p.b === myIdNow()) && !st.feed.some((f: any) => /pact/.test(f.headline))) throw new Error("accepted bot pact was not carried out");
+  }
   if (r === 2) {
     const mine = D().game.companies[0].history.at(-1);
     if (db.deals[0].status !== "done" || mine.dealCash !== 200000) throw new Error("loan deal should be done with +200k: " + JSON.stringify([db.deals[0], mine.dealCash]));
@@ -371,6 +398,12 @@ for (let r = 1; r <= 6; r++) {
   if ($("[data-vote]")) click('[data-vote="a"]');
   click("#btn-confirm");
   await until("waiting screen", () => /waiting for the others/.test($(".overlay")?.textContent || ""));
+  if (!$("#mg-slot .mg canvas")) throw new Error("Coin Rush missing on the waiting screen");
+  if (r === 1) {
+    click('[data-mg="start"]');
+    await new Promise((res) => setTimeout(res, 120));
+    if (!D().game || !(window as any).__ftDebug.MG.run) throw new Error("Coin Rush did not start");
+  }
   const mine = db.decisions.find((d) => d.round === r && d.player_id !== friend.player_id);
   if (!mine) throw new Error("my decisions were not sent in round " + r);
   if (JSON.stringify(mine.decisions).includes('"you"')) throw new Error("the 'you' alias leaked to the server");

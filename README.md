@@ -49,6 +49,10 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **Typing numbers and sliders that grow:** every slider's number box can be typed in ("2,35", "750k", "1.2m"). Budget sliders (capacity, R&D, marketing, brand, stakes) reach further as your company grows, and typing can go past the slider; prices go up to the industry's price limit. Several windows: drag a tab from the menu onto the screen to open up to 3 at once.
 
+**Online deals with bots:** bots are in the chat online too. Offer them shares, loans, pacts or mergers: the game server answers for the bot at once, and a yes is carried out when the round ends, like any other deal.
+
+**Coin Rush:** a 30-second minigame on the waiting screen (online, after you submit). Catch coins and money bags, dodge tax audits, build combos; your best score is kept on the device and you can brag about it in the group chat.
+
 **More news:** about 35 stories per industry, plus rare mega events that hit everyone (crashes, booms, blackouts) with their own red TV broadcast.
 
 **Rivalries:** the final screen shows your head-to-head against everyone (who finished ahead, stakes in each other, takeovers), and online games keep an all-time record against each friend (Career screen).

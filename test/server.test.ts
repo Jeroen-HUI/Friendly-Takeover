@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData } from "../src/server/core";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, botDealOnline } from "../src/server/core";
 
 const players = [
   { id: "u1", name: "Jeroen", company: "Cocoa Loco", trait: "ruthless" as const },
@@ -57,4 +57,18 @@ test("views hide the hidden market drivers and rivals' cost details and promises
   assert.ok(!json.includes("654321") && !json.includes("222333"), "the rival's guidance appears nowhere");
   // The friend's own view does get their buyer panel.
   assert.ok(viewFor(s, "u2").companies.find((c) => c.id === "u2")!.history.at(-1)!.research!.buyerPanel);
+});
+
+test("online deals with bots: the bot answers at once and a yes is carried out when the round resolves", () => {
+  let s = startOnlineGame({ industry: "chocolate", difficulty: "standard", rounds: 6, botCount: 3, botSkill: "normal", seed: 99 }, [{ id: "p1", name: "Jeroen", company: "Cocoa Loco", trait: "visionary" }, { id: "p2", name: "Sanne", company: "Bar None", trait: "ruthless" }]);
+  const bot = Object.keys(s.bots!).find((id) => !s.bots![id].includes("raider"))!;
+  assert.throws(() => botDealOnline(s, "p1", "p2", "pact", { rounds: 2, penalty: 300000 }), /not a bot/);
+  const r = botDealOnline(s, "p1", bot, "pact", { rounds: 2, penalty: 300000 });
+  assert.equal(r.accept, true, r.line);
+  assert.ok(r.line.length > 0);
+  s = r.state;
+  assert.equal(viewFor(s, "p2").botDeals!.length, 0, "other players don't see my bot deals");
+  s = resolveOnlineRound(s, {});
+  assert.ok((s.pacts ?? []).some((p) => (p.a === "p1" && p.b === bot) || (p.b === "p1" && p.a === bot)), "pact signed");
+  assert.equal((s.botDeals ?? []).length, 0);
 });

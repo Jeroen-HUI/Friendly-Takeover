@@ -280,6 +280,15 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 @media (max-width: 760px) { .menu-tip { display: none; } }
 .flashpane { animation: flashPane 0.7s ease-out; }
 @keyframes flashPane { 0% { box-shadow: 0 0 0 4px var(--gold); } 100% { box-shadow: none; } }
+.mg { display: grid; gap: 8px; }
+.mg-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.mg-head .muted { font-size: 12px; } .mg-score { margin-left: auto; font-size: 13px; font-variant-numeric: tabular-nums; }
+.mg-stage { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 2px #0b1027; }
+.mg-stage canvas { display: block; width: 100%; aspect-ratio: 16 / 10; image-rendering: pixelated; cursor: none; background: #141a3a; }
+.mg-overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(11, 16, 39, 0.72); font-weight: 800; padding: 10px; }
+.mg-overlay[hidden] { display: none; }
+.mg-big { font-family: var(--font-display); font-size: 34px; color: var(--gold); }
+.mg-btns { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
 .cs { display: grid; gap: 8px; }
 .cs-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cs-chip { border: 0; cursor: pointer; padding: 7px 11px; border-radius: 999px; font-weight: 900; font-size: 12.5px; background: var(--panel-3); color: var(--ink); box-shadow: 0 0 0 2px #0b1027; }
@@ -1808,9 +1817,134 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${MP.error ? `<div class="note neg">${esc(MP.error)}</div>` : ""}
       <div class="kv"><div><span>Ready</span><b>${ri.ready} / ${ri.total}</b></div><div><span>Time left</span><b id="wait-timer">…</b></div></div>
       <div class="card">${list}${botCount ? `<div class="sumline"><span class="muted">${botCount} bot${botCount > 1 ? "s" : ""}</span><b class="pos">✓ ready</b></div>` : ""}</div>
+      <div class="card mg-slot" id="mg-slot"></div>
       <div class="hint">${host ? (ri.all ? "Everyone is ready. You can start the next round now, or wait for the timer." : "As the host you can skip the timer once everyone is ready.") : "The round ends when the host skips the timer or the time runs out. Players who didn't submit repeat last round's plan."}</div>
       <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap"><button class="btn" type="button" id="btn-change">Change my decisions</button>${host ? `<button class="btn go" type="button" id="btn-skip" ${canSkip ? "" : "disabled"} data-autofocus>Next round now</button>` : ""}</div>
     </div></div>`;
+  }
+
+  // ----- Coin Rush: a 30-second minigame while you wait for the others. Catch coins and money bags, dodge the tax audits.
+  // The game lives in one element that moves into the waiting screen each time it's drawn, so a refresh never interrupts a run.
+  const MG = { el: null, cv: null, g: null, run: false, over: false, score: 0, best: -1, items: [], x: 80, tx: 80, keys: {}, last: 0, t: 0, spawn: 0, combo: 0, stun: 0, gold: 0, pops: [], raf: 0, shared: false };
+  const MG_W = 160, MG_H = 100, MG_LEN = 30;
+  function mgEl() {
+    if (MG.el) return MG.el;
+    MG.best = Number(localGet("ft-mg-best", 0)) || 0;
+    const el = document.createElement("div");
+    el.className = "mg";
+    el.innerHTML = `<div class="mg-head"><b>🎮 Coin Rush</b><span class="muted">while you wait</span><span class="mg-score" id="mg-score"></span></div>
+      <div class="mg-stage"><canvas width="${MG_W}" height="${MG_H}" aria-label="Coin Rush: move left and right to catch coins and dodge tax audits"></canvas><div class="mg-overlay" id="mg-over"></div></div>
+      <div class="hint">Move with the mouse, your finger, or ← →. Coins +1, money bags +5, a star doubles everything for 5 seconds. Tax audits cost 5 and freeze you. Catch in a row for a combo.</div>`;
+    MG.el = el; MG.cv = el.querySelector("canvas"); MG.g = MG.cv.getContext("2d");
+    const aim = (e) => { const r = MG.cv.getBoundingClientRect(); if (r.width) MG.tx = Math.max(8, Math.min(MG_W - 8, ((e.clientX - r.left) / r.width) * MG_W)); };
+    MG.cv.addEventListener("pointermove", aim);
+    MG.cv.addEventListener("pointerdown", (e) => { aim(e); if (!MG.run) mgStart(); });
+    MG.cv.style.touchAction = "none";
+    window.addEventListener("keydown", (e) => { if (!MG.run || !MG.el.isConnected) return; if (["ArrowLeft", "ArrowRight", "a", "d", "A", "D"].includes(e.key)) { MG.keys[e.key.toLowerCase().replace("arrow", "")] = true; e.preventDefault(); } });
+    window.addEventListener("keyup", (e) => { MG.keys[e.key.toLowerCase().replace("arrow", "")] = false; });
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-mg]");
+      if (!b) return;
+      if (b.dataset.mg === "start") mgStart();
+      if (b.dataset.mg === "share") mgShare();
+    });
+    return el;
+  }
+  function mountMinigame(slot) {
+    if (!slot) return;
+    slot.appendChild(mgEl());
+    mgOverlay(); mgDraw();
+    if (MG.run && !MG.raf) MG.raf = requestAnimationFrame(mgLoop);
+  }
+  function mgOverlay() {
+    const o = MG.el && MG.el.querySelector("#mg-over"), sc = MG.el && MG.el.querySelector("#mg-score");
+    if (sc) sc.innerHTML = `Score <b>${MG.score}</b> · Best <b>${MG.best}</b>`;
+    if (!o) return;
+    if (MG.run) { o.hidden = true; return; }
+    o.hidden = false;
+    o.innerHTML = MG.over
+      ? `<div><b class="mg-big">${MG.score}</b><div>${MG.score >= MG.best && MG.score > 0 ? "New best! 🏆" : "Best: " + MG.best}</div><div class="mg-btns"><button type="button" class="btn small go" data-mg="start">Play again</button>${S && S.mp && !MG.shared ? `<button type="button" class="btn small" data-mg="share">Brag in the chat</button>` : ""}</div></div>`
+      : `<div><b>Catch the cash. Dodge the taxman.</b><div class="mg-btns"><button type="button" class="btn small go" data-mg="start">Play (30 s)</button></div></div>`;
+  }
+  function mgStart() {
+    Object.assign(MG, { run: true, over: false, score: 0, items: [], t: 0, spawn: 0, combo: 0, stun: 0, gold: 0, pops: [], last: performance.now(), shared: false });
+    sfx("click"); mgOverlay();
+    cancelAnimationFrame(MG.raf); MG.raf = requestAnimationFrame(mgLoop);
+  }
+  function mgEnd() {
+    MG.run = false; MG.over = true; MG.raf = 0;
+    if (MG.score > MG.best) { MG.best = MG.score; localSet("ft-mg-best", MG.best); }
+    sfx(MG.score >= 30 ? "profit" : "click"); mgOverlay(); mgDraw();
+  }
+  async function mgShare() {
+    MG.shared = true; mgOverlay();
+    const text = `🎮 I just scored ${MG.score} in Coin Rush${MG.score >= MG.best ? " (my best!)" : ""}. Beat that while you think about your prices.`;
+    try { await api().sendMessage(MP.gameId, S.game.round, MP.playerId, null, text, "chat"); mpRefresh(); } catch (e) { MG.shared = false; mgOverlay(); }
+  }
+  function mgLoop(now) {
+    MG.raf = 0;
+    if (!MG.run) return;
+    if (!MG.el || !MG.el.isConnected) { MG.last = now; MG.raf = requestAnimationFrame(mgLoop); return; } // paused while the waiting screen is gone
+    const dt = Math.min(0.05, (now - MG.last) / 1000); MG.last = now;
+    MG.t += dt;
+    if (MG.t >= MG_LEN) { mgEnd(); return; }
+    const k = MG.t / MG_LEN;
+    // Move: keys or pointer; frozen for a moment after an audit.
+    if (MG.stun > 0) MG.stun -= dt;
+    else {
+      if (MG.keys.left || MG.keys.a) MG.tx = Math.max(8, MG.tx - 140 * dt);
+      if (MG.keys.right || MG.keys.d) MG.tx = Math.min(MG_W - 8, MG.tx + 140 * dt);
+      MG.x += (MG.tx - MG.x) * Math.min(1, dt * 14);
+    }
+    if (MG.gold > 0) MG.gold -= dt;
+    // Spawn: faster and more audits as the clock runs.
+    MG.spawn -= dt;
+    if (MG.spawn <= 0) {
+      MG.spawn = 0.55 - 0.32 * k + Math.random() * 0.2;
+      const r = Math.random(), audit = 0.14 + 0.16 * k;
+      const kind = r < 0.02 ? "star" : r < 0.02 + audit ? "audit" : r < 0.1 + audit ? "bag" : "coin";
+      MG.items.push({ kind, x: 8 + Math.random() * (MG_W - 16), y: -6, v: 38 + 55 * k + Math.random() * 20 });
+    }
+    for (const it of MG.items) it.y += it.v * dt;
+    // Catch: the briefcase spans x±9 at y 84-92.
+    for (const it of MG.items) {
+      if (it.done || it.y < 80 || it.y > 94 || Math.abs(it.x - MG.x) > 11) continue;
+      it.done = true;
+      const mult = (MG.gold > 0 ? 2 : 1) * (1 + Math.min(2, Math.floor(MG.combo / 5)));
+      if (it.kind === "audit") { MG.score = Math.max(0, MG.score - 5); MG.combo = 0; MG.stun = 0.6; MG.pops.push({ x: it.x, y: 78, txt: "-5", c: "#ff6b6b", t: 0 }); sfx("loss"); }
+      else if (it.kind === "star") { MG.gold = 5; MG.pops.push({ x: it.x, y: 78, txt: "x2!", c: "#ffd166", t: 0 }); sfx("profit"); }
+      else { const pts = (it.kind === "bag" ? 5 : 1) * mult; MG.score += pts; MG.combo++; MG.pops.push({ x: it.x, y: 78, txt: "+" + pts, c: it.kind === "bag" ? "#51cf66" : "#ffe066", t: 0 }); if (it.kind === "bag") sfx("profit"); }
+    }
+    MG.items = MG.items.filter((it) => !it.done && it.y < MG_H + 8);
+    for (const p of MG.pops) { p.t += dt; p.y -= 18 * dt; }
+    MG.pops = MG.pops.filter((p) => p.t < 0.8);
+    mgDraw();
+    const sc = MG.el.querySelector("#mg-score"); if (sc) sc.innerHTML = `Score <b>${MG.score}</b> · ${Math.ceil(MG_LEN - MG.t)}s${MG.combo >= 5 ? ` · combo x${1 + Math.min(2, Math.floor(MG.combo / 5))}` : ""}${MG.gold > 0 ? " · ⭐ x2" : ""}`;
+    MG.raf = requestAnimationFrame(mgLoop);
+  }
+  function mgDraw() {
+    const g = MG.g; if (!g) return;
+    const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+    // Sky, skyline, street.
+    px(0, 0, MG_W, MG_H, "#141a3a");
+    for (let i = 0; i < 9; i++) { const h = 18 + ((i * 37) % 26), x = i * 18; px(x, 92 - h, 16, h, "#1f2754"); for (let w = 0; w < h - 6; w += 6) px(x + 4, 92 - h + 3 + w, 2, 2, (i + w) % 3 ? "#2c366e" : "#ffd16655"); }
+    px(0, 92, MG_W, 8, "#0b1027"); for (let x = 4; x < MG_W; x += 16) px(x, 95, 8, 1, "#ffd166");
+    // Falling things.
+    for (const it of MG.items) {
+      const x = it.x, y = it.y;
+      if (it.kind === "coin") { px(x - 3, y - 3, 6, 6, "#f0b429"); px(x - 2, y - 2, 4, 4, "#ffe066"); px(x - 1, y - 2, 1, 4, "#c99a2e"); }
+      else if (it.kind === "bag") { px(x - 4, y - 2, 8, 6, "#3e8f3e"); px(x - 2, y - 4, 4, 2, "#58c158"); px(x - 1, y - 1, 2, 3, "#ffe066"); }
+      else if (it.kind === "star") { px(x - 1, y - 4, 2, 8, "#ffd166"); px(x - 4, y - 1, 8, 2, "#ffd166"); px(x - 2, y - 2, 4, 4, "#fff3b0"); }
+      else { px(x - 4, y - 4, 8, 8, "#d9443a"); px(x - 3, y - 3, 6, 6, "#ff6b6b"); px(x - 1, y - 2, 2, 3, "#fff"); px(x - 1, y + 2, 2, 1, "#fff"); }
+    }
+    // The briefcase (flashes when frozen, gold during x2).
+    const bx = MG.x, col = MG.stun > 0 && Math.floor(MG.stun * 12) % 2 ? "#ff6b6b" : MG.gold > 0 ? "#ffd166" : "#c26a2e";
+    px(bx - 9, 84, 18, 8, col); px(bx - 8, 85, 16, 6, MG.gold > 0 ? "#ffe066" : "#e08a45"); px(bx - 3, 81, 6, 3, "#7a4420"); px(bx - 2, 82, 4, 1, "#141a3a"); px(bx - 1, 87, 2, 2, "#3a2210");
+    g.font = "bold 7px monospace"; g.textAlign = "center";
+    for (const p of MG.pops) { g.fillStyle = p.c; g.globalAlpha = Math.max(0, 1 - p.t / 0.8); g.fillText(p.txt, p.x, p.y); }
+    g.globalAlpha = 1;
+    // Timer bar.
+    if (MG.run) px(0, 0, MG_W * (1 - MG.t / MG_LEN), 2, MG.t > MG_LEN - 5 ? "#ff6b6b" : "#51cf66");
   }
 
   // ----- Lobby
@@ -2102,7 +2236,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   let talkSeq = 1;
   const nowT = () => Date.now() + (talkSeq++) / 1000;
   const talkList = () => (S.mp ? MP.talk : (S.talk = S.talk || []));
-  const dealList = () => (S.mp ? MP.deals : (S.deals = S.deals || []));
+  const dealList = () => (S.mp ? [...MP.deals, ...mpBotDeals()] : (S.deals = S.deals || []));
+  // Online deals with bots: answered by the server at once, kept on this device for the chat window.
+  function mpBotDeals() { if (!MP.botDeals || MP.botDealsGame !== MP.gameId) { MP.botDealsGame = MP.gameId; MP.botDeals = localGet("ft-botdeals-" + MP.gameId, []); } return MP.botDeals; }
+  function saveBotDeals() { localSet("ft-botdeals-" + MP.gameId, mpBotDeals().slice(-60)); }
   function say(round, who, text, to) {
     if (!S.mp) S.chat.push({ round, kind: "chat", who, text });
     talkList().push({ id: "l" + talkSeq, t: nowT(), round, from: who, to: to || null, text, kind: "chat" });
@@ -2118,10 +2255,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return msgs + deals;
   }
   const unreadTotal = () => ["all", ...partners()].reduce((a, k) => a + unread(k), 0);
-  // Who you can talk to privately: online only people (bots can't read DMs there).
+  // Who you can talk to privately and make deals with: everyone still in business (bots too, also online).
   function partners() {
-    return S.game.companies.filter((c) => c.id !== "you" && live(c) && (!S.mp || !/^bot-/.test(c.id))).map((c) => c.id);
+    return S.game.companies.filter((c) => c.id !== "you" && live(c)).map((c) => c.id);
   }
+  const isBotId = (id) => (S.mp ? /^bot-/.test(id) : id !== "you");
   function dealText(d, mine) {
     const t = d.terms, other = byId(d.from === "you" ? d.to : d.from), oName = esc(other ? other.companyName : "?");
     const youFirst = d.from === "you";
@@ -2303,6 +2441,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
   async function sendTalk(text) {
     const to = TALK.thread === "all" ? null : TALK.thread;
     TALK.err = "";
+    if (S.mp && to && /^bot-/.test(to)) {
+      // Bots online: they read your private messages here and answer (nothing is sent to the server).
+      say(S.game.round, "you", text, to); renderTalk();
+      const rng = new FT.Rng((S.game.round * 7919 + talkSeq * 31 + text.length) | 0);
+      setTimeout(() => { say(S.game.round, to, rng.pick(BOT_DM), "you"); renderTalk(); }, 700 + rng.int(900));
+      return;
+    }
     if (S.mp) {
       try { await api().sendMessage(MP.gameId, S.game.round, MP.playerId, to === null ? null : realId(to), text, "chat"); } catch (e) { TALK.err = e.message; }
       mpRefresh(); return;
@@ -2318,6 +2463,16 @@ details.howto[open] summary::after { content: "▾ hide"; }
   async function sendDeal(kind, terms) {
     const to = TALK.thread;
     TALK.busy = true; TALK.err = "";
+    if (S.mp && /^bot-/.test(to)) {
+      try {
+        const r = await api().call("botdeal", { game_id: MP.gameId, bot: to, kind, terms: JSON.parse(JSON.stringify(terms).split('"you"').join('"' + MP.playerId + '"')) });
+        mpBotDeals().push({ id: r.id || "b" + talkSeq, t: nowT(), round: S.game.round, from: "you", to, kind, terms, status: r.accept ? "accepted" : "declined" });
+        saveBotDeals(); TALK.form = null;
+        say(S.game.round, to, r.line || (r.accept ? "Deal." : "No deal."), "you");
+        sfx(r.accept ? "profit" : "click");
+      } catch (e) { TALK.err = e.message; }
+      TALK.busy = false; renderTalk(); return;
+    }
     if (S.mp) {
       try { await api().offerDeal(MP.gameId, S.game.round, MP.playerId, realId(to), kind, JSON.parse(JSON.stringify(terms).split('"you"').join('"' + MP.playerId + '"'))); TALK.form = null; }
       catch (e) { TALK.err = e.message; }
@@ -3618,6 +3773,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.flash = Object.fromEntries(S.game.companies.map((c) => [c.id, v[c.id] >= prevValues[c.id] ? "up" : "down"]));
     S.show = { round, before: prevValues, after: v };
     S.modal = PREFS.show ? "show" : S.game.finished ? (S.boardQueue.length ? "board" : "final") : "results";
+    if (S.mp) {
+      const log = S.game.dealLog || [];
+      for (const d of mpBotDeals()) {
+        if (d.round !== round || d.status !== "accepted") continue;
+        const l = log.find((x) => x.id === d.id);
+        d.status = !l || l.ok ? "done" : "failed"; if (l) d.note = l.reason;
+      }
+      saveBotDeals();
+    }
     if (S.game.finished) { try { recordRivals(); } catch (e) {} setTimeout(recordGameEnd, 0); }
     resetDraft();
     saveGame();
@@ -5029,7 +5193,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     countUp(modal);
     if (S.modal === "show") runShow();
     if (S.modal === "board") runBoard();
-    if (S.modal === "wait") mpTick();
+    if (S.modal === "wait") { mpTick(); mountMinigame(modal.querySelector("#mg-slot")); }
     // The red × in a window's title: a real close button where the window can be closed, hidden where it can't.
     const x = modal.querySelector(".win-title span.x");
     if (x && !["final", "show", "board", "wait", "age"].includes(S.modal)) {
@@ -5838,7 +6002,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   try { document.fonts && document.fonts.ready.then(() => S && drawCity(1)); } catch (e) {}
 
   // Test hook (only in the automated smoke test).
-  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick() };
+  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick(), mountMinigame: (el) => mountMinigame(el), MG };
   window.claude?.hot?.snapshot?.(() => (S ? { S: JSON.parse(JSON.stringify({ ...S, anim: null })) } : {}));
   function start(data) {
     if (data && data.S && data.S.screen === "title") { S = data.S; render(); return; }

@@ -9,13 +9,14 @@
 // POST { action: "bid", game_id, lot, amount }          live auction bid ("auction", or a bankrupt company's id).
 // POST { action: "vote", game_id, proposal, yes }       a shareholder votes on a big decision (board vote) during the round.
 // POST { action: "end", game_id }                       host only: this round becomes the last one (unlimited games).
+// POST { action: "botdeal", game_id, bot, kind, terms }  offer a deal to a bot: it answers at once; a yes happens when the round resolves.
 // The full engine state never leaves the server: each player gets their own view (rivals' secrets removed).
 // Accepted deals between players are carried out when the round resolves.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // Bundle of src/server/core.ts (supabase/functions/game/engine.js), pinned to a commit so a deploy is reproducible.
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@5af37557c9a0e757093a90f7deb9798279ecfaa8/supabase/functions/game/engine.js";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound, botDealOnline, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@5af37557c9a0e757093a90f7deb9798279ecfaa8/supabase/functions/game/engine.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +81,7 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   await publish(admin, gameId, round, next, humanIds);
   // Deal outcomes, and offers nobody answered in time.
   const now = new Date().toISOString();
-  for (const d of next.dealLog ?? []) {
+  for (const d of (next.dealLog ?? []).filter((x: State) => /^\d+$/.test(String(x.id)))) {
     await admin.from("deals").update({ status: d.ok ? "done" : "failed", note: d.reason, updated_at: now }).eq("id", Number(d.id)).eq("status", "accepted");
   }
   await admin.from("deals").update({ status: "cancelled", note: "The round ended before anyone answered", updated_at: now }).eq("game_id", gameId).eq("round", round).eq("status", "offered");
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  let body: { action?: string; game_id?: string; target_id?: string; name?: string; qty?: number; lot?: string; amount?: number; proposal?: string; yes?: boolean };
+  let body: { action?: string; game_id?: string; target_id?: string; name?: string; qty?: number; lot?: string; amount?: number; proposal?: string; yes?: boolean; bot?: string; kind?: string; terms?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -152,7 +153,7 @@ Deno.serve(async (req) => {
   }
 
   // ------------------------------------------------- live exchange and auctions
-  if (body.action === "trade" || body.action === "bid" || body.action === "vote" || body.action === "end") {
+  if (body.action === "trade" || body.action === "bid" || body.action === "vote" || body.action === "end" || body.action === "botdeal") {
     if (body.action === "end" && game.host_user_id !== userId) return json({ error: "Only the host can end the game" }, 403);
     if (game.status !== "playing") return json({ error: "The game is not running" }, 409);
     if (game.round_deadline && Date.now() >= new Date(game.round_deadline).getTime()) return json({ error: "Time's up: this round is closing" }, 409);
@@ -161,11 +162,17 @@ Deno.serve(async (req) => {
       const { data: row } = await admin.from("game_states").select("state, updated_at").eq("game_id", gameId).single();
       const state = row!.state as State;
       if (state.round !== game.current_round) return json({ error: "This round is closing" }, 409);
-      let next: State, trade: unknown = null;
+      let next: State, trade: unknown = null, answer: unknown = null;
       try {
         if (body.action === "trade") ({ state: next, trade } = exchangeTrade(state, mePlayer.id, String((body as State).target_id ?? ""), Math.trunc(Number((body as State).qty) || 0)));
         else if (body.action === "bid") next = liveBid(state, mePlayer.id, String((body as State).lot ?? ""), Math.round(Number((body as State).amount) || 0));
         else if (body.action === "vote") next = castVote(state, mePlayer.id, String(body.proposal ?? ""), body.yes === true);
+        else if (body.action === "botdeal") {
+          const r = botDealOnline(state, mePlayer.id, String(body.bot ?? ""), String(body.kind ?? ""), body.terms);
+          answer = { accept: r.accept, line: r.line, id: r.id };
+          if (!r.accept) return json({ ok: true, ...(answer as object) });
+          next = r.state;
+        }
         else next = endAfterThisRound(state);
       } catch (e) {
         return json({ error: (e as Error).message }, 400);
@@ -185,7 +192,7 @@ Deno.serve(async (req) => {
           await admin.from("games").update({ round_deadline: extended }).eq("id", gameId).eq("current_round", game.current_round).eq("status", "playing");
         }
       }
-      return json({ ok: true, trade, live: publicLive(next), extended });
+      return json({ ok: true, trade, live: publicLive(next), extended, ...(answer ? (answer as object) : {}) });
     }
     return json({ error: "The market is busy, try again" }, 409);
   }

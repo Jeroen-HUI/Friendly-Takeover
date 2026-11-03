@@ -7,6 +7,8 @@ import {
 } from "../engine";
 import { Rng } from "../engine/rng";
 import { botDecisions, type BotStrategy } from "../sim/bots";
+import { botRespondDeal } from "../sim/deals";
+import type { DealKind } from "../engine";
 
 export interface LobbyPlayer { id: string; name: string; company: string; trait: CeoTrait }
 export interface OnlineSettings { industry: IndustryId; difficulty: DifficultyId; rounds: number; botCount: number; botSkill: "normal" | "hard"; seed: number; rules?: HouseRules | null }
@@ -45,6 +47,24 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
   return castBotVotes(state, Object.keys(bots));
 }
 
+/** A player offers a deal to a bot online: the bot answers straight away; a yes is carried out when the round resolves. */
+export function botDealOnline(state: GameState, fromId: string, botId: string, kind: string, terms: unknown): { state: GameState; accept: boolean; line: string; id: string } {
+  if (state.finished) throw new Error("The game is over");
+  const bot = state.companies.find((c) => c.id === botId), me = state.companies.find((c) => c.id === fromId);
+  if (!bot || !(state.bots ?? {})[botId]) throw new Error("That's not a bot in this game");
+  if (!me || me.bankrupt || bot.bankrupt || bot.merged) throw new Error("That company can't make deals right now");
+  if (!["shares", "loan", "pact", "merger"].includes(kind) || !terms || typeof terms !== "object") throw new Error("Unknown deal");
+  const mine = (state.botDeals ?? []).filter((d) => d.round === state.round && d.from === fromId);
+  if (mine.length >= 12) throw new Error("That's enough deals with bots for one round");
+  const id = `b${state.round}-${fromId.slice(0, 8)}-${mine.length + 1}`;
+  const deal: DealOrder = { id, from: fromId, to: botId, kind: kind as DealKind, terms: JSON.parse(JSON.stringify(terms)) };
+  const r = botRespondDeal(state, botId, deal, state.bots![botId], (state.config.seed ^ mine.length * 2654435761) | 0);
+  if (!r.accept) return { state, accept: false, line: r.line, id };
+  const next: GameState = JSON.parse(JSON.stringify(state));
+  next.botDeals = [...(next.botDeals ?? []).filter((d) => d.round === state.round), { ...deal, round: state.round }];
+  return { state: next, accept: true, line: r.line, id };
+}
+
 /** Resolves a round: human decisions as submitted (missing = repeat last round), bots decide for themselves. */
 export function resolveOnlineRound(state: GameState, human: Record<string, Partial<Decisions>>, deals: DealOrder[] = []): GameState {
   const decisions: Record<string, Partial<Decisions>> = { ...human };
@@ -64,7 +84,10 @@ export function resolveOnlineRound(state: GameState, human: Record<string, Parti
     decisions[id] = d;
   }
   const before = Object.fromEntries(state.companies.map((c) => [c.id, c.controlledBy]));
-  let next = resolveRound(state, decisions, deals);
+  // Deals with bots (agreed during the round) go in with the deals between people.
+  const botDeals = (state.botDeals ?? []).filter((d) => d.round === state.round).map(({ round: _r, ...d }) => d);
+  let next = resolveRound(state, decisions, [...deals, ...botDeals]);
+  next.botDeals = [];
   // Bots rename the companies they take over.
   for (const c of next.companies) {
     const by = c.controlledBy;
@@ -100,6 +123,7 @@ export function viewFor(state: GameState, playerId: string): GameState {
   // Loans between players are private to the two of them.
   view.playerLoans = (view.playerLoans ?? []).filter((l) => l.lender === playerId || l.borrower === playerId);
   view.dealLog = (view.dealLog ?? []).filter((d) => d.from === playerId || d.to === playerId);
+  view.botDeals = (view.botDeals ?? []).filter((d) => d.from === playerId);
   // Hidden market drivers: only the raw material index is public (it's in the market report).
   if (view.market) view.market = { materialIndex: view.market.materialIndex, materialOutlook: view.market.materialOutlook, bulkPrice: view.market.bulkPrice };
   view.companies = view.companies.map((c: Company) => {
