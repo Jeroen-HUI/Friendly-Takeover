@@ -523,6 +523,22 @@ button[data-tip] { cursor: pointer; }
 .coach .linkbtn { color: #7a5716; justify-self: start; font-size: 12.5px; }
 .coach-hl { outline: 3px solid var(--gold) !important; outline-offset: 2px; animation: coachpulse 1.1s ease-in-out infinite; position: relative; z-index: 2; }
 @keyframes coachpulse { 50% { outline-color: rgba(255, 207, 74, 0.25); } }
+.coach-arrow { position: fixed; z-index: 45; left: 0; top: 0; width: 44px; height: 44px; pointer-events: none; display: grid; place-items: center; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.45)); }
+.coach-arrow[hidden] { display: none; }
+.coach-arrow i { display: block; width: 44px; height: 44px; animation: coachbob 0.9s ease-in-out infinite; }
+.coach-arrow svg { width: 100%; height: 100%; display: block; }
+.coach-arrow[data-dir="left"] svg { transform: rotate(90deg); }
+.coach-arrow[data-dir="right"] svg { transform: rotate(-90deg); }
+.coach-arrow[data-dir="up"] svg { transform: rotate(180deg); }
+.coach-arrow[data-dir="down"] i { --bx: 0; --by: 8px; }
+.coach-arrow[data-dir="up"] i { --bx: 0; --by: -8px; }
+.coach-arrow[data-dir="left"] i { --bx: -8px; --by: 0; }
+.coach-arrow[data-dir="right"] i { --bx: 8px; --by: 0; }
+.coach-arrow b { position: absolute; top: calc(100% + 2px); white-space: nowrap; font-family: var(--font-display); font-size: 11px; color: #2b1d00; background: #ffcf4a; padding: 3px 7px; border-radius: 6px; box-shadow: 0 0 0 2px #7a3e14; }
+.coach-arrow b:empty { display: none; }
+.coach-arrow[data-dir="down"] b { top: auto; bottom: calc(100% + 4px); }
+@keyframes coachbob { 50% { transform: translate(var(--bx), var(--by)); } }
+:root[data-motion="off"] .coach-arrow i { animation: none; }
 @media (max-width: 640px) { .coach { bottom: auto; top: 6px; padding: 8px 10px; font-size: 13px; gap: 4px; box-shadow: 0 6px 18px rgba(0,0,0,0.45); } .coach .coach-k { font-size: 10px; } }
 .acc-chip { position: absolute; top: 14px; right: 14px; z-index: 3; display: grid; justify-items: end; gap: 1px; padding: 7px 12px; border: 0; border-radius: 8px; cursor: pointer; background: rgba(22, 30, 64, 0.94); color: var(--ink); box-shadow: 0 0 0 3px var(--frame-dark), inset 0 -3px 0 rgba(0,0,0,0.3); font: inherit; }
 :root[data-theme="light"] .acc-chip { background: rgba(255, 250, 240, 0.95); }
@@ -2759,12 +2775,39 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const COACH_STEPS = [
     { text: () => "Your first forecast, TOPSIM style. Open <b>Market</b> in the left menu.", target: '.menu [data-tab="market"]', done: () => S.tab === "market" || !!S.coachMarket },
     { text: () => "Open the <b>Calc</b> in the top bar.", target: "#btn-calc", done: () => CALC.open },
-    { text: () => `In <b>Competitors</b>, click the number in the <b>Sold</b> column of your own row (${esc(me().companyName)}). It pastes into the calculator.`, target: ".tbl tr.me td.num", done: () => !!CALC.flash },
+    { text: () => `In <b>Competitors</b>, click the number in the <b>Sold</b> column of your own row (${esc(me().companyName)}). It pastes into the calculator.`, target: ".tbl.compact tr.me td:nth-child(4)", done: () => !!CALC.flash },
     { text: () => `The market grows about ${Math.round(ind().growth * 100)}% a round. Press <b>×</b>, type <b>1.0${Math.round(ind().growth * 100)}</b>, press <b>=</b>. That's a rough sales forecast.`, target: '#calcwin [data-k="×"]', done: () => CALC.tape.some((t) => t.includes("×")) },
-    { text: () => "Put it to work: <b>Finance</b> → Investor call. Switch it on and type that number as units. Last year's profit is in Reports, if you want a starting point.", target: '.menu [data-tab="finance"]', done: () => !!S.draft.guidance },
+    { text: () => "Put it to work: <b>Finance</b> → Investor call. Switch it on and type that number as units. Last year's profit is in Reports, if you want a starting point.", target: () => (document.querySelector("#g-on") && S.tab === "finance" || (S.panes || []).includes("finance") ? (S.guidanceOpen ? "#g-units" : "#g-on") : '.menu [data-tab="finance"]'), done: () => !!S.draft.guidance },
     { text: () => "Now set your price and production in <b>Production</b>, look around, and press <b>Submit</b>. Good luck!", target: "#btn-submit", done: () => S.game.round > 1 },
   ];
-  let coachEl = null, coachTimer = 0;
+  let coachEl = null, coachTimer = 0, coachArrow = null, coachRaf = 0, coachTarget = null;
+  // A bouncing arrow that points at what to click next. It follows the target while you scroll or resize.
+  function coachArrowEl() {
+    if (coachArrow) return coachArrow;
+    coachArrow = document.createElement("div"); coachArrow.className = "coach-arrow"; coachArrow.hidden = true; coachArrow.setAttribute("aria-hidden", "true");
+    coachArrow.innerHTML = `<i><svg viewBox="0 0 11 11" shape-rendering="crispEdges"><path fill="#7a3e14" d="M3 0h5v5h3v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h3z"/><path fill="#ffcf4a" d="M4 1h3v5h2v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1v-1h2z"/><path fill="#fff3b0" d="M4 1h1v6h-1z"/></svg></i><b></b>`;
+    document.body.appendChild(coachArrow);
+    return coachArrow;
+  }
+  function coachPlace() {
+    coachRaf = 0;
+    const a = coachArrowEl(), t = coachTarget;
+    if (!t || !document.body.contains(t)) { a.hidden = true; return; }
+    const r = t.getBoundingClientRect(), W = innerWidth, H = innerHeight, A = 44, gap = 6;
+    if (!r.width && !r.height) { a.hidden = true; return; }
+    let dir, x, y, hint = "";
+    if (r.bottom < 0) { dir = "up"; x = r.left + r.width / 2 - A / 2; y = 4; hint = "scroll up"; }
+    else if (r.top > H) { dir = "down"; x = r.left + r.width / 2 - A / 2; y = H - A - 8; hint = "scroll down"; }
+    else if (r.left < 260 && r.right < W / 3) { dir = "left"; x = r.right + gap; y = r.top + r.height / 2 - A / 2; }
+    else if (r.top > A + gap + 4) { dir = "down"; x = r.left + r.width / 2 - A / 2; y = r.top - A - gap; }
+    else { dir = "up"; x = r.left + r.width / 2 - A / 2; y = r.bottom + gap; }
+    x = Math.max(4, Math.min(W - A - 4, x)); y = Math.max(4, Math.min(H - A - 4, y));
+    a.dataset.dir = dir; a.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    a.querySelector("b").textContent = hint; a.hidden = false;
+  }
+  function coachFollow() { if (!coachRaf) coachRaf = requestAnimationFrame(coachPlace); }
+  window.addEventListener("scroll", coachFollow, true);
+  window.addEventListener("resize", coachFollow);
   function coachStart() {
     let done = false; try { done = !!localStorage.getItem("ft-coach-done"); } catch (e) {}
     S.coach = done ? null : 0;
@@ -2785,11 +2828,19 @@ details.howto[open] summary::after { content: "▾ hide"; }
       coachEl.addEventListener("click", (e) => { if (e.target.closest("#coach-skip")) coachEnd(); });
     }
     coachEl.hidden = !show;
-    if (!show) return;
+    if (!show) { coachTarget = null; if (coachArrow) coachArrow.hidden = true; return; }
     const st = COACH_STEPS[S.coach], html = `<div class="coach-k">First round · step ${S.coach + 1} of ${COACH_STEPS.length}</div><div>${st.text()}</div><button type="button" class="linkbtn" id="coach-skip">Skip the tutorial</button>`;
     if (coachEl.dataset.step !== String(S.coach)) { coachEl.innerHTML = html; coachEl.dataset.step = String(S.coach); }
-    const t = document.querySelector(st.target);
+    const sel = typeof st.target === "function" ? st.target() : st.target;
+    const t = document.querySelector(sel);
     if (t) t.classList.add("coach-hl");
+    // New step: bring the thing to click into view (once), then the arrow points at it.
+    if (t && coachEl.dataset.scrolled !== String(S.coach)) {
+      coachEl.dataset.scrolled = String(S.coach);
+      const r = t.getBoundingClientRect();
+      if (r.bottom < 60 || r.top > innerHeight - 160) { try { t.scrollIntoView({ behavior: PREFS.anim ? "smooth" : "auto", block: "center" }); } catch (e) {} }
+    }
+    coachTarget = t; coachPlace();
   }
 
 
