@@ -1,4 +1,4 @@
-// Friendly Takeover — round resolution.
+// Friendly Takeovers — round resolution.
 // resolveRound(state, decisions) is pure: it never mutates its input and always gives the same
 // result for the same input, so the server can re-run or audit any round.
 

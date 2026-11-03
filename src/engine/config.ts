@@ -1,4 +1,4 @@
-// Friendly Takeover — balance constants, industries, difficulties and news.
+// Friendly Takeovers — balance constants, industries, difficulties and news.
 // Every number here is a starting value meant to be tuned in playtests.
 
 import type { AuctionItemId, CampaignType, CeoTrait, DifficultyId, IndustryId, MissionId, NewsEffect, NewsEvent, RegulationId, ResearchId, SegmentId, WildcardId } from "./types";

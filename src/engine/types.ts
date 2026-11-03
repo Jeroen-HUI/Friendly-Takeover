@@ -1,4 +1,4 @@
-// Friendly Takeover — core engine types.
+// Friendly Takeovers — core engine types.
 // The engine is pure: (state, decisions) -> new state. No I/O, no clocks, no Math.random.
 
 export type SegmentId = "budget" | "mainstream" | "premium" | "hype";

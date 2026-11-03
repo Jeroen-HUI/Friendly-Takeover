@@ -1,4 +1,4 @@
-// Friendly Takeover — the chat censor's word list (slurs and hate, not ordinary swearing).
+// Friendly Takeovers — the chat censor's word list (slurs and hate, not ordinary swearing).
 // Used by the game (src/web/game.html, generated block) and the database (supabase migration, generated).
 // Run: node scripts/censor-list.mjs  → prints the JS and SQL pattern lists.
 // Letters may be swapped for look-alikes (n1gg3r) or split with dots/dashes (n.i.g.g.e.r); spaces don't count as a split,

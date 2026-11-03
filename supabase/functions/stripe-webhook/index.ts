@@ -1,4 +1,4 @@
-// Friendly Takeover — Stripe webhook.
+// Friendly Takeovers — Stripe webhook.
 // Stripe calls this after a payment on the "full game" payment link. The link carries the buyer's account id as
 // client_reference_id; a paid checkout session unlocks the full game for that account (table purchases).
 // The webhook's signing secret lives only in the edge function secrets as STRIPE_WEBHOOK_SECRET.

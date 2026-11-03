@@ -1,7 +1,7 @@
 {
   "name": "friendly-takeover",
   "version": "0.1.0",
-  "description": "Friendly Takeover — multiplayer business game engine",
+  "description": "Friendly Takeovers — multiplayer business game engine",
   "directories": {
     "test": "test"
   },

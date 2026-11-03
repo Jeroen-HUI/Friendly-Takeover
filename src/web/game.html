@@ -1,4 +1,4 @@
-<title>Friendly Takeover</title>
+<title>Friendly Takeovers</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- Fonts are built into the page (no requests to Google Fonts, so no visitor data goes to Google). -->
 <style>/*__FONTS__*/</style>
@@ -1389,7 +1389,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<section class="title-screen" aria-label="Main menu">
       <canvas class="title-bg" id="title-bg" aria-hidden="true"></canvas>${signs}
       ${accountChip()}
-      <header class="title-logo"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly<br>Takeover</h1><p>Company tycoon for friend groups · Voted #1 by our moms</p></div></header>
+      <header class="title-logo"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly<br>Takeovers</h1><p>Company tycoon for friend groups · Voted #1 by our moms</p></div></header>
       <div class="title-low">
         <nav class="win title-side" aria-label="Manage"><h2>Manage</h2>${side}</nav>
         <div class="title-center">
@@ -1627,7 +1627,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function privacyModal() {
     return legalWin("Privacy statement", `
-      <p>Friendly Takeover is made by ${LEGAL.owner} ("we"). This page explains what data the game uses and what you can do about it. Short version: <b>no ads, no tracking, no analytics, and we never sell data.</b></p>
+      <p>Friendly Takeovers is made by ${LEGAL.owner} ("we"). This page explains what data the game uses and what you can do about it. Short version: <b>no ads, no tracking, no analytics, and we never sell data.</b></p>
       <h3>Playing on your own (against bots)</h3>
       <p>Nothing leaves your device. Your saved game, settings and calculator notes are kept in your browser's storage. You can wipe them below at any time.</p>
       <h3>Playing online and accounts</h3>
@@ -1664,9 +1664,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function termsModal() {
     return legalWin("Terms of use", `
-      <p>By playing Friendly Takeover you agree to these terms. They're short, so please read them.</p>
+      <p>By playing Friendly Takeovers you agree to these terms. They're short, so please read them.</p>
       <h3>The game</h3>
-      <p>Friendly Takeover is a free business game. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
+      <p>Friendly Takeovers is a free business game. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
       <h3>No real money</h3>
       <p>All money in the game is pretend. You can't buy it, sell it, win it or cash it out. There is no gambling.</p>
       <h3>Age</h3>
@@ -1686,7 +1686,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function creditsModal() {
     return legalWin("Credits", `
-      <p>Friendly Takeover is designed and built by Jeroen.</p>
+      <p>Friendly Takeovers is designed and built by Jeroen.</p>
       <h3>Fonts</h3>
       <p><b>Silkscreen</b> by Jason Kottke and <b>Nunito</b> by Vernon Adams, Cyreal and Jacques Le Bailly, both under the <a href="https://openfontlicense.org" target="_blank" rel="noopener">SIL Open Font License 1.1</a>, built into the game.</p>
       <h3>Everything else</h3>
@@ -2802,7 +2802,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     g.fillStyle = panel; g.fillRect(24, 24, 672, 852);
     g.fillStyle = col; g.fillRect(24, 24, 672, 10);
     const font = (px, w) => (g.font = `${w || 700} ${px}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-display") || "monospace"}`);
-    g.fillStyle = gold; font(26); g.fillText("FRIENDLY TAKEOVER", 56, 86);
+    g.fillStyle = gold; font(26); g.fillText("FRIENDLY TAKEOVERS", 56, 86);
     g.fillStyle = ink; font(44); g.fillText(c.companyName.slice(0, 24), 56, 156);
     font(22, 400); g.fillStyle = "#b9c1ea"; g.fillText(`${c.playerName} · ${ind().name} · ${S.game.config.rounds >= 999 ? "endless" : S.game.config.rounds + " rounds"}`, 56, 192);
     g.fillStyle = r.place === 1 ? gold : ink; font(96); g.fillText("#" + r.place, 56, 310);
@@ -2825,12 +2825,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
   async function saveRecap() {
     const cv = drawRecap();
     if (!cv || !cv.toDataURL) return;
-    const url = cv.toDataURL("image/png"), name = "friendly-takeover-" + me().companyName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
+    const url = cv.toDataURL("image/png"), name = "friendly-takeovers-" + me().companyName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".png";
     try {
       if (navigator.canShare && cv.toBlob) {
         const blob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
         const file = new File([blob], name, { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "My Friendly Takeover" }); return; }
+        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "My game of Friendly Takeovers" }); return; }
       }
     } catch (e) {}
     const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -3088,7 +3088,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<div class="win"><div class="win-title">Get the full game<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       ${SHOP.err ? `<div class="note neg">${esc(SHOP.err)}</div>` : ""}
       ${a && !a.owned && !a.free_left ? `<div class="note">Your free online game is used up. Thanks for playing!</div>` : ""}
-      <div class="card shopcard"><div class="shop-price">${esc(price)}</div><div><b>Friendly Takeover: full game</b><div class="hint">One payment, yours to keep. No subscription, no ads.</div></div></div>
+      <div class="card shopcard"><div class="shop-price">${esc(price)}</div><div><b>Friendly Takeovers: full game</b><div class="hint">One payment, yours to keep. No subscription, no ads.</div></div></div>
       <ul class="shop-list"><li>Host and join unlimited online games with friends</li><li>Seasons, rematches, party TV mode and everything in the custom start</li><li>All future updates of the base game</li><li>Single-player and the daily challenge stay free for everyone</li></ul>
       ${guest ? `<div class="hint">Tip: save your account with your email first (Profile), so you can play your full game on any device and never lose it.</div>` : ""}
       <div class="hint">Payment runs on Stripe's secure page. Stripe handles VAT and sends your receipt.</div>
@@ -3227,7 +3227,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const notes = `${A.msg ? `<div class="note pos">${esc(A.msg)}</div>` : ""}${A.err ? `<div class="note neg">${esc(A.err)}</div>` : ""}`;
     const pw = (id, label, auto) => `<div class="afield"><label for="${id}">${label}</label><div class="pw"><input type="${A.show ? "text" : "password"}" id="${id}" autocomplete="${auto}" minlength="8" maxlength="72" /><button type="button" data-showpw>${A.show ? "Hide" : "Show"}</button></div></div>`;
     const field = (id, label, type, val, auto, ph) => `<div class="afield"><label for="${id}">${label}</label><input type="${type}" id="${id}" value="${esc(val || "")}" autocomplete="${auto}" placeholder="${ph || ""}" maxlength="${type === "email" ? 254 : 24}" /></div>`;
-    const hero = (title, sub) => `<div class="auth-hero"><canvas data-authlogo width="16" height="16" aria-hidden="true"></canvas><div><div class="wordmark"><b>Friendly</b><b>Takeover</b></div><p>${sub}</p></div></div>`;
+    const hero = (title, sub) => `<div class="auth-hero"><canvas data-authlogo width="16" height="16" aria-hidden="true"></canvas><div><div class="wordmark"><b>Friendly</b><b>Takeovers</b></div><p>${sub}</p></div></div>`;
     const tabs = `<div class="seg" role="radiogroup"><button type="button" role="radio" aria-checked="${A.tab === "login"}" data-atab="login">Log in</button><button type="button" role="radio" aria-checked="${A.tab === "create"}" data-atab="create">Create account</button></div>`;
     const guest = A.next ? `<div class="auth-or">or</div><button class="btn" type="button" id="a-guest" style="justify-content:center">Play as guest for now</button>` : "";
     let body = "", title = "Account";
@@ -4030,12 +4030,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function tvScreen() {
     const d = TV.data;
-    if (!d) return `<section class="tv"><div class="tv-center"><h1 class="tvp-logo">Friendly Takeover</h1><p>${esc(TV.err || "Connecting to the game…")}</p></div></section>`;
+    if (!d) return `<section class="tv"><div class="tv-center"><h1 class="tvp-logo">Friendly Takeovers</h1><p>${esc(TV.err || "Connecting to the game…")}</p></div></section>`;
     const g = d.game, R = d.results && d.results.data, comps = R ? R.companies : [];
     const colorOf = (id) => { const i = comps.findIndex((c) => c.companyId === id); return css(COLORS[Math.max(0, i) % COLORS.length]); };
     const nameOf = (id) => { const c = comps.find((x) => x.companyId === id); return c ? c.companyName : tvName(d, id) || "?"; };
     const join = backUrl() + "?join=" + g.code;
-    const head = `<header class="tvp-head"><div class="tv-brand"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><b>Friendly Takeover</b><span>Party mode · ${esc((FT.INDUSTRIES[g.industry] || {}).name || "")}</span></div>
+    const head = `<header class="tvp-head"><div class="tv-brand"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><b>Friendly Takeovers</b><span>Party mode · ${esc((FT.INDUSTRIES[g.industry] || {}).name || "")}</span></div>
       <div class="tv-code"><span>Game code</span><b>${esc(g.code)}</b></div>
       ${g.status === "playing" ? `<div class="tv-round"><span>Round ${g.current_round} / ${g.rounds}</span><b id="tv-timer">…</b></div>` : g.status === "finished" ? `<div class="tv-round"><span>Game over</span><b>🏆</b></div>` : `<div class="tv-round"><span>Lobby</span><b>${d.players.length} in</b></div>`}</header>`;
     if (g.status === "lobby") {
@@ -4380,7 +4380,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const r = Math.min(g.round, g.config.rounds);
     const industryLine = { chocolate: "Chocolate company tycoon", ai: "AI company tycoon", weed: "Weed company tycoon (18+)" }[g.config.industry];
     return `<header class="win topbar ${S.mp && !g.finished ? "has-mp" : ""}">
-      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeover</b></div><div class="logo-full"><h1>Friendly Takeover</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
+      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeovers</b></div><div class="logo-full"><h1>Friendly Takeovers</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
       ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
@@ -5993,7 +5993,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function tvModal() {
     const item = S.tvQueue[S.tvIndex], last = S.tvIndex >= S.tvQueue.length - 1;
-    return `<div class="win tvwin"><div class="win-title">Friendly Takeover News<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+    return `<div class="win tvwin"><div class="win-title">Friendly Takeovers News<span class="x" aria-hidden="true">×</span></div><div class="win-body">
       ${tvHtml(item, "m" + S.tvIndex, S.tvIndex, S.tvQueue.length, false)}
       <div style="display:flex;justify-content:flex-end;gap:10px">${last ? `<button class="btn go" type="button" id="btn-tv-done" data-autofocus>Back to the boardroom</button>` : `<button class="btn go" type="button" id="btn-tv-next" data-autofocus>Next story</button>`}</div>
     </div></div>`;

@@ -71,7 +71,7 @@ function etaSquared(stats: Record<string, Agg>) {
 }
 
 const t0 = Date.now();
-log("# Friendly Takeover: skill vs luck report");
+log("# Friendly Takeovers: skill vs luck report");
 log();
 log(`${N} matches per test, 8 rounds, seats rotated every match. "Pro" bots try out candidate plans with the engine before deciding (like a player who does the maths), without seeing the dice: rivals are assumed to repeat their last plan and every try uses a different random seed. "Smart" bots read their reports, steer price by sell-through, plan production and capacity, open stores when they fill up, play the endgame, and use wildcards, auctions, votes and missions. "Naive" bots repeat one fixed plan. "Sloppy" is the smart bot with ±25% random mistakes.`);
 

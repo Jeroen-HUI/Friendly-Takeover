@@ -1,4 +1,4 @@
-# Friendly Takeover
+# Friendly Takeovers
 
 Multiplayer business game for friend groups: everyone runs a company in the same market, competes round by round, and can buy each other out.
 
