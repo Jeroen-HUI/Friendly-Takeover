@@ -813,11 +813,11 @@ test("mega events: rare, big, never two at once, and switchable", () => {
   assert.ok(INDUSTRIES.chocolate.news.length >= 30 && INDUSTRIES.ai.news.length >= 30 && INDUSTRIES.weed.news.length >= 30, "lots of news");
 });
 
-test("live auction: the live winner gets the lot even if paying needs a loan; a patent at quality 5 still pays off", () => {
+test("live auction: the live winner gets the lot even if paying needs a loan; a patent at the top quality still pays off", () => {
   let g = newGame(17);
   while (!(g.auction && g.auction.round === g.round)) g = resolveRound(g, {});
   g = { ...g, auction: { ...g.auction!, item: "patent" } };
-  g.companies[1].qualityCap = 5;
+  g.companies[1].qualityCap = 8;
   g = liveBid(g, "b", "auction", 400_000, 5000);
   g.companies[1].cash = 100_000;          // spent most of it after bidding
   const cum = g.companies[1].cumProduced ?? 0, brand = g.companies[1].brand;
@@ -834,4 +834,17 @@ test("live auction: the live winner gets the lot even if paying needs a loan; a 
   h = liveBid(h, "a", "auction", 200_000, 5000);
   h = resolveRound(h, {});
   assert.equal(h.companies[0].qualityCap, capBefore + 1);
+});
+
+test("research goes up to quality 8; a custom start can begin higher", () => {
+  let g = newGame(23);
+  g.companies[0].cash = 50_000_000;
+  for (let r = 0; r < 4; r++) g = resolveRound(g, { a: { investRnd: 1_500_000 } });
+  assert.ok(g.companies[0].qualityCap >= 6, "past 5 with enough research: " + g.companies[0].qualityCap);
+  for (let r = 0; r < 3 && !g.finished; r++) g = resolveRound(g, { a: { investRnd: 1_500_000 } });
+  assert.equal(g.companies[0].qualityCap, 8, "stops at 8");
+  g = resolveRound(g, { a: { quality: 8, price: 6 } });
+  assert.equal(g.companies[0].history.at(-1)!.quality, 8);
+  const s = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 3, rules: { startQuality: 7 } }, players);
+  assert.equal(s.companies[0].qualityCap, 7);
 });

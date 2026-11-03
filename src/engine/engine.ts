@@ -204,7 +204,7 @@ export function createGame(config: GameConfig, players: PlayerSetup[]): GameStat
       debt: rules.startDebt,
       capacity: cap,
       qualityCap: Math.max(industry.start.qualityCap, rules.startQuality),
-      rndProgress: rules.startQuality >= 5 ? BALANCE.rndThresholds[5] : rules.startQuality >= 4 ? BALANCE.rndThresholds[4] : 0,
+      rndProgress: rules.startQuality >= 4 ? BALANCE.rndThresholds[rules.startQuality] ?? 0 : 0,
       brand: clamp((rules.startBrand ?? industry.start.brand) + lv.brand, 0, 100),
       hype: industry.start.hype,
       inventory: 0,
@@ -937,7 +937,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       let got = AUCTION.items[item].name;
       if (item === "endorsement") c.brand = clamp(c.brand + 15, 0, 100);
       if (item === "patent") {
-        if (c.qualityCap < 5) {
+        if (c.qualityCap < BALANCE.maxQuality) {
           c.qualityCap = c.qualityCap + 1;
           c.rndProgress = Math.max(c.rndProgress, BALANCE.rndThresholds[c.qualityCap] ?? c.rndProgress);
           got = `Patent: quality ${c.qualityCap} unlocked (you can use it from next round)`;
@@ -945,7 +945,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
           // Already at the top quality: the patent makes production cheaper (a head start on the experience curve) and lifts the brand.
           c.cumProduced = (c.cumProduced ?? 0) + industry.start.capacity * AUCTION.patentAtMax.experienceRounds;
           c.brand = clamp(c.brand + AUCTION.patentAtMax.brand, 0, 100);
-          got = `Patent: you already make top quality, so it cuts your production costs and adds ${AUCTION.patentAtMax.brand} brand`;
+          got = `Patent: you already make the top quality, so it cuts your production costs and adds ${AUCTION.patentAtMax.brand} brand`;
         }
       }
       if (item === "factory") c.capacity = Math.round(c.capacity + industry.start.capacity * 0.25);
@@ -1352,8 +1352,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const visionary = c.trait === "visionary" ? TRAIT_EFFECTS.visionaryRndFactor : 1;
     c.rndProgress += d.investRnd * visionary;
     let cap = 3;
-    if (c.rndProgress >= BALANCE.rndThresholds[4]) cap = 4;
-    if (c.rndProgress >= BALANCE.rndThresholds[5]) cap = 5;
+    for (let q = 4; q <= BALANCE.maxQuality; q++) if (c.rndProgress >= BALANCE.rndThresholds[q]) cap = q;
     if (cap > c.qualityCap) w.events.push(`R&D breakthrough: quality ${cap} unlocked`);
     c.qualityCap = Math.max(c.qualityCap, cap);
     c.capacity = Math.round(c.capacity * (1 - BALANCE.capacityDepreciation) + d.investCapacity / (BALANCE.capacityCostPerUnit * industry.baseUnitCost));

@@ -449,6 +449,15 @@ if (!tvTags.has("Auction") || !tvTags.has("Summit")) throw new Error("special br
   if (g.config.rounds !== 5 || Math.abs(you.cash - 2500000) > 400000 || you.shares.founder !== 40) throw new Error("custom start not applied: " + JSON.stringify({ r: g.config.rounds, cash: you.cash, f: you.shares.founder }));
   if (!(giant.cash > you.cash * 2)) throw new Error("giant handicap not applied");
   if (!/ROUND 1 \/ 5/.test(doc.querySelector(".topbar .round").textContent)) throw new Error("blitz round count not shown");
+  // Typing numbers: a price with a Dutch decimal comma, and a marketing budget above the slider.
+  click('[data-tab="production"]');
+  { const pi = doc.getElementById("f-price-out"); pi.dispatchEvent(new window.Event("focus")); pi.value = "2,35"; pi.dispatchEvent(new window.Event("change", { bubbles: true }));
+    if (Math.abs(D.S.draft.price - 2.35) > 1e-9) throw new Error("typed price not applied: " + D.S.draft.price); }
+  click('[data-tab="marketing"]');
+  { const mi = doc.getElementById("f-mkt-out"); mi.value = "7.5m"; mi.dispatchEvent(new window.Event("change", { bubbles: true }));
+    if (D.S.draft.marketingBudget !== 7500000) throw new Error("typed budget above the slider not applied: " + D.S.draft.marketingBudget);
+    mi.value = "300k"; mi.dispatchEvent(new window.Event("change", { bubbles: true }));
+    if (D.S.draft.marketingBudget !== 300000) throw new Error("typed 300k not applied"); }
   // Dividend policy in Finance.
   click('[data-tab="finance"]');
   if (!/Dividend policy/.test(doc.body.textContent)) throw new Error("dividend policy missing");

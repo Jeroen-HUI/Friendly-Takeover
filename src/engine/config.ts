@@ -99,7 +99,9 @@ export const BALANCE = {
   brandDecay: 0.95,
   hypeDecay: 0.65,
   /** R&D needed (cumulative, euros) to unlock quality caps 4 and 5. */
-  rndThresholds: { 4: 450_000, 5: 1_150_000 } as Record<number, number>,
+  rndThresholds: { 4: 450_000, 5: 1_150_000, 6: 2_100_000, 7: 3_300_000, 8: 4_800_000 } as Record<number, number>,
+  /** Highest quality level research can reach. */
+  maxQuality: 8,
   /** Takeovers. */
   takeoverPremium: 0.15,
   /** Extra premium per share the buyer already holds (shares get pricier as you accumulate). */
@@ -168,7 +170,7 @@ export const AUCTION = {
   minBid: 50_000,
   items: {
     endorsement: { name: "Celebrity endorsement", description: "+15 brand right away" },
-    patent: { name: "Patent", description: "Your maximum quality goes up one level (already at 5: cheaper production and +8 brand instead)" },
+    patent: { name: "Patent", description: "Your maximum quality goes up one level (already at the top, 8: cheaper production and +8 brand instead)" },
     factory: { name: "Bankrupt rival's factory", description: "+25% factory capacity" },
     location: { name: "Prime high-street location", description: "Two free stores (works once retail is open)" },
   } as Record<AuctionItemId, { name: string; description: string }>,
@@ -534,7 +536,7 @@ export const HOUSE_RULES = {
   startCashRange: [250_000, 5_000_000] as [number, number],
   startDebtRange: [0, 5_000_000] as [number, number],
   startCapacityRange: [0.5, 2] as [number, number],
-  startQualityRange: [3, 5] as [number, number],
+  startQualityRange: [3, 8] as [number, number],
   startBrandRange: [0, 80] as [number, number],
   startStoresRange: [0, 5] as [number, number],
   founderSharesRange: [10, 60] as [number, number],

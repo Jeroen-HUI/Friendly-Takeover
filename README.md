@@ -45,6 +45,10 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **Shareholders:** every 3 rounds (a quarter) companies pay their dividend policy (0, 25 or 50% of the quarter's profit) to shareholders; the founder's part stays in the company, and investors value a dividend payer 4% or 8% higher. Big decisions go to a board vote weighted by shares: friendly mergers (when either company has other shareholders) and extra loans above the bank's credit line. The vote is announced when the round closes and held live during the next round; the founder's shares vote yes, not voting counts as yes, the public float doesn't vote, and the result is carried out when the round ends. Whoever takes control of a company pays the largest other shareholder 10% of its value (runner-up bonus).
 
+**Quality up to 8:** research unlocks quality 4 to 8 (in total €450k, €1.15M, €2.1M, €3.3M, €4.8M). A patent won at quality 8 cuts production costs and adds brand instead.
+
+**Typing numbers and sliders that grow:** every slider's number box can be typed in ("2,35", "750k", "1.2m"). Budget sliders (capacity, R&D, marketing, brand, stakes) reach further as your company grows, and typing can go past the slider; prices go up to the industry's price limit. Several windows: drag a tab from the menu onto the screen to open up to 3 at once.
+
 **More news:** about 35 stories per industry, plus rare mega events that hit everyone (crashes, booms, blackouts) with their own red TV broadcast.
 
 **Rivalries:** the final screen shows your head-to-head against everyone (who finished ahead, stakes in each other, takeovers), and online games keep an all-time record against each friend (Career screen).

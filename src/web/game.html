@@ -209,7 +209,10 @@ button, input { font: inherit; color: inherit; }
 .stepper { display: grid; grid-template-columns: 38px minmax(0, 1fr) 38px; gap: 8px; align-items: center; }
 .stepper button { height: 36px; border-radius: 7px; border: 0; cursor: pointer; background: var(--panel); color: var(--ink); font-size: 20px; font-weight: 900; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.35), 0 0 0 2px #0b1027; }
 .stepper button:active { transform: translateY(1px); }
-.stepper output { display: block; text-align: center; background: var(--bg-deep); border-radius: 6px; padding: 6px 4px; font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
+.stepper .step-val { width: 100%; min-width: 0; box-sizing: border-box; border: 0; color: inherit; font-family: inherit; cursor: text; }
+.stepper .step-val:focus { outline: 2px solid var(--gold); }
+.stepper .step-val.bad { outline: 2px solid var(--bad); }
+.stepper output, .stepper .step-val { display: block; text-align: center; background: var(--bg-deep); border-radius: 6px; padding: 6px 4px; font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 .zonebar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
 .zonelegend { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); font-weight: 800; }
@@ -1058,7 +1061,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ["startCash", "Starting cash", "Cash every company starts with", "num", [250000, 5000000, 50000, 1, "€", (c) => FT.INDUSTRIES[c.industry].start.cash]],
       ["startDebt", "Starting debt", "Bank debt from day one (interest every round)", "num", [0, 5000000, 100000, 1, "€", () => 0]],
       ["startCapacity", "Factory size", "Compared with a normal starting factory", "num", [50, 200, 5, 0.01, "%", () => 100]],
-      ["startQuality", "Best quality", "Highest quality you can make from the start", "seg", [[3, "3"], [4, "4"], [5, "5"]], 3],
+      ["startQuality", "Best quality", "Highest quality you can make from the start (research goes up to 8)", "seg", [[3, "3"], [4, "4"], [5, "5"], [6, "6"], [7, "7"], [8, "8"]], 3],
       ["startBrand", "Brand", "How well known every company is (0-80)", "num", [0, 80, 5, 1, "", (c) => FT.INDUSTRIES[c.industry].start.brand]],
       ["startStores", "Own stores", "Stores you start with (they open when retail opens)", "num", [0, 5, 1, 1, "", () => 0]],
       ["founderShares", "Founder's shares", "What each founder keeps; the rest trades on the market. Above 49% nobody can take you over by buying shares", "num", [10, 60, 5, 1, "%", () => 30]],
@@ -3799,10 +3802,44 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${DECIDE_TABS.map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav>`;
   }
 
+  // Sliders that grow with your company: the budget sliders reach further as you get bigger, and you can type more than the slider shows.
+  function niceUp(x) { if (x <= 0) return 0; const p = Math.pow(10, Math.floor(Math.log10(x))); for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= x) return m * p; return 10 * p; }
+  function roomFor(base, cur) {
+    const c = me(), v = Math.max(0, CV(S.game).you || 0);
+    return niceUp(Math.max(base, (cur || 0) * 1.5, Math.max(0, c.cash) * 0.8, v * 0.3));
+  }
+  /** How high a typed number may go (beyond the slider), per control. Money budgets: practically unlimited; prices: the industry's price range. */
+  function hardMaxFor(id, max) {
+    if (["f-cap", "f-rnd", "f-mkt", "f-brand", "f-tstake", "f-dstake", "f-bid"].includes(id) || id.startsWith("f-bk-")) return 100000000;
+    if (id === "f-price" || id === "f-rprice") return ind().priceRange[1];
+    return max;
+  }
+  /** "2,35", "€1.2m", "750k", "1,200,000 bars", "+€300k" → number (NaN if there's no number). */
+  function parseTyped(str) {
+    let t = String(str || "").trim().toLowerCase().replace(/[−–]/g, "-").replace(/[€\s_+]/g, "").replace(/[a-z]+$/, (m) => (/^(k|m|mln|b|bn)$/.test(m) ? m : ""));
+    // A single comma followed by 1-2 digits is a decimal comma (Dutch style); other commas group thousands.
+    if (/^-?\d+,\d{1,2}([kmb]|mln|bn)?$/.test(t)) t = t.replace(",", "."); else t = t.replace(/,/g, "");
+    const m = t.match(/^(-?\d*\.?\d+)(k|m|mln|b|bn)?$/);
+    if (!m) return NaN;
+    return Number(m[1]) * ({ k: 1e3, m: 1e6, mln: 1e6, b: 1e9, bn: 1e9 }[m[2]] || 1);
+  }
+  function typeStepper(id, raw) {
+    const el = document.getElementById(id), out = document.getElementById(id + "-out");
+    if (!el) return;
+    const v = parseTyped(raw);
+    if (!Number.isFinite(v)) { if (out) { out.classList.add("bad"); setTimeout(() => out.classList.remove("bad"), 600); } setRange(id, Number(el.value)); return; }
+    // Typed numbers are kept exactly (the slider would snap them to its step).
+    if (!el.dataset.step0) el.dataset.step0 = el.step;
+    el.step = "any";
+    const hard = Number(el.dataset.hard) || Number(el.max);
+    if (v > Number(el.max) && v <= hard) el.max = String(v);
+    else if (v > hard) el.max = String(hard);
+    setRange(id, v);
+  }
   function stepper(id, label, value, min, max, step, fmt, extra) {
     return `<div class="ctl"><label for="${id}">${label}</label>
-      <div class="stepper"><button type="button" data-step="${id}" data-dir="-1" aria-label="Lower ${label}">−</button><output id="${id}-out" for="${id}"${tipAttr(exactFor(id)(value))}>${fmt(value)}</output><button type="button" data-step="${id}" data-dir="1" aria-label="Raise ${label}">+</button></div>
-      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}">${extra || ""}</div>`;
+      <div class="stepper"><button type="button" data-step="${id}" data-dir="-1" aria-label="Lower ${label}">−</button><input type="text" class="step-val" inputmode="decimal" autocomplete="off" id="${id}-out" data-stepval="${id}" value="${esc(fmt(value))}" aria-label="${label}: type a number"${tipAttr(exactFor(id)(value) + "\nClick to type a number")}><button type="button" data-step="${id}" data-dir="1" aria-label="Raise ${label}">+</button></div>
+      <input type="range" id="${id}" min="${min}" max="${Math.max(max, value)}" step="${step}" value="${value}" data-hard="${hardMaxFor(id, max)}">${extra || ""}</div>`;
   }
 
   // Bar chart drawn to scale; bars colored per company or a single color.
@@ -3853,13 +3890,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function tabProduction() {
     const c = me(), d = S.draft, i = ind(), seg = i.segments, fx = fxNow();
-    const pMin = i.priceRange[0], pMax = Math.round(seg.premium.refPrice * 2 * 100) / 100;
+    const pMin = i.priceRange[0], pMax = Math.min(i.priceRange[1], Math.max(Math.round(seg.premium.refPrice * 2 * 100) / 100, Math.round(d.price * 1.3 * 100) / 100, Math.round(seg.premium.refPrice * (1 + 0.25 * Math.max(0, c.qualityCap - 5)) * 2 * 100) / 100));
     const step = Math.max(0.01, Math.round(seg.budget.refPrice / 40 * 100) / 100);
     const priceRows = S.game.companies.filter((o) => live(o)).map((o) => { const v = o.id === "you" ? d.price : (o.history.at(-1)?.price ?? o.lastDecisions.price); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + (o.id === "you" ? " (your plan)" : " (last round)") + ": " + eurX(v) }; });
     const salesRows = c.history.map((h) => ({ label: h.round ? "R" + h.round : "Y0", v: h.sold, color: colRaw("you"), tip: "Round " + h.round + ": sold " + unitsX(h.sold) + ", produced " + unitsX(h.produced) + (h.unmetDemand ? ", missed " + unitsX(h.unmetDemand) : "") }));
     if (!salesRows.length) salesRows.push({ label: "R1", v: 0, color: colRaw("you") });
     const qFloor = S.game.round > 1 ? Math.min(c.qualityCap, (c.history.at(-1) || {}).quality || 1) : 1;
-    const q = [1, 2, 3, 4, 5].map((n) => `<label class="choice"><input type="radio" name="quality" value="${n}" ${d.quality === n ? "checked" : ""} ${n > c.qualityCap || n < qFloor ? "disabled" : ""}><span>${n}</span></label>`).join("");
+    const q = Array.from({ length: Math.max(5, Math.min(FT.BALANCE.maxQuality, c.qualityCap + 1)) }, (_, k) => k + 1).map((n) => `<label class="choice"><input type="radio" name="quality" value="${n}" ${d.quality === n ? "checked" : ""} ${n > c.qualityCap || n < qFloor ? "disabled" : ""}><span>${n}</span></label>`).join("");
     const qHint = S.game.round === 1
       ? `<span class="note">Round 1 sets your positioning: after this round quality can never go down.</span> Max quality ${c.qualityCap}; unlock more in R&amp;D.`
       : `Quality can only go up from here (now ${qFloor}). Max ${c.qualityCap}; unlock more in R&amp;D.`;
@@ -3875,7 +3912,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         ${stepper("f-price", "Price per " + i.labels.product, d.price, pMin, pMax, step, eur, `<div class="hint muted" style="font-size:12.5px">Cheap or premium is decided by the market: it depends on what your rivals charge and offer.</div>`)}
         ${stepper("f-prod", "Production (" + i.labels.unit + ")", Math.min(d.production, c.capacity), 0, c.capacity, Math.max(1, Math.round(c.capacity / 100)), units, `<div class="hint muted" style="font-size:12.5px">Capacity ${units(c.capacity)} · overtime above ${units(loadLines().over)} (+${Math.round(FT.COSTS.overtimePremium * 100)}% per unit) · idle machines below ${units(loadLines().idle)} cost money.</div>`)}
         <div class="ctl"><span class="lbl">${esc(i.labels.quality[0].toUpperCase() + i.labels.quality.slice(1))}</span><div class="qual" role="radiogroup" aria-label="Quality">${q}</div><div class="hint muted" style="font-size:12.5px">${qHint}</div></div>
-        ${stepper("f-cap", "Build more " + i.labels.capacity, d.investCapacity, 0, 2000000, 20000, eur, `<div class="hint muted" style="font-size:12.5px" id="cap-note">${capNote()}</div>`)}
+        ${stepper("f-cap", "Build more " + i.labels.capacity, d.investCapacity, 0, roomFor(2000000, d.investCapacity), 20000, eur, `<div class="hint muted" style="font-size:12.5px" id="cap-note">${capNote()}</div>`)}
         ${S.game.config.difficulty === "tycoon" ? staffControl() : ""}
         ${materialsCard()}
       </div></div>`;
@@ -3908,7 +3945,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function tabRnd() {
     const c = me(), d = S.draft;
-    const next = c.qualityCap < 5 ? c.qualityCap + 1 : null;
+    const next = c.qualityCap < FT.BALANCE.maxQuality ? c.qualityCap + 1 : null;
     const need = next ? FT.BALANCE.rndThresholds[next] : 1;
     const rows = S.game.companies.filter((o) => live(o)).map((o) => { const v = o.id === "you" ? d.quality : (o.history.at(-1)?.quality ?? o.lastDecisions.quality); return { label: o.id === "you" ? "You" : o.companyName, v, color: colRaw(o.id), tip: o.companyName + ": quality " + v }; });
     return `<div class="grid2">
@@ -3916,8 +3953,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div style="display:grid;gap:12px;min-width:0">
         <div class="card"><h3>Research progress</h3>
           <div class="meter"><div class="row"><span>${next ? "Toward quality " + next : "Top quality unlocked"}</span><span class="num">${next ? eur(c.rndProgress, 1) + " / " + eur(need, 1) : ""}</span></div><div class="track"><div style="width:${next ? Math.min(100, (c.rndProgress / need) * 100) : 100}%;background:var(--c1)"></div></div></div>
-          <div class="hint">${c.trait === "visionary" ? "Visionary CEO: every euro counts 15% extra." : "Unlocks apply from next round."}</div></div>
-        ${stepper("f-rnd", "R&D budget", d.investRnd, 0, 1000000, 10000, eur)}
+          <div class="hint">${c.trait === "visionary" ? "Visionary CEO: every euro counts 15% extra. " : ""}Unlocks apply from next round. Research in total: ${[4, 5, 6, 7, 8].map((q) => `<span class="${c.qualityCap >= q ? "pos" : ""}">Q${q} ${eur(FT.BALANCE.rndThresholds[q])}</span>`).join(" · ")}. Higher quality costs more to make, and premium buyers pay for it.</div></div>
+        ${stepper("f-rnd", "R&D budget", d.investRnd, 0, roomFor(1000000, d.investRnd), 10000, eur)}
       </div></div>`;
   }
 
@@ -3935,8 +3972,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       </div>
       <div style="display:grid;gap:12px;min-width:0">
         <div class="ctl"><span class="lbl">Campaign</span><div class="choices" role="radiogroup" aria-label="Campaign">${camps}</div></div>
-        ${stepper("f-mkt", "Marketing budget", d.marketingBudget, 0, 1000000, 10000, eur)}
-        ${stepper("f-brand", "Brand building", d.investBrand, 0, 600000, 10000, eur)}
+        ${stepper("f-mkt", "Marketing budget", d.marketingBudget, 0, roomFor(1000000, d.marketingBudget), 10000, eur)}
+        ${stepper("f-brand", "Brand building", d.investBrand, 0, roomFor(600000, d.investBrand), 10000, eur)}
       </div></div>`;
   }
 
@@ -4096,8 +4133,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
           <li><span><b>Higher amount wins</b>; a tie goes to the defender. If the defender wins, the buyer stops at exactly 50% (no control). Both sides pay what they put in, win or lose.</span></li>
           <li><span>No showdown, no cost: both amounts are only paid when a showdown actually happens.</span></li>
         </ol><div class="hint">Example: you buy your way to 55% of a rival with a €300k attack stake. They have a €200k defense fund. You win: you pay €300k, they pay €200k, and you control them.</div></div>
-        ${stepper("f-tstake", "Attack stake: what you'll fight with", d.takeoverStake, 0, 2000000, 25000, eur, `<div class="hint muted" style="font-size:12.5px">Used only if one of your purchases this round takes you past 50% of a company with a defense fund. It comes out of the cash left after your share purchases.</div>`)}
-        ${stepper("f-dstake", "Defense fund: what you'll defend with", d.defenseStake, 0, 2000000, 25000, eur, `<div class="hint muted" style="font-size:12.5px">Stays set every round until you change it. Used only if someone tries to take you past 50%. Rivals can't see it.</div>`)}
+        ${stepper("f-tstake", "Attack stake: what you'll fight with", d.takeoverStake, 0, roomFor(2000000, d.takeoverStake), 25000, eur, `<div class="hint muted" style="font-size:12.5px">Used only if one of your purchases this round takes you past 50% of a company with a defense fund. It comes out of the cash left after your share purchases.</div>`)}
+        ${stepper("f-dstake", "Defense fund: what you'll defend with", d.defenseStake, 0, roomFor(2000000, d.defenseStake), 25000, eur, `<div class="hint muted" style="font-size:12.5px">Stays set every round until you change it. Used only if someone tries to take you past 50%. Rivals can't see it.</div>`)}
       </div></div>`;
   }
 
@@ -4582,7 +4619,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const salesRows = H.map((h) => ({ label: "R" + h.round, v: h.retailSold, color: colRaw("you"), tip: "Round " + h.round + ": " + unitsX(h.retailSold) + " sold in " + h.stores + " stores, demand " + unitsX(h.retailDemand) }));
     const last = c.history.at(-1);
     const rivals = S.game.companies.map((o) => `<tr class="${o.id === "you" ? "me" : ""}">${coCell(o.id)}${td(String(o.stores || 0))}${td(o.history.at(-1) && o.stores ? eur(o.history.at(-1).retailPrice) : "—", o.history.at(-1) && o.stores ? eurX(o.history.at(-1).retailPrice) : "")}</tr>`).join("");
-    const pMax = Math.round(ref * 2.5 * 100) / 100;
+    const pMax = Math.min(i.priceRange[1], Math.max(Math.round(ref * 2.5 * 100) / 100, Math.round((S.draft.retailPrice || 0) * 1.3 * 100) / 100));
     return `<div class="grid2">
       <div style="display:grid;gap:14px;min-width:0">
         <div class="card"><h3>Your stores: ${c.stores}</h3>${facts}
@@ -4885,7 +4922,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (rt === "costs") {
       const fx = fxNow();
       const idx = (S.game.market && S.game.market.materialIndex) || 1;
-      const rows = [1, 2, 3, 4, 5].map((q) => { const cost = FT.unitCost(i, q, 1, c.trait, S.game.config.difficulty === "tycoon"); return `<tr class="${q === S.draft.quality ? "me" : ""}${q > c.qualityCap ? " locked-row" : ""}"><td>Quality ${q}${q > c.qualityCap ? " (locked)" : ""}</td>${td("€" + cost.toFixed(3), "€" + cost.toFixed(4) + " per " + i.labels.product + " (standard)")}</tr>`; }).join("");
+      const rows = Array.from({ length: FT.BALANCE.maxQuality }, (_, k) => k + 1).map((q) => { const cost = FT.unitCost(i, q, 1, c.trait, S.game.config.difficulty === "tycoon"); return `<tr class="${q === S.draft.quality ? "me" : ""}${q > c.qualityCap ? " locked-row" : ""}"><td>Quality ${q}${q > c.qualityCap ? " (locked)" : ""}</td>${td("€" + cost.toFixed(3), "€" + cost.toFixed(4) + " per " + i.labels.product + " (standard)")}</tr>`; }).join("");
       const factors = `<div class="kv" style="margin-top:8px"><div${tipAttr("Raw material price index this round: " + idx.toFixed(3))}><span>Material index now</span><b>${idx.toFixed(2)}</b></div><div${tipAttr("Material share of the standard cost")}><span>Material share</span><b>${Math.round(FT.COSTS.materialShare * 100)}%</b></div><div${tipAttr("Production cost change from this round's news")}><span>News on costs</span><b>${Math.abs(fx.cost - 1) < 0.0005 ? "none" : signed(fx.cost - 1)}</b></div></div>`;
       body = `<div class="grid2"><div class="card"><h3>Standard cost per ${esc(i.labels.product)}</h3>${tbl(["", "Standard"], rows)}${factors}<div class="hint">Standard = material index 1.00, no news, no experience${c.trait === "pennyPincher" ? ", your Penny-Pincher discount included" : ""}. Your real cost this round is yours to work out.</div></div>${costRules()}</div>`;
     }
@@ -5593,8 +5630,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (id.startsWith("f-bk-")) { S.draft.bankruptBids = { ...(S.draft.bankruptBids || {}), [id.slice(5)]: Number(el.value) }; val = Number(el.value); }
     else { S.draft[RANGES[id]] = Number(el.value); val = S.draft[RANGES[id]]; }
     const out = document.getElementById(id + "-out");
-    out.textContent = fmtFor(id)(val);
-    out.dataset.tip = exactFor(id)(val);
+    if (out.tagName === "INPUT") { if (document.activeElement !== out) out.value = fmtFor(id)(val); } else out.textContent = fmtFor(id)(val);
+    out.dataset.tip = exactFor(id)(val) + "\nClick to type a number";
     refreshDerived();
   }
   function refreshDerived() {
@@ -5640,9 +5677,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     for (const id of Object.keys(RANGES)) on("#" + id, "input", (e) => setRange(id, Number(e.target.value)));
     on("#f-pname", "input", (e) => { S.draft.productName = e.target.value.replace(/[<>]/g, "").slice(0, 28); });
     on('input[id^="f-bk-"]', "input", (e) => setRange(e.target.id, Number(e.target.value)));
+    on("[data-stepval]", "focus", (e) => { const el = document.getElementById(e.target.dataset.stepval); e.target.value = el && /^f-(price|rprice)$/.test(e.target.dataset.stepval) ? Number(el.value).toFixed(2) : el ? String(Number(el.value)) : e.target.value; e.target.select(); });
+    on("[data-stepval]", "change", (e) => typeStepper(e.target.dataset.stepval, e.target.value));
+    on("[data-stepval]", "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); typeStepper(e.target.dataset.stepval, e.target.value); e.target.blur(); } if (e.key === "Escape") e.target.blur(); });
+    on("[data-stepval]", "blur", (e) => { const id = e.target.dataset.stepval, el = document.getElementById(id); if (el) e.target.value = fmtFor(id)(Number(el.value)); });
     on("[data-step]", "click", (e) => {
       const id = e.currentTarget.dataset.step, el = document.getElementById(id);
-      setRange(id, Number(el.value) + Number(e.currentTarget.dataset.dir) * Number(el.step));
+      setRange(id, Number(el.value) + Number(e.currentTarget.dataset.dir) * Number(el.dataset.step0 || el.step));
     });
     on('input[name="quality"]', "change", (e) => { S.draft.quality = Number(e.target.value); refreshDerived(); });
     on('input[name="campaign"]', "change", (e) => { S.draft.campaign = e.target.value; refreshDerived(); });
