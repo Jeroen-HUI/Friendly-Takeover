@@ -1184,6 +1184,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     g.fillStyle = "#ffd43b";
     for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + (f % 40) / 40 * 0.4, d = 13 + (k % 2); g.fillRect(Math.round(x + Math.cos(a) * d), Math.round(y + Math.sin(a) * d), 2, 2); }
   }
+  // AI is switched off for now (it has nothing special yet). Old AI games still load and play; you just can't start a new one.
+  const AI_ENABLED = false;
+  const INDUSTRY_PICKS = () => [["chocolate", "Chocolate", "Bars, truffles, bacon-pickle experiments"], ...(AI_ENABLED ? [["ai", "AI", "Subscriptions, servers, robot hype"]] : []), ["weed", "Weed (18+)", "Grams, grow rooms, carrier pigeons"]];
+  const okIndustry = (x) => (INDUSTRY_PICKS().some(([k]) => k === x) ? x : "chocolate");
   const DEFAULT_OPTS = { name: "You", company: "Cocoa Loco", industry: "chocolate", bots: 4, difficulty: "standard", trait: "visionary", botSkill: "normal", rounds: 8, rules: {} };
   // ----- Custom start (new-game screen and lobby). Missing settings = the normal rules.
   const NORMAL_RULES = () => FT.rulesOf({ config: { rules: {} } });
@@ -2100,7 +2104,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
           ${g.league_id ? `<div class="card"><h3>Season rematch</h3><div class="hint">This game counts for your group's season. The season table is on the final screen.</div></div>` : ""}
         </div>
         <div class="card"><h3>Settings ${host ? "" : '<span class="muted" style="font-size:12px">(the host decides)</span>'}</h3>
-          <div class="orow"><div class="otext"><b>Industry</b></div><div class="octl">${sel("industry", [["chocolate", "Chocolate"], ["ai", "AI"], ["weed", "Weed 18+"]], g.industry)}</div></div>
+          <div class="orow"><div class="otext"><b>Industry</b></div><div class="octl">${sel("industry", INDUSTRY_PICKS().map(([k, n]) => [k, k === "weed" ? "Weed 18+" : n]), okIndustry(g.industry))}</div></div>
           <div class="orow"><div class="otext"><b>Difficulty</b></div><div class="octl">${sel("difficulty", [["standard", "Standard"], ["cutthroat", "Cutthroat"], ["tycoon", "Tycoon"]], g.difficulty)}</div></div>
           <div class="orow"><div class="otext"><b>Time per round</b><small>The host can skip it once everyone is ready</small></div><div class="octl">${sel("round_seconds", ROUND_TIMES, g.round_seconds)}</div></div>
           <div class="orow"><div class="otext"><b>Bots</b><small>Fill the table with computer players</small></div><div class="octl">${sel("bot_count", [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4"]], g.bot_count || 0)}</div></div>
@@ -3545,7 +3549,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function dailySetup(day) {
     let h = 2166136261; for (const ch of "ft-daily-" + day) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
     const n = Math.floor(Date.parse(day + "T00:00:00Z") / 86400000);
-    return { day, seed: (h >>> 1) & 0x7fffffff, industry: n % 2 ? "ai" : "chocolate", rounds: 6, bots: 4, difficulty: "standard", botSkill: "hard" };
+    return { day, seed: (h >>> 1) & 0x7fffffff, industry: AI_ENABLED && n % 2 ? "ai" : "chocolate", rounds: 6, bots: 4, difficulty: "standard", botSkill: "hard" };
   }
   function dailyModal() {
     const d = dailySetup(todayUTC()), st = localGet("ft-daily", null), mine = st && st.day === d.day ? st : null, save = loadSave();
@@ -6215,7 +6219,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const m = typeof modal !== "undefined" && modal ? modal : null;
     const pickVal = (name, fb) => (m && m.querySelector(`input[name="${name}"]:checked`) || {}).value || fb;
     const bots = Number(pickVal("bots", o.bots || 4));
-    return { rules: st.rules, rounds: st.rounds, industry: pickVal("industry", o.industry || "chocolate"), difficulty: pickVal("difficulty", o.difficulty || "standard"), editable: true, where: "setup",
+    return { rules: st.rules, rounds: st.rounds, industry: pickVal("industry", okIndustry(o.industry || "chocolate")), difficulty: pickVal("difficulty", o.difficulty || "standard"), editable: true, where: "setup",
       players: [{ id: "you", name: "You" }, ...Array.from({ length: bots }, (_, i) => ({ id: "bot" + i, name: "Bot " + (i + 1) }))] };
   }
   function bindSetupCs() {
@@ -6230,7 +6234,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ctl"><label for="s-name">Your name</label><input type="text" id="s-name" maxlength="24" value="${esc(o.name)}"></div>
         <div class="ctl"><label for="s-company">Company name</label><input type="text" id="s-company" maxlength="32" value="${esc(o.company)}"></div>
       </div>
-      <div class="ctl"><span class="lbl">Industry</span><div class="choices">${pick("industry", [["chocolate", "Chocolate", "Bars, truffles, bacon-pickle experiments"], ["ai", "AI", "Subscriptions, servers, robot hype"], ["weed", "Weed (18+)", "Grams, grow rooms, carrier pigeons"]], o.industry)}</div></div>
+      <div class="ctl"><span class="lbl">Industry</span><div class="choices">${pick("industry", INDUSTRY_PICKS(), okIndustry(o.industry))}</div></div>
       <div class="form">
         <div class="ctl" style="align-self:start"><span class="lbl">Bot rivals</span><div class="choices row3">${pick("bots", [[3, "3", "Room to grow"], [4, "4", "Standard"], [5, "5", "Crowded"]], o.bots)}</div></div>
         <div class="ctl"><span class="lbl">Difficulty</span><div class="choices">${pick("difficulty", [["standard", "Standard", "Takeovers from round 3"], ["cutthroat", "Cutthroat", "Takeovers and stores from round 1-2"], ["tycoon", "Tycoon", "Hire and pay production teams"]], o.difficulty)}</div></div>

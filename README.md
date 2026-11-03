@@ -29,7 +29,7 @@ In single-player the bots answer your offers (good offers get a yes) and now and
 
 **Achievements:** 21 badges (wins, takeovers, handshake deals, investor calls, missions, betrayals, dailies, friends…), earned at the end of a game and saved to your account (and on the device when offline).
 
-**Daily challenge:** the same market, rivals (4 hard bots) and starting news for everyone each day (chocolate or AI, 6 rounds). One scored try per day; practice runs after that don't count. **Leaderboards:** today's daily (everyone or friends) and all-time (wins, achievements, best daily).
+**Daily challenge:** the same market, rivals (4 hard bots) and starting news for everyone each day (chocolate, 6 rounds). One scored try per day; practice runs after that don't count. **Leaderboards:** today's daily (everyone or friends) and all-time (wins, achievements, best daily).
 
 **Live market (from round 3):** a stock exchange is open during the round. Buy or sell rivals' shares right away (up to 50% of a company; every share moves the price 0.5%, 2% fee); everyone sees the trades on the ticker. Each company has its own price chart: the share price at the end of every round, then this round's live trades. Your cash and debt (with how much credit is left) sit big in the top bar. Taking control past 50% still goes through an end-of-round takeover bid. You can buy at most 15 shares of each company per round (20 in Cutthroat), exchange and takeover bids together, so control (51 shares) takes at least 4 rounds. **Live auctions:** the boardroom auction and bankruptcy sales are open bidding: every bid restarts a 45-second hammer ("going once… going twice… sold!"), and the winner pays when the round closes. In single-player the bots trade and bid too.
 
@@ -118,7 +118,7 @@ Like TOPSIM, the game doesn't forecast for you. The Production tab shows your fa
 
 The game page has a **Calc** desk: a calculator (keyboard, memory, tape; click any number in a table to paste it) and notes per game.
 
-All balance numbers live in `src/engine/config.ts`. AI and Weed are derived from Chocolate's tuned market, scaled by unit cost, so balance carries over.
+All balance numbers live in `src/engine/config.ts`. **AI is switched off for now** (no new games; `AI_ENABLED` in the client, `app_settings.industries_off` on the server); old AI games still play. AI and Weed are derived from Chocolate's tuned market, scaled by unit cost, so balance carries over.
 
 ## Skill vs luck (`npm run analyze`, full output in `sim-report.md`)
 
