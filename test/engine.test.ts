@@ -990,3 +990,11 @@ test("weed: security is a budget, goons are a budget, and the two weed CEOs bend
   const choco = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 1 }, players.map((p, i) => (i === 0 ? { ...p, trait: "enforcer" as never } : p)));
   assert.equal(choco.companies[0].trait, "visionary");
 });
+
+test("repaying the whole loan leaves no cents behind; crumbs of debt are cleared", () => {
+  const g = newGame(5);
+  g.companies[0].debt = 400_000.3; g.companies[1].debt = 0.42;
+  const r = resolveRound(g, { a: { loanChange: -400_000 } });
+  assert.equal(r.companies[0].debt, 0, "repaying the rounded amount clears it");
+  assert.equal(r.companies[1].debt, 0, "under €1 is paid automatically");
+});

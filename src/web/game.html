@@ -2100,7 +2100,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const g = MP.game, host = mpIsHost(), dis = host ? "" : "disabled";
     const link = (onHostedPage() && location.protocol !== "file:" ? location.origin + location.pathname : PLAY_URL) + "?join=" + g.code;
     const players = MP.players.map((p, i) => `<div class="lplayer" style="--pc:var(${COLORS[i % COLORS.length]})"><canvas data-tavatar="${p.id === MP.playerId ? "you" : p.id}" data-color="${i}" width="12" height="12" aria-hidden="true"></canvas><div style="min-width:0"><b>${esc(p.player_name)}${p.id === MP.playerId ? " (you)" : ""}</b><div class="muted" style="font-size:12.5px">${esc(p.company_name)} · ${esc(TRAITS[p.trait] ? TRAITS[p.trait][0] : p.trait)}</div></div>${p.is_host ? '<span class="title-chip">host</span>' : ""}</div>`).join("")
-      + Array.from({ length: g.bot_count || 0 }, (_, k) => `<div class="lplayer bot"><span class="botface">🤖</span><div><b>Bot ${k + 1}</b><div class="muted" style="font-size:12.5px">${g.bot_skill === "hard" ? "Hard" : "Normal"} bot</div></div></div>`).join("");
+      + Array.from({ length: g.bot_count || 0 }, (_, k) => `<div class="lplayer bot"><span class="botface">🤖</span><div><b>Bot ${k + 1}</b><div class="muted" style="font-size:12.5px">${g.bot_skill === "hard" ? "Hard" : g.bot_skill === "easy" ? "Easy" : "Normal"} bot</div></div></div>`).join("");
     const sel = (name, opts, cur) => `<div class="seg" role="radiogroup">${opts.map(([v, n]) => `<button type="button" role="radio" aria-checked="${String(cur) === String(v)}" data-set="${name}" data-val="${v}" ${dis}>${n}</button>`).join("")}</div>`;
     const total = MP.players.length + (g.bot_count || 0);
     return `<section class="win lobby" aria-label="Online lobby"><div class="win-title">Online lobby<span class="x" aria-hidden="true">×</span></div><div class="win-body">
@@ -2120,7 +2120,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
           <div class="orow"><div class="otext"><b>Difficulty</b></div><div class="octl">${sel("difficulty", [["standard", "Standard"], ["cutthroat", "Cutthroat"], ["tycoon", "Tycoon"]], g.difficulty)}</div></div>
           <div class="orow"><div class="otext"><b>Time per round</b><small>The host can skip it once everyone is ready</small></div><div class="octl">${sel("round_seconds", ROUND_TIMES, g.round_seconds)}</div></div>
           <div class="orow"><div class="otext"><b>Bots</b><small>Fill the table with computer players</small></div><div class="octl">${sel("bot_count", [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4"]], g.bot_count || 0)}</div></div>
-          <div class="orow"><div class="otext"><b>Bot skill</b></div><div class="octl">${sel("bot_skill", [["normal", "Normal"], ["hard", "Hard"]], g.bot_skill || "normal")}</div></div>
+          <div class="orow"><div class="otext"><b>Bot skill</b></div><div class="octl">${sel("bot_skill", [["easy", "Easy"], ["normal", "Normal"], ["hard", "Hard"]], g.bot_skill || "normal")}</div></div>
           <h3 style="margin-top:8px">Game setup</h3>
           ${customStart(lobbyCtx())}
         </div>
@@ -4024,8 +4024,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function newGame(o, showTv) {
     const seed0 = o.seed || (Date.now() & 0x7fffffff);
     const rng = new FT.Rng(seed0);
-    const lvl = o.botSkill === "hard" ? "pro-" : "smart-";
-    const strategies = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider"]).slice(0, o.bots).map((x) => (x === "raider" ? "smart-raider" : lvl + x));
+    const lvl = o.botSkill === "hard" ? "pro-" : o.botSkill === "easy" ? "easy-" : "smart-";
+    // Easy games have no raider: nobody comes after your shares while you learn.
+    const strategies = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider"]).slice(0, o.bots).map((x) => (x === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : lvl + x));
     const names = rng.shuffle(COMPANY_NAMES[o.industry].filter((n) => n.toLowerCase() !== o.company.toLowerCase()));
     const bots = rng.shuffle(BOT_NAMES);
     const traits = ["ruthless", "visionary", "influencer", "pennyPincher"];
@@ -4623,7 +4624,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="kv"><div${tipAttr(eurX(v.you))}><span>Value</span><b>${eur(v.you)}</b></div><div${tipAttr(eurX(p.you))}><span>Share price</span><b>${eur(p.you)}</b></div><div${tipAttr(eurX(c.cash))}><span>Cash</span><b>${eur(c.cash)}</b></div><div${tipAttr(eurX(c.debt))}><span>Debt</span><b>${eur(c.debt)}</b></div></div>
       </div>
       <div style="display:grid;gap:12px;min-width:0">
-        ${stepper("f-loan", "Loan (borrow or repay)", d.loanChange, -Math.round(c.debt), Math.max(0, Math.round(creditLimitUI(c) - c.debt)), 50000, (x) => (x > 0 ? "+" : "") + eur(x), `<div class="hint muted" style="font-size:12.5px"${tipAttr("Credit limit " + eurX(creditLimitUI(c)) + "\nDebt now " + eurX(c.debt))}>Interest ${(rateNow() * 100).toFixed(1).replace(".0", "")}% a round · the bank lends you up to ${eur(creditLimitUI(c))} in total</div>`)}
+        ${stepper("f-loan", "Loan (borrow or repay)", d.loanChange, -Math.ceil(c.debt), Math.max(0, Math.round(creditLimitUI(c) - c.debt)), 50000, (x) => (x > 0 ? "+" : "") + eur(x), `<div class="hint muted" style="font-size:12.5px"${tipAttr("Credit limit " + eurX(creditLimitUI(c)) + "\nDebt now " + eurX(c.debt))}>Interest ${(rateNow() * 100).toFixed(1).replace(".0", "")}% a round · the bank lends you up to ${eur(creditLimitUI(c))} in total</div>`)}
         ${shareholdersCard()}
         ${investorCard()}
         <div class="card"><h3>Cost rules</h3><div class="hint">Every cost rule (upkeep, interest, overtime, idle machines, materials, stores, capacity, credit limit) is in Reports → Cost sheet.</div><button class="btn small" type="button" data-goto-report="costs" style="justify-self:start">Open the cost sheet</button></div>
@@ -6265,7 +6266,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ctl" style="align-self:start"><span class="lbl">Bot rivals</span><div class="choices row3">${pick("bots", [[3, "3", "Room to grow"], [4, "4", "Standard"], [5, "5", "Crowded"]], o.bots)}</div></div>
         <div class="ctl"><span class="lbl">Difficulty</span><div class="choices">${pick("difficulty", [["standard", "Standard", "Takeovers from round 3"], ["cutthroat", "Cutthroat", "Takeovers and stores from round 1-2"], ["tycoon", "Tycoon", "Hire and pay production teams"]], o.difficulty)}</div></div>
       </div>
-      <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
+      <div class="ctl"><span class="lbl">Bot skill</span><div class="choices">${pick("botSkill", [["easy", "Easy", "Learning the ropes: they misjudge prices and spend too little"], ["normal", "Normal", "They plan, but make human mistakes"], ["hard", "Hard", "They do the maths every round"]], o.botSkill || "normal")}</div></div>
       <div class="ctl"><span class="lbl">Game setup</span>${customStart(setupCtx())}</div>
       <div class="ctl"><span class="lbl">CEO trait</span><div id="trait-slot">${traitPicker("trait", o.trait, okIndustry(o.industry || "chocolate"))}</div></div>
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="btn-start" data-autofocus>Start game</button></div>

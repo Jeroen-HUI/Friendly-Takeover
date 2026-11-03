@@ -415,7 +415,8 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
   const nonNeg = (v: unknown, fb: number) => Math.max(0, num(v, fb));
   // Investments and marketing default to last round's values, so an untouched screen repeats the plan.
   const loanRaw = num(d.loanChange, 0);
-  const loanChange = loanRaw >= 0 ? Math.min(loanRaw, Math.max(0, creditLimit(state, c) - c.debt)) : -Math.min(-loanRaw, c.debt);
+  // Repaying (almost) everything clears the debt to the cent, so no 30 cents are left over.
+  const loanChange = loanRaw >= 0 ? Math.min(loanRaw, Math.max(0, creditLimit(state, c) - c.debt)) : -loanRaw >= c.debt - 1 ? -c.debt : -Math.min(-loanRaw, c.debt);
   const buyShares: Record<string, number> = {};
   for (const [target, qty] of Object.entries(d.buyShares ?? {})) {
     const q = Math.max(0, Math.floor(num(qty, 0)));
@@ -1768,6 +1769,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     if (c.cash < 0 && c.debt >= BALANCE.maxDebt) goBankrupt(state, c, round, byId);
   }
 
+  // Crumbs of debt (under €1, from interest and fees) are paid off automatically.
+  for (const c of state.companies) if (c.debt > 0 && c.debt < 1 && !c.bankrupt) { if (reports[c.id]) reports[c.id].loanChange -= c.debt; c.cash -= c.debt; c.debt = 0; }
   // 8. Valuation and reports. ---------------------------------------------------------------
   for (const w of work) w.c.history.push(reports[w.c.id]);
   const values = companyValues(state);

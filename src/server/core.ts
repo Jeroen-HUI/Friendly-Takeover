@@ -11,7 +11,7 @@ import { botRespondDeal } from "../sim/deals";
 import type { DealKind } from "../engine";
 
 export interface LobbyPlayer { id: string; name: string; company: string; trait: CeoTrait }
-export interface OnlineSettings { industry: IndustryId; difficulty: DifficultyId; rounds: number; botCount: number; botSkill: "normal" | "hard"; seed: number; rules?: HouseRules | null }
+export interface OnlineSettings { industry: IndustryId; difficulty: DifficultyId; rounds: number; botCount: number; botSkill: "easy" | "normal" | "hard"; seed: number; rules?: HouseRules | null }
 
 const BOT_NAMES = ["Barbara", "Kees", "Ingrid", "Mo", "Fenna", "Sem"];
 const BOT_COMPANIES: Record<IndustryId, string[]> = {
@@ -33,12 +33,12 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
   const companies = rng.shuffle(BOT_COMPANIES[settings.industry].filter((n) => !taken.has(n.toLowerCase())));
   const names = rng.shuffle(BOT_NAMES);
   const kinds = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider", "mainstream"]);
-  const lvl = settings.botSkill === "hard" ? "pro-" : "smart-";
+  const lvl = settings.botSkill === "hard" ? "pro-" : settings.botSkill === "easy" ? "easy-" : "smart-";
   const bots: Record<string, string> = {};
   const setup = players.map((p) => ({ id: p.id, playerName: p.name, companyName: p.company, trait: p.trait }));
   for (let k = 0; k < Math.min(settings.botCount, 6, 8 - players.length); k++) {
     const id = `bot-${k + 1}`;
-    bots[id] = kinds[k] === "raider" ? "smart-raider" : lvl + kinds[k];
+    bots[id] = kinds[k] === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : lvl + kinds[k];
     setup.push({ id, playerName: names[k] + " (bot)", companyName: companies[k], trait: rng.pick(TRAITS) });
   }
   const rules = settings.rules && typeof settings.rules === "object" ? settings.rules : undefined;

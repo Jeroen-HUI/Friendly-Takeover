@@ -7,7 +7,8 @@ import { oracleDecisions } from "./oracle";
 
 export type NaiveStrategy = "budget" | "mainstream" | "premium" | "hype" | "raider" | "dumper" | "random";
 export type SmartStrategy = "smart-budget" | "smart-mainstream" | "smart-premium" | "smart-hype" | "smart-raider"
-  | "pro-budget" | "pro-mainstream" | "pro-premium" | "pro-hype";
+  | "pro-budget" | "pro-mainstream" | "pro-premium" | "pro-hype"
+  | "easy-budget" | "easy-mainstream" | "easy-premium" | "easy-hype";
 /** Smart bots with one bad habit, to look for exploits. */
 export type ExploitStrategy = "shortseller" | "spammer" | "hoarder" | "loanshark" | "nomarketing" | "overbidder" | "plain-mainstream" | "sloppy-mainstream";
 export type BotStrategy = NaiveStrategy | SmartStrategy | ExploitStrategy;
@@ -176,6 +177,22 @@ export function botDecisions(strategy: BotStrategy, state: GameState, c: Company
   const steady = /^(smart|pro)-(premium|mainstream)$/.test(strategy);
   return { ...d, dividendPolicy: steady && c.cash > 1_500_000 && c.debt < 2_000_000 ? 25 : 0, ...botStreet(strategy, state, c, rng) };
 }
+/** Easy bots: they plan like the normal bots, then make beginner mistakes. They price a bit off, misjudge how much to make,
+ *  spend less on marketing and R&D, skip research, and never buy shares or play wildcards. */
+function easyDecisions(pos: Position, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
+  const d = smartDecisions(pos, state, c, rng);
+  const wobble = (lo: number, hi: number) => lo + rng.next() * (hi - lo);
+  const industry = INDUSTRIES[state.config.industry];
+  return {
+    ...d,
+    price: Math.max(industry.priceRange[0], Math.round((d.price ?? c.lastDecisions.price) * wobble(0.85, 1.18) * 100) / 100),
+    production: Math.round((d.production ?? c.lastDecisions.production) * wobble(0.7, 1.2)),
+    marketingBudget: Math.round((d.marketingBudget ?? 0) * 0.45),
+    investRnd: Math.round((d.investRnd ?? 0) * 0.5),
+    investBrand: Math.round((d.investBrand ?? 0) * 0.6),
+    research: [], buyShares: {}, wildcard: null, takeoverStake: 0, defenseStake: 0, auctionBid: Math.round((d.auctionBid ?? 0) * 0.5),
+  };
+}
 /** Weed: bots pick security and a lawyer by how hot they are, and the sneaky ones make street moves. */
 function botStreet(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
   if (!hasStreet(state)) return {};
@@ -186,7 +203,7 @@ function botStreet(strategy: BotStrategy, state: GameState, c: Company, rng: Rng
   const rivals = state.companies.filter((o) => o.id !== c.id && !o.bankrupt && !o.merged);
   if (rivals.length && state.round >= 2 && c.cash > 900_000) {
     const leader = rivals.reduce((a, b) => ((b.history.at(-1)?.sold ?? 0) > (a.history.at(-1)?.sold ?? 0) ? b : a));
-    const sneaky = /raider|hype/.test(strategy);
+    const sneaky = /raider|hype/.test(strategy) && !strategy.startsWith("easy-");
     if (rng.chance(sneaky ? 0.18 : smart ? 0.12 : 0.06)) streetMove = { kind: rng.chance(0.55) ? "tipoff" : "heist", target: leader.id };
   }
   // Legalization: volume sellers and hot companies want it; premium growers like the fence that keeps rivals out. Some vote on gut feeling.
@@ -198,6 +215,7 @@ function botStreet(strategy: BotStrategy, state: GameState, c: Company, rng: Rng
   return { security, lawyer, streetMove, launder, legalVote };
 }
 function botDecisionsInner(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
+  if (strategy.startsWith("easy-")) return easyDecisions(strategy.slice(5) as Position, state, c, rng);
   if (strategy === "smart-raider") return smartRaider(state, c, rng);
   if (strategy.startsWith("pro-")) return oracleDecisions(strategy.slice(4) as Position, state, c, rng);
   if (strategy.startsWith("smart-")) return smartDecisions(strategy.slice(6) as Position, state, c, rng);
