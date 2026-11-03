@@ -1,4 +1,4 @@
-<title>Friendly Takeovers</title>
+<title>Friendly Takeovers (beta)</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- Fonts are built into the page (no requests to Google Fonts, so no visitor data goes to Google). -->
 <style>/*__FONTS__*/</style>
@@ -710,6 +710,14 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .legal a { color: var(--gold); font-weight: 800; }
 .legal-tabs { display: flex; gap: 6px; flex-wrap: wrap; position: sticky; top: -12px; padding: 4px 0 6px; background: inherit; z-index: 1; }
 .legal-actions .sumline { align-items: center; }
+.title-logo { position: relative; }
+.beta-stamp { position: absolute; top: -12px; right: -14px; transform: rotate(9deg); padding: 3px 10px 4px; border-radius: 6px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 0 0 3px #7a3e14, 0 4px 0 rgba(0,0,0,0.35); }
+.beta-note { position: absolute; left: 14px; top: 14px; z-index: 2; max-width: min(300px, calc(50% - 280px)); padding: 4px 10px; border-radius: 6px; background: rgba(10, 15, 36, 0.8); color: #c8d0f0; font-size: 12px; font-weight: 700; line-height: 1.35; }
+.beta-note b { color: #3d1c00; background: var(--gold); border-radius: 4px; padding: 0 5px; margin-right: 4px; font-family: var(--font-display); font-weight: 400; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.beta-note a { color: var(--gold); font-weight: 900; }
+@media (max-width: 1100px) { .beta-note { position: static; max-width: none; margin: 8px 12px 0; } .beta-stamp { right: -6px; font-size: 12px; } }
+.beta-pill { align-self: flex-start; margin-left: -4px; padding: 1px 5px; border-radius: 4px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
+@container topbar (max-width: 1190px) { .topbar .beta-pill { display: none; } }
 .title-foot { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 2px; z-index: 2; }
 .title-foot button { border: 0; background: rgba(10, 15, 36, 0.75); color: #c8d0f0; font: inherit; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px; cursor: pointer; }
 .title-foot button:hover, .title-foot button:focus-visible { color: var(--gold); outline: none; }
@@ -1389,7 +1397,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return `<section class="title-screen" aria-label="Main menu">
       <canvas class="title-bg" id="title-bg" aria-hidden="true"></canvas>${signs}
       ${accountChip()}
-      <header class="title-logo"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly<br>Takeovers</h1><p>Company tycoon for friend groups · Voted #1 by our moms</p></div></header>
+      <header class="title-logo"><canvas data-ticon="logo" width="12" height="12" aria-hidden="true"></canvas><div><h1>Friendly<br>Takeovers</h1><span class="beta-stamp" title="Still being built: expect rough edges">Beta</span><p>Company tycoon for friend groups · Voted #1 by our moms</p></div></header>
       <div class="title-low">
         <nav class="win title-side" aria-label="Manage"><h2>Manage</h2>${side}</nav>
         <div class="title-center">
@@ -1403,6 +1411,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
           </div>
         </div>
       </div>
+      <div class="beta-note"><b>Beta</b> Still being built: expect bugs, balance changes and the odd reset. <a href="${LEGAL.issues}" target="_blank" rel="noopener">Report a bug</a></div>
       <nav class="title-foot" aria-label="Legal"><button type="button" data-legal="privacy">Privacy</button><button type="button" data-legal="terms">Terms</button><button type="button" data-legal="credits">Credits</button></nav>
     </section>`;
   }
@@ -1666,6 +1675,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return legalWin("Terms of use", `
       <p>By playing Friendly Takeovers you agree to these terms. They're short, so please read them.</p>
       <h3>The game</h3>
+      <p><b>The game is in beta.</b> It is still being built: there can be bugs, the balance can change between updates, and in rare cases games or stats may be reset. Please report anything odd.</p>
       <p>Friendly Takeovers is a free business game. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
       <h3>No real money</h3>
       <p>All money in the game is pretend. You can't buy it, sell it, win it or cash it out. There is no gambling.</p>
@@ -4380,7 +4390,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const r = Math.min(g.round, g.config.rounds);
     const industryLine = { chocolate: "Chocolate company tycoon", ai: "AI company tycoon", weed: "Weed company tycoon (18+)" }[g.config.industry];
     return `<header class="win topbar ${S.mp && !g.finished ? "has-mp" : ""}">
-      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeovers</b></div><div class="logo-full"><h1>Friendly Takeovers</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
+      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeovers</b></div><span class="beta-pill" title="Beta: still being built">Beta</span><div class="logo-full"><h1>Friendly Takeovers</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
       ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
