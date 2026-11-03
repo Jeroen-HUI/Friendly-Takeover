@@ -812,3 +812,26 @@ test("mega events: rare, big, never two at once, and switchable", () => {
   assert.equal(off, 0);
   assert.ok(INDUSTRIES.chocolate.news.length >= 30 && INDUSTRIES.ai.news.length >= 30 && INDUSTRIES.weed.news.length >= 30, "lots of news");
 });
+
+test("live auction: the live winner gets the lot even if paying needs a loan; a patent at quality 5 still pays off", () => {
+  let g = newGame(17);
+  while (!(g.auction && g.auction.round === g.round)) g = resolveRound(g, {});
+  g = { ...g, auction: { ...g.auction!, item: "patent" } };
+  g.companies[1].qualityCap = 5;
+  g = liveBid(g, "b", "auction", 400_000, 5000);
+  g.companies[1].cash = 100_000;          // spent most of it after bidding
+  const cum = g.companies[1].cumProduced ?? 0, brand = g.companies[1].brand;
+  g = resolveRound(g, {});
+  const b = g.companies[1], r = b.history.at(-1)!;
+  assert.equal(r.auctionPaid, 400_000, "paid the live bid");
+  assert.ok(r.events.some((e) => e.startsWith("Won the auction: Patent")), "won it");
+  assert.ok((b.cumProduced ?? 0) > cum + 1_000_000 && b.brand > brand - 5, "patent at max quality: cheaper production and brand");
+  // Below quality 5 the patent unlocks the next level.
+  let h = newGame(17);
+  while (!(h.auction && h.auction.round === h.round)) h = resolveRound(h, {});
+  h = { ...h, auction: { ...h.auction!, item: "patent" } };
+  const capBefore = h.companies[0].qualityCap;
+  h = liveBid(h, "a", "auction", 200_000, 5000);
+  h = resolveRound(h, {});
+  assert.equal(h.companies[0].qualityCap, capBefore + 1);
+});

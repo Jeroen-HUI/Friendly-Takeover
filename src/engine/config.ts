@@ -163,10 +163,12 @@ export const SHOWDOWN = { minStake: 50_000 };
 
 export const AUCTION = {
   rounds: [3, 6, 9, 12],
+  /** A patent won by a company that already makes quality 5: rounds of full-factory experience (cheaper units) and brand. */
+  patentAtMax: { experienceRounds: 2, brand: 8 },
   minBid: 50_000,
   items: {
     endorsement: { name: "Celebrity endorsement", description: "+15 brand right away" },
-    patent: { name: "Patent", description: "Your maximum quality goes up by one level" },
+    patent: { name: "Patent", description: "Your maximum quality goes up one level (already at 5: cheaper production and +8 brand instead)" },
     factory: { name: "Bankrupt rival's factory", description: "+25% factory capacity" },
     location: { name: "Prime high-street location", description: "Two free stores (works once retail is open)" },
   } as Record<AuctionItemId, { name: string; description: string }>,

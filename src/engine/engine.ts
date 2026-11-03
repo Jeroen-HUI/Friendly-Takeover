@@ -924,19 +924,34 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     }
   }
   if (state.auction && state.auction.round === round) {
-    const bids = alive.map((c) => ({ c, bid: Math.min(dec[c.id].auctionBid, Math.max(0, c.cash)) })).filter((b) => b.bid >= AUCTION.minBid);
+    // The live auction's highest bidder wins at their bid (what everyone saw on screen), even if it takes an emergency loan to pay.
+    const liveHigh = live?.lots?.auction?.high;
+    const liveWinner = liveHigh && dec[liveHigh.bidder] && liveHigh.amount >= AUCTION.minBid ? alive.find((c) => c.id === liveHigh.bidder) : undefined;
+    const bids = alive.map((c) => ({ c, bid: c === liveWinner ? liveHigh!.amount : Math.min(dec[c.id].auctionBid, Math.max(0, c.cash)) })).filter((b) => b.bid >= AUCTION.minBid);
     if (bids.length) {
       const top = Math.max(...bids.map((b) => b.bid));
-      const winner = rng.pick(bids.filter((b) => b.bid === top));
+      const winner = liveWinner && liveHigh!.amount >= top ? { c: liveWinner, bid: top } : rng.pick(bids.filter((b) => b.bid === top));
       const c = winner.c, item = state.auction.item;
       c.cash -= top;
       special[c.id].auction = top;
+      let got = AUCTION.items[item].name;
       if (item === "endorsement") c.brand = clamp(c.brand + 15, 0, 100);
-      if (item === "patent") { c.qualityCap = Math.min(5, c.qualityCap + 1); c.rndProgress = Math.max(c.rndProgress, BALANCE.rndThresholds[c.qualityCap] ?? c.rndProgress); }
+      if (item === "patent") {
+        if (c.qualityCap < 5) {
+          c.qualityCap = c.qualityCap + 1;
+          c.rndProgress = Math.max(c.rndProgress, BALANCE.rndThresholds[c.qualityCap] ?? c.rndProgress);
+          got = `Patent: quality ${c.qualityCap} unlocked (you can use it from next round)`;
+        } else {
+          // Already at the top quality: the patent makes production cheaper (a head start on the experience curve) and lifts the brand.
+          c.cumProduced = (c.cumProduced ?? 0) + industry.start.capacity * AUCTION.patentAtMax.experienceRounds;
+          c.brand = clamp(c.brand + AUCTION.patentAtMax.brand, 0, 100);
+          got = `Patent: you already make top quality, so it cuts your production costs and adds ${AUCTION.patentAtMax.brand} brand`;
+        }
+      }
       if (item === "factory") c.capacity = Math.round(c.capacity + industry.start.capacity * 0.25);
       if (item === "location") c.stores = Math.min(RETAIL.maxStores, c.stores + 2);
       state.feed.push({ round, headline: `${c.companyName} wins the ${AUCTION.items[item].name.toLowerCase()} auction for €${Math.round(top).toLocaleString("en")}` });
-      special[c.id].events.push(`Won the auction: ${AUCTION.items[item].name}`);
+      special[c.id].events.push(`Won the auction: ${got}`);
     } else {
       state.feed.push({ round, headline: `Nobody bids on the ${AUCTION.items[state.auction.item].name.toLowerCase()}. Awkward.` });
     }
@@ -945,11 +960,13 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   for (const lot of (state.bankruptcySales ?? []).filter((l) => l.round === round)) {
     const dead = byIdAll.get(lot.companyId);
     if (!dead) continue;
-    const bids = alive.map((c) => ({ c, bid: Math.min(dec[c.id].bankruptBids[dead.id] ?? 0, Math.max(0, c.cash)) })).filter((b) => b.bid >= BANKRUPTCY_SALE.minBid);
+    const lh = live?.lots?.[dead.id]?.high;
+    const lw = lh && dec[lh.bidder] && lh.amount >= BANKRUPTCY_SALE.minBid ? alive.find((c) => c.id === lh.bidder) : undefined;
+    const bids = alive.map((c) => ({ c, bid: c === lw ? lh!.amount : Math.min(dec[c.id].bankruptBids[dead.id] ?? 0, Math.max(0, c.cash)) })).filter((b) => b.bid >= BANKRUPTCY_SALE.minBid);
     const cap = Math.round(dead.capacity * BANKRUPTCY_SALE.capacityShare);
     if (bids.length) {
       const top = Math.max(...bids.map((b) => b.bid));
-      const winner = rng.pick(bids.filter((b) => b.bid === top)).c;
+      const winner = lw && lh!.amount >= top ? lw : rng.pick(bids.filter((b) => b.bid === top)).c;
       winner.cash -= top;
       special[winner.id].auction += top;
       winner.capacity += cap;

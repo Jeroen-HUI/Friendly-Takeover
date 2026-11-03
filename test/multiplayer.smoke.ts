@@ -343,6 +343,9 @@ for (let r = 1; r <= 6; r++) {
   if (r === 3) {
     // Live exchange online: my trade goes through the server; the friend's trade shows up on my ticker.
     click('[data-tab="takeovers"]');
+    // Prices at the start of a round match the public price (no fake crash from the hidden rival books).
+    { const txt = ($("#live-exchange")?.textContent || "") + ($("#ticker")?.textContent || "");
+      if (/▼\s?[1-9]\d(\.\d)?%/.test(txt)) throw new Error("exchange shows a fake crash at round start: " + txt.slice(0, 300)); }
     const buy = $(`[data-trade="${friend.player_id}"][data-qty="5"]`);
     if (!buy) throw new Error("exchange row for the friend missing");
     buy.click();

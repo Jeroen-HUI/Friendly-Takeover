@@ -101,6 +101,9 @@ button, input { font: inherit; color: inherit; }
   font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.02em; text-transform: uppercase;
 }
 .win-title .x { color: #fff; }
+.win-title span.x { display: none; }
+.win-title button.x { border: 0; cursor: pointer; padding: 0; }
+.win-title button.x:hover { filter: brightness(1.15); }
 .win-title .x { margin-left: auto; width: 22px; height: 22px; border-radius: 5px; background: #d9443a; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3); display: grid; place-items: center; font-family: var(--font-pixel); font-size: 12px; }
 .win-body { padding: 14px; display: grid; gap: 14px; }
 
@@ -255,6 +258,20 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .tv.mega .tv-set { box-shadow: 0 0 0 3px var(--bad), 0 0 24px rgba(255, 80, 80, 0.45); }
 @keyframes megaBlink { 50% { opacity: 0.55; } }
 :root[data-motion="off"] .tv.mega .tv-tag { animation: none; }
+.panes { display: grid; gap: 12px; min-width: 0; align-items: start; border-radius: 12px; }
+.panes > .win { min-width: 0; container-type: inline-size; }
+@media (min-width: 1200px) { .panes.p2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1500px) { .panes.p3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1200px) and (max-width: 1499px) { .panes.p3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panes.p3 > .win:first-child { grid-column: 1 / -1; } }
+@container (max-width: 760px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.panes.drop-on { box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(255, 209, 102, 0.35); }
+.tabghost { position: fixed; z-index: 9999; pointer-events: none; padding: 7px 12px; border-radius: 8px; background: var(--gold); color: #2a1d00; font-family: var(--font-display); font-size: 11px; font-weight: 700; text-transform: uppercase; box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
+body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-select: none; }
+.mbtn[data-open="true"] { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), 0 0 0 2px var(--gold); }
+.menu-tip { font-size: 10.5px; font-weight: 800; color: var(--muted); text-align: center; line-height: 1.3; padding: 2px; }
+@media (max-width: 760px) { .menu-tip { display: none; } }
+.flashpane { animation: flashPane 0.7s ease-out; }
+@keyframes flashPane { 0% { box-shadow: 0 0 0 4px var(--gold); } 100% { box-shadow: none; } }
 .cs { display: grid; gap: 8px; }
 .cs-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cs-chip { border: 0; cursor: pointer; padding: 7px 11px; border-radius: 999px; font-weight: 900; font-size: 12.5px; background: var(--panel-3); color: var(--ink); box-shadow: 0 0 0 2px #0b1027; }
@@ -600,8 +617,9 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .calc-x { border: 0; cursor: pointer; font: inherit; }
 .calcwin .win-body { gap: 8px; padding: 10px; }
 .lcd { background: #b9c99a; color: #1d2a12; border-radius: 6px; padding: 6px 10px 8px; box-shadow: inset 0 3px 0 rgba(0,0,0,0.25), inset 0 0 0 2px #5d6b45; font-family: var(--font-display); }
-.lcd-top { display: flex; justify-content: space-between; gap: 8px; min-height: 15px; font-size: 11px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lcd-num { text-align: right; font-size: 26px; font-weight: 700; line-height: 1.15; min-height: 30px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.lcd-top { width: 0; min-width: 100%; display: flex; justify-content: space-between; gap: 8px; min-height: 15px; font-size: 11px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lcd-top span { min-width: 0; overflow: hidden; white-space: nowrap; } .lcd-top span:last-child { flex: 1; text-align: right; }
+.lcd-num { width: 0; min-width: 100%; box-sizing: border-box; text-align: right; font-size: 26px; font-weight: 700; line-height: 1.15; min-height: 30px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
 .lcd-num.sm { font-size: 20px; } .lcd-num.xs { font-size: 15px; }
 .lcd sup { font-size: 0.6em; vertical-align: 0.7em; line-height: 0; margin-left: 1px; }
 .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -1000,6 +1018,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // Values come from the server in online games (rivals' books are hidden), and are computed locally otherwise.
   function CV(g) { return (g && g.publicValues) || FT.companyValues(g); }
   function SP(g) { return (g && g.publicSharePrices) || FT.sharePrices(g); }
+  /** Live share price: the exchange's price this round, else the public price (online views hide rivals' books, so never recompute from them). */
+  function livePx(id) { const L = S.game && S.game.live; return L && L.round === S.game.round && L.prices && L.prices[id] !== undefined ? L.prices[id] : SP(S.game)[id] || 0; }
   function creditLimitUI(c) { const B = FT.BALANCE; return Math.min(B.maxDebt, Math.max(B.minCreditLimit, B.creditLimitShare * Math.max(0, CV(S.game)[c.id] || 0))); }
   const MH = () => (S.game && S.game.marketLog) || S.marketHist || [];
   const isDay = () => document.documentElement.dataset.theme === "light";
@@ -1680,7 +1700,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       }
       if (api().marketLive && S && S.screen === "game" && S.game && !S.game.finished) {
         const ml = await api().marketLive(MP.gameId);
-        if (ml && ml.round === S.game.round) { const sig = JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join() + JSON.stringify((ml.data.board || []).map((p) => [p.id, p.votes])) + (ml.data.rounds || ""); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
+        if (ml && ml.round === S.game.round) { const sig = ml.round + ":" + JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join() + JSON.stringify((ml.data.board || []).map((p) => [p.id, p.votes])) + (ml.data.rounds || ""); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
       }
       const rows = await api().deals(MP.gameId);
       const next = rows.map((d) => ({ id: String(d.id), t: new Date(d.created_at).getTime(), round: d.round, from: cid(d.from_player_id), to: cid(d.to_player_id), kind: d.kind, terms: JSON.parse(JSON.stringify(d.terms).split(MP.playerId).join("you")), status: d.status, note: d.note }));
@@ -1978,9 +1998,18 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="keys">${CALC_KEYS.map(([k, cls]) => `<button type="button" class="key ${cls || ""} ${C.op === k && C.fresh ? "armed" : ""}" data-k="${k}" aria-label="${{ "⌫": "Backspace", "±": "Plus or minus", "−": "Minus", "×": "Times", "÷": "Divide by", "M−": "Memory minus" }[k] || k}">${k}</button>`).join("")}</div>
       <div class="tape" aria-label="Calculation history">${C.tape.length ? C.tape.slice(-6).map((t) => `<div>${esc(t)}</div>`).join("") : `<div class="muted">Tip: click any number in a table to paste it here. Keyboard works too.</div>`}</div>`;
   }
+  // Shrink the display text until the whole number fits (long numbers never scroll or get cut off).
+  function fitLcd() {
+    for (const el of document.querySelectorAll("#calcwin .lcd-num, #calcwin .lcd-top span")) {
+      el.style.fontSize = "";
+      let size = parseFloat(getComputedStyle(el).fontSize) || 26;
+      const min = el.classList.contains("lcd-num") ? 11 : 8;
+      while (el.scrollWidth > el.clientWidth + 1 && size > min) { size -= 1; el.style.fontSize = size + "px"; }
+    }
+  }
   function renderCalcBody() {
     const b = $("#calc-body");
-    if (b && CALC.tab === "calc") b.innerHTML = calcBodyHtml();
+    if (b && CALC.tab === "calc") { b.innerHTML = calcBodyHtml(); fitLcd(); }
   }
   let calcEl = null;
   function renderCalc() {
@@ -2000,6 +2029,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     calcEl.hidden = !CALC.open || !S || S.screen !== "game" || !S.game;
     if (calcEl.hidden) return;
     calcEl.innerHTML = calcHtml();
+    requestAnimationFrame(fitLcd);
     if (CALC.pos && window.innerWidth > 640) { calcEl.style.left = Math.min(CALC.pos.x, window.innerWidth - 120) + "px"; calcEl.style.top = Math.min(Math.max(0, CALC.pos.y), window.innerHeight - 60) + "px"; calcEl.style.right = "auto"; calcEl.style.bottom = "auto"; }
     else { calcEl.style.left = calcEl.style.top = calcEl.style.right = calcEl.style.bottom = ""; }
   }
@@ -3096,7 +3126,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const items = [];
     for (const t of (L ? L.trades : []).slice(-8).reverse()) items.push(`<span class="tk ${t.qty > 0 ? "up" : "down"}">${t.qty > 0 ? "▲" : "▼"} ${esc(tradeLine(t))}</span>`);
     for (const lot of liveLots()) { const l = L && L.lots[lot.key]; if (l && l.high) items.push(`<span class="tk gold">🔨 ${esc(lot.short)}: ${eur(l.high.amount)} by ${esc(short2(l.high.bidder))}</span>`); }
-    const prices = S.game.companies.filter((c) => live(c)).map((c) => { const p = FT.livePrice(S.game, c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0; return `<span class="tk ${ch > 0.0005 ? "up" : ch < -0.0005 ? "down" : ""}"><b>${esc(c.companyName)}</b> ${eur(p)}${Math.abs(ch) > 0.0005 ? ` ${ch > 0 ? "▲" : "▼"}${Math.abs(ch * 100).toFixed(1)}%` : ""}</span>`; });
+    const prices = S.game.companies.filter((c) => live(c)).map((c) => { const p = livePx(c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0; return `<span class="tk ${ch > 0.0005 ? "up" : ch < -0.0005 ? "down" : ""}"><b>${esc(c.companyName)}</b> ${eur(p)}${Math.abs(ch) > 0.0005 ? ` ${ch > 0 ? "▲" : "▼"}${Math.abs(ch * 100).toFixed(1)}%` : ""}</span>`; });
     return `<section class="ticker" id="ticker" aria-label="Live market"><span class="tk-live">LIVE</span><div class="tk-roll">${[...items, ...prices].join("")}</div></section>`;
   }
   // The lots open this round: the auction and any bankruptcy sales.
@@ -3173,7 +3203,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const c = me();
     if (!exchangeOpen()) return `<div class="card"><h3>Stock exchange</h3><div class="locked">The live stock exchange opens in round ${diff().takeoverUnlockRound}.</div></div>`;
     const cards = S.game.companies.filter((o) => o.id !== "you" && live(o)).map((o) => {
-      const p = FT.livePrice(S.game, o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
+      const p = livePx(o.id), p0 = startPriceOf(o.id), ch = p0 ? p / p0 - 1 : 0, held = o.shares.holders.you || 0;
       const h = (S.hist[o.id] || []).filter((v) => v > 0), pStart = h.length ? h[0] / 100 : p, chAll = pStart ? p / pStart - 1 : 0;
       const blocked = o.controlledBy && o.controlledBy !== "you", room = Math.min(diff().maxSharesPerRound - FT.liveBought(S.game, "you", o.id), o.shares.float, FT.EXCHANGE.maxHolding - held), canBuy = !blocked && c.takeoverCooldown <= 0 && room > 0;
       const pct = (x) => (Math.abs(x) < 0.0005 ? "±0.0%" : (x > 0 ? "▲" : "▼") + Math.abs(x * 100).toFixed(1) + "%");
@@ -3635,7 +3665,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     }
     S.visited = S.visited || {};
     S.visited[S.tab] = true;
-    app.innerHTML = topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}${windowFor(S.tab)}</div>`;
+    S.panes = (S.panes || []).filter((t) => t !== S.tab && TAB_TITLES[t]).slice(0, 2);
+    for (const t of S.panes) S.visited[t] = true;
+    const panes = [S.tab, ...S.panes];
+    app.innerHTML = topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}<div class="panes p${panes.length}" id="panes">${panes.map((t, i) => windowFor(t, i, panes.length)).join("")}</div></div>`;
     if (!S.mp) startLiveBots();
     if (!S.modal) S.flash = null;
     paintCanvases();
@@ -3688,12 +3721,82 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="stage"><canvas id="city" width="480" height="168"></canvas>${signs}</div></section>`;
   }
 
+  // ----- Several windows at once: hold and drag a menu tab onto the screen to open it next to the others (up to 3).
+  const tabDrag = { tab: null, ghost: null, timer: 0, x: 0, y: 0, active: false, justDropped: false, pointerId: null };
+  function tabDragStart(e) {
+    if (e.button && e.button !== 0) return;
+    const t = e.currentTarget.dataset.tab;
+    if (!TAB_TITLES[t] || !S.game) return;
+    Object.assign(tabDrag, { tab: t, x: e.clientX, y: e.clientY, active: false, pointerId: e.pointerId, touch: e.pointerType === "touch" });
+    clearTimeout(tabDrag.timer);
+    // Touch: hold still for a moment first (so the menu still scrolls). Mouse: start as soon as it moves.
+    if (tabDrag.touch) tabDrag.timer = setTimeout(() => tabDragBegin(tabDrag.x, tabDrag.y), 320);
+    window.addEventListener("pointermove", tabDragMove);
+    window.addEventListener("pointerup", tabDragEnd);
+    window.addEventListener("pointercancel", tabDragCancel);
+  }
+  function tabDragBegin(x, y) {
+    if (tabDrag.active || !tabDrag.tab) return;
+    tabDrag.active = true;
+    const g = document.createElement("div");
+    g.className = "tabghost"; g.textContent = "Open " + TAB_TITLES[tabDrag.tab].split(":")[0];
+    document.body.appendChild(g); tabDrag.ghost = g;
+    document.body.classList.add("tab-dragging");
+    try { navigator.vibrate && navigator.vibrate(15); } catch (er) {}
+    tabDragPos(x, y);
+  }
+  function tabDragPos(x, y) {
+    if (tabDrag.ghost) { tabDrag.ghost.style.left = x + 12 + "px"; tabDrag.ghost.style.top = y + 12 + "px"; }
+    const over = dropTarget(x, y), panes = document.getElementById("panes");
+    if (panes) panes.classList.toggle("drop-on", !!over);
+  }
+  function dropTarget(x, y) {
+    const el = document.elementFromPoint(x, y);
+    // Anywhere on the game screen except the menu itself (and not over a dialog).
+    return el && !el.closest(".menu") && !el.closest(".overlay, #calcwin, #talkwin") && el.closest("#app") ? true : false;
+  }
+  function tabDragMove(e) {
+    if (e.pointerId !== tabDrag.pointerId) return;
+    const moved = Math.hypot(e.clientX - tabDrag.x, e.clientY - tabDrag.y);
+    if (!tabDrag.active) {
+      if (tabDrag.touch) { if (moved > 10) tabDragCancel(); return; }
+      if (moved > 8) tabDragBegin(e.clientX, e.clientY);
+      return;
+    }
+    e.preventDefault();
+    tabDragPos(e.clientX, e.clientY);
+  }
+  function tabDragCleanup() {
+    clearTimeout(tabDrag.timer);
+    window.removeEventListener("pointermove", tabDragMove);
+    window.removeEventListener("pointerup", tabDragEnd);
+    window.removeEventListener("pointercancel", tabDragCancel);
+    if (tabDrag.ghost) tabDrag.ghost.remove();
+    tabDrag.ghost = null;
+    document.body.classList.remove("tab-dragging");
+    const panes = document.getElementById("panes"); if (panes) panes.classList.remove("drop-on");
+  }
+  function tabDragCancel() { tabDragCleanup(); tabDrag.tab = null; tabDrag.active = false; }
+  function tabDragEnd(e) {
+    const was = tabDrag.active, t = tabDrag.tab;
+    tabDragCleanup(); tabDrag.tab = null; tabDrag.active = false;
+    if (!was || !t) return;
+    tabDrag.justDropped = true; setTimeout(() => (tabDrag.justDropped = false), 0);
+    if (dropTarget(e.clientX, e.clientY)) openPane(t);
+  }
+  /** Opens a tab as an extra window next to the current one (at most 3 windows; the oldest extra one makes room). */
+  function openPane(t) {
+    if (!TAB_TITLES[t] || t === S.tab) return;
+    S.panes = [...(S.panes || []).filter((x) => x !== t), t];
+    if (S.panes.length > 2) S.panes = S.panes.slice(-2);
+    sfx("click"); hideTip(); render();
+  }
   function menu() {
     const btn = ([k, n]) => {
       const unread = k === "news" && S.tab !== "news" ? S.chat.length - (S.newsSeen || 0) : 0, st = tabStatus(k);
-      return `<button class="mbtn" type="button" data-tab="${k}" aria-current="${S.tab === k}"><canvas data-icon="${k}" width="12" height="12" aria-hidden="true"></canvas>${n}${unread > 0 ? `<span class="badge" aria-label="${unread} new">${unread}</span>` : st ? `<span class="tag ${st.cls}">${st.text}</span>` : ""}</button>`;
+      return `<button class="mbtn" type="button" data-tab="${k}" aria-current="${S.tab === k}" ${(S.panes || []).includes(k) ? 'data-open="true"' : ""} title="Click to open. Hold and drag onto the screen to open it next to what you have open (up to 3)."><canvas data-icon="${k}" width="12" height="12" aria-hidden="true"></canvas>${n}${unread > 0 ? `<span class="badge" aria-label="${unread} new">${unread}</span>` : st ? `<span class="tag ${st.cls}">${st.text}</span>` : ""}</button>`;
     };
-    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${DECIDE_TABS.map(btn).join("")}</nav>`;
+    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${DECIDE_TABS.map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav>`;
   }
 
   function stepper(id, label, value, min, max, step, fmt, extra) {
@@ -3740,10 +3843,12 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="kv"><div><span>Your value</span><b>${eur(v.you || 0)}</b></div><div><span>Cash</span><b>${eur(c.cash)}</b></div>${stakes.map((o) => `<div><span>${esc(o.companyName)}</span><b>${o.shares.holders.you}%</b></div>`).join("")}</div>
       <div class="hint">What you can still do: sell (or buy) shares on the live stock exchange in Takeovers, make share deals in the chat, and talk your partner into running the company well.</div></div>`;
   }
-  function windowFor(tab) {
-    const title = { production: "Production & pricing", rnd: "Research & development", marketing: "Marketing", finance: "Finance", takeovers: "Takeovers", boardroom: "Boardroom: missions, wildcards, auctions, votes", retail: "Retail: your own stores", market: "Market research", reports: "Reports", news: "News" }[tab];
+  const TAB_TITLES = { production: "Production & pricing", rnd: "Research & development", marketing: "Marketing", finance: "Finance", takeovers: "Takeovers", boardroom: "Boardroom: missions, wildcards, auctions, votes", retail: "Retail: your own stores", market: "Market research", reports: "Reports", news: "News" };
+  function windowFor(tab, idx = 0, count = 1) {
+    const title = TAB_TITLES[tab];
     const body = me().merged && ["production", "rnd", "marketing", "finance", "retail"].includes(tab) ? mergedPanel() : { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
-    return `<section class="win" aria-label="${title}"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body ${S.tabEnter ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
+    const close = count > 1 ? `<button type="button" class="x live" data-pane-close="${tab}" aria-label="Close ${title}"${tipAttr("Close this window")}>×</button>` : "";
+    return `<section class="win pane" data-pane="${tab}" aria-label="${title}"><div class="win-title">${title}${close}</div><div class="win-body ${S.tabEnter && idx === 0 ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
   }
 
   function tabProduction() {
@@ -4882,6 +4987,19 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "show") runShow();
     if (S.modal === "board") runBoard();
     if (S.modal === "wait") mpTick();
+    // The red × in a window's title: a real close button where the window can be closed, hidden where it can't.
+    const x = modal.querySelector(".win-title span.x");
+    if (x && !["final", "show", "board", "wait", "age"].includes(S.modal)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "x live"; b.textContent = "×"; b.setAttribute("aria-label", "Close");
+      b.addEventListener("click", () => {
+        const c = modal.querySelector("#btn-close");
+        if (c && !c.disabled) { c.click(); return; }
+        if (S.modal === "tv") S.tvQueue = [];
+        S.modal = null; renderModal();
+      });
+      x.replaceWith(b);
+    }
     const focus = modal.querySelector("[data-autofocus]");
     if (focus) focus.focus();
     runTv();
@@ -5497,7 +5615,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   function bind() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
-    on("[data-tab]", "click", (e) => { if (e.currentTarget.dataset.tab === "chat") { toggleTalk(true); return; } S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; });
+    on("[data-tab]", "click", (e) => {
+      if (tabDrag.justDropped) { tabDrag.justDropped = false; return; }
+      const t = e.currentTarget.dataset.tab;
+      if (t === "chat") { toggleTalk(true); return; }
+      if ((S.panes || []).includes(t)) { const el = document.querySelector(`.pane[data-pane="${t}"]`); if (el) { el.scrollIntoView({ behavior: PREFS.anim ? "smooth" : "auto", block: "start" }); el.classList.remove("flashpane"); void el.offsetWidth; el.classList.add("flashpane"); } return; }
+      S.tab = t; S.tabEnter = true; hideTip(); render(); S.tabEnter = false;
+    });
+    on(".menu [data-tab]", "pointerdown", tabDragStart);
+    on("[data-pane-close]", "click", (e) => { const t = e.currentTarget.dataset.paneClose; if (t === S.tab) { S.tab = S.panes[0]; S.panes = S.panes.slice(1); } else S.panes = S.panes.filter((x) => x !== t); sfx("click"); hideTip(); render(); });
     on("#city", "pointermove", cityTip);
     on("#city", "pointerdown", cityTip);
     on("#city", "pointerleave", hideTip);
