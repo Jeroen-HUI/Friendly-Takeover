@@ -131,6 +131,8 @@ const fakeApi = {
   async signIn() {},
   async rpc(name: string, a: any) {
     if (name === "report_content") { (db as any).reportsSent = [...((db as any).reportsSent ?? []), a]; return null; }
+    if (name === "my_access") return { signed_in: true, owned: false, free_left: (db as any).paywall ? 0 : 1, paywall: { enabled: !!(db as any).paywall, price: "€8.99", payment_link: "https://buy.stripe.com/test_fake" } };
+    if (name === "create_game" && (db as any).paywall) throw new Error("PAYWALL: Your free online game is used up. Get the full game to keep playing online.");
     if (name === "create_game") return server.createGame(HOST, a.p_player_name, a.p_company_name, a.p_trait, a);
     if (name === "respond_deal") { const d = db.deals.find((x) => x.id === a.p_deal_id && x.status === "offered"); if (!d) throw new Error("That offer is no longer open"); d.status = a.p_accept ? "accepted" : "declined"; return null; }
     if (name === "cancel_deal") { const d = db.deals.find((x) => x.id === a.p_deal_id && x.status === "offered"); if (d) d.status = "cancelled"; return null; }
@@ -458,6 +460,15 @@ await until("rematch lobby", () => $(".lobby"));
 if (db.games.at(-1)!.league_id !== HG().id) throw new Error("rematch should be in the same league");
 if (db.games.at(-1)!.rounds !== 6 || db.games.at(-1)!.bot_count !== 1) throw new Error("rematch should keep the settings");
 await until("rematch rules", () => db.games.at(-1)!.rules?.startCash === 2000000);
+// Paywall: with the free game used up, hosting again opens the shop with the Stripe button.
+(db as any).paywall = true;
+click("#btn-leave");
+await until("title screen", () => $("#t-online"));
+click("#t-online");
+($("#mp-name") as any).value = "Jeroen"; ($("#mp-company") as any).value = "Cocoa Loco";
+click("#btn-mp-create");
+await until("shop opens", () => /Get the full game/.test($(".overlay")?.textContent || "") && $("#shop-buy") && !($("#shop-buy") as any).disabled, 6000);
+if (!/€8\.99/.test($(".overlay")!.textContent!)) throw new Error("shop should show the price");
 if (errors.length) throw new Error("script errors: " + errors.join(" | "));
 console.log(`multiplayer smoke ok: lobby code ${code}, 6 online rounds with a friend and a bot, chat, a loan deal, season table and rematch; ${db.reports.length} reports written`);
 process.exit(0);

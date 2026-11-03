@@ -289,6 +289,9 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .mg-overlay[hidden] { display: none; }
 .mg-big { font-family: var(--font-display); font-size: 34px; color: var(--gold); }
 .mg-btns { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.shopcard { display: flex; gap: 14px; align-items: center; }
+.shop-price { font-family: var(--font-display); font-size: 30px; color: var(--gold); }
+.shop-list { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-weight: 700; }
 .cs { display: grid; gap: 8px; }
 .cs-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cs-chip { border: 0; cursor: pointer; padding: 7px 11px; border-radius: 999px; font-weight: 900; font-size: 12.5px; background: var(--panel-3); color: var(--ink); box-shadow: 0 0 0 2px #0b1027; }
@@ -1588,6 +1591,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
     });
   }
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); });
   // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-legal]");
@@ -1659,6 +1663,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async linkEmail(email) { await http("/auth/v1/user?redirect_to=" + q(backUrl()), { method: "PUT", body: JSON.stringify({ email }) }); },
     async emailLogin(email) { await http("/auth/v1/otp?redirect_to=" + q(backUrl()), { method: "POST", body: JSON.stringify({ email, create_user: false }) }, false); },
     async logout() { try { await http("/auth/v1/logout", { method: "POST" }); } catch (e) {} AUTH = null; try { localStorage.removeItem("ft-auth"); } catch (e) {} },
+    myId() { try { const a = loadAuth(); return a ? JSON.parse(atob(a.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub : null; } catch (e) { return null; } },
     async feedback(row) { await http("/rest/v1/feedback", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(row) }, !!loadAuth()); },
   };
   const api = () => window.__ftApi || realApi;
@@ -2054,6 +2059,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       await mpEnter(res.game_id, res.player_id);
     } catch (e) {
       S.onlineBusy = false;
+      if (isPaywall(e)) { openShop(); return; }
       S.onlineError = /duplicate key.*company/i.test(e.message) ? "Someone in that game already uses that company name." : e.message;
       if (S.screen === "title") { S.modal = "online"; renderModal(); bindModal(); }
     }
@@ -2555,13 +2561,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const res = await api().rpc("create_game", { p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait, p_industry: g.industry, p_difficulty: g.difficulty, p_mode: g.mode, p_rounds: g.rounds, p_league_id: g.league_id || g.id, p_round_seconds: g.round_seconds, p_bot_count: g.bot_count || 0, p_bot_skill: g.bot_skill || "normal" });
       if (g.rules && Object.keys(g.rules).length) { try { await api().rpc("set_house_rules", { p_game_id: res.game_id, p_rules: g.rules }); } catch (e) {} }
       S.modal = null; await mpEnter(res.game_id, res.player_id);
-    } catch (e) { MP.error = e.message; alertModal(e.message); }
+    } catch (e) { if (isPaywall(e)) { openShop(); return; } MP.error = e.message; alertModal(e.message); }
   }
   async function joinRematch() {
     const m = mpMe(), lobby = MP.leagueLobby;
     if (!m || !lobby) return;
     try { const res = await api().rpc("join_game", { p_code: lobby.code, p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait }); S.modal = null; await mpEnter(res.game_id, res.player_id); }
-    catch (e) { alertModal(e.message); }
+    catch (e) { if (isPaywall(e)) { openShop(); return; } alertModal(e.message); }
   }
   function alertModal(msg) { const b = modal.querySelector(".win-body"); if (b) b.insertAdjacentHTML("afterbegin", `<div class="note neg">${esc(msg)}</div>`); }
 
@@ -2794,7 +2800,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       try {
         const res = await api().rpc("join_game", { p_code: code || inv.code, p_player_name: (ACC.profile && ACC.profile.name) || (o.name === "You" ? "Player" : o.name), p_company_name: o.company, p_trait: o.trait });
         await mpEnter(res.game_id, res.player_id);
-      } catch (er) { S.modal = "online"; S.onlineError = er.message; S.joinCode = inv.code; renderModal(); bindModal(); }
+      } catch (er) { if (isPaywall(er)) { openShop(); return; } S.modal = "online"; S.onlineError = er.message; S.joinCode = inv.code; renderModal(); bindModal(); }
     }
   }
 
@@ -2818,6 +2824,67 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ----- Profile & account.
+  // ----- The full game (Stripe). First online game free; after that, hosting or joining online needs the full game.
+  // Single-player and the daily challenge stay free. Payment runs on Stripe's own page; a webhook unlocks the account.
+  const SHOP = { access: null, busy: false, err: "", waiting: false };
+  async function loadAccess() {
+    try { await api().signIn(); SHOP.access = await api().rpc("my_access", {}); } catch (e) { SHOP.err = e.message; }
+    return SHOP.access;
+  }
+  const paywall = () => (SHOP.access && SHOP.access.paywall) || {};
+  const ownsGame = () => !!(SHOP.access && SHOP.access.owned);
+  function accessLine() {
+    const a = SHOP.access;
+    if (!a) return "";
+    if (a.owned) return `<div class="sumline"><span class="muted">Full game</span><b class="pos">✓ Yours: unlimited online games</b></div>`;
+    if (!paywall().enabled) return `<div class="sumline"><span class="muted">Online games</span><b class="pos">Free during early access</b></div>`;
+    return `<div class="sumline"><span class="muted">Online games</span><b>${a.free_left ? "1 free game left" : "Free game used"}</b></div><button class="btn small go" type="button" data-shop style="justify-self:start">Get the full game · ${esc(paywall().price || "€8.99")}</button>`;
+  }
+  function shopModal() {
+    const pw = paywall(), price = pw.price || "€8.99", a = SHOP.access;
+    const guest = !ACC.profile || ACC.profile.anonymous;
+    if (SHOP.waiting) return `<div class="win"><div class="win-title">Thank you!<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <h2 style="margin:0;font-family:var(--font-display);font-weight:400">${ownsGame() ? "The full game is yours. 🎉" : "Unlocking your game…"}</h2>
+      <div class="hint">${ownsGame() ? "Host and join as many online games as you like. Have fun taking over your friends." : "Stripe is confirming your payment. This usually takes a few seconds."}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn go" type="button" id="btn-close">${ownsGame() ? "Let's play" : "Close"}</button></div></div></div>`;
+    return `<div class="win"><div class="win-title">Get the full game<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${SHOP.err ? `<div class="note neg">${esc(SHOP.err)}</div>` : ""}
+      ${a && !a.owned && !a.free_left ? `<div class="note">Your free online game is used up. Thanks for playing!</div>` : ""}
+      <div class="card shopcard"><div class="shop-price">${esc(price)}</div><div><b>Friendly Takeover: full game</b><div class="hint">One payment, yours to keep. No subscription, no ads.</div></div></div>
+      <ul class="shop-list"><li>Host and join unlimited online games with friends</li><li>Seasons, rematches, party TV mode and everything in the custom start</li><li>All future updates of the base game</li><li>Single-player and the daily challenge stay free for everyone</li></ul>
+      ${guest ? `<div class="hint">Tip: save your account with your email first (Profile), so you can play your full game on any device and never lose it.</div>` : ""}
+      <div class="hint">Payment runs on Stripe's secure page. Stripe handles VAT and sends your receipt.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Not now</button>${guest ? `<button class="btn" type="button" id="shop-profile">Save my account first</button>` : ""}<button class="btn go" type="button" id="shop-buy" ${SHOP.busy || !pw.payment_link ? "disabled" : ""}>${pw.payment_link ? "Pay " + esc(price) + " with Stripe" : "Coming soon"}</button></div>
+    </div></div>`;
+  }
+  async function openShop() {
+    SHOP.err = ""; SHOP.waiting = false; S.modal = "shop"; renderModal(); bindModal();
+    await loadAccess(); if (S.modal === "shop") { renderModal(); bindModal(); }
+  }
+  async function shopBuy() {
+    SHOP.busy = true; SHOP.err = ""; renderModal(); bindModal();
+    try {
+      await api().signIn();
+      const uid = api().myId && api().myId(), link = paywall().payment_link;
+      if (!uid || !link) throw new Error("The shop isn't open yet. Try again later.");
+      const email = ACC.profile && !ACC.profile.anonymous && ACC.profile.email ? "&prefilled_email=" + encodeURIComponent(ACC.profile.email) : "";
+      try { localStorage.setItem("ft-paying", String(Date.now())); } catch (e) {}
+      location.href = link + (link.includes("?") ? "&" : "?") + "client_reference_id=" + encodeURIComponent(uid) + email;
+    } catch (e) { SHOP.err = e.message; SHOP.busy = false; renderModal(); bindModal(); }
+  }
+  // Back from Stripe (?paid=1): wait until the webhook has unlocked the account.
+  async function shopReturned() {
+    SHOP.waiting = true; S.modal = "shop"; renderModal(); bindModal();
+    for (let k = 0; k < 20 && !ownsGame(); k++) { await loadAccess(); if (ownsGame()) break; await new Promise((r) => setTimeout(r, 1500)); }
+    try { localStorage.removeItem("ft-paying"); } catch (e) {}
+    if (S.modal === "shop") { renderModal(); bindModal(); }
+  }
+  function bindShop() {
+    const on = (sel, fn) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", fn); };
+    on("#shop-buy", shopBuy);
+    on("#shop-profile", () => { S.modal = "profile"; renderModal(); bindModal(); });
+  }
+  const isPaywall = (e) => /^PAYWALL:/.test((e && e.message) || "");
   function profileModal() {
     const p = ACC.profile;
     if (!p) return `<div class="win"><div class="win-title">Profile<span class="x" aria-hidden="true">×</span></div><div class="win-body">
@@ -2829,6 +2896,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="form"><div class="ctl"><label for="p-name">Your name</label><div style="display:flex;gap:6px"><input type="text" id="p-name" maxlength="24" value="${esc(p.name)}" style="flex:1"><button class="btn small" type="button" id="p-save-name">Save</button></div></div>
         <div class="ctl"><span class="lbl">Friend code</span><div class="bigcode" style="font-size:30px">${esc(p.friend_code)}</div><button class="btn small" type="button" id="p-copy-friend">Copy invite link</button></div></div>
       <div class="kv"><div><span>Games</span><b>${st.games || 0}</b></div><div><span>Wins</span><b>${st.wins || 0}</b></div><div><span>Online wins</span><b>${st.online_wins || 0}</b></div><div><span>Achievements</span><b>${ACC.ach.size} / ${ACH.length}</b></div></div>
+      ${SHOP.access ? `<div class="card"><h3>Full game</h3>${accessLine()}</div>` : ""}
       <div class="card"><h3>${p.anonymous ? "Save your account" : "Account"}</h3>
         ${p.anonymous ? `<div class="hint">Right now you're a guest on this device. Add your email to keep your friends, achievements and scores, and to log in on your phone or another computer. We'll email you a link to confirm.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><input type="email" id="p-email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:200px"><button class="btn small go" type="button" id="p-link" ${ACC.busy ? "disabled" : ""}>Save with email</button></div>
@@ -5266,6 +5334,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "online") inner = onlineModal();
     if (S.modal === "mission") inner = briefingModal();
     if (S.modal === "profile") inner = profileModal();
+    if (S.modal === "shop") inner = shopModal();
     if (S.modal === "friends") inner = friendsModal();
     if (S.modal === "achievements") inner = achievementsModal();
     if (S.modal === "daily") inner = dailyModal();
@@ -6034,7 +6103,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.modal = null; renderModal(); bindModal();
     });
     on("#btn-menu-final", "click", goTitle);
-    if (S.modal === "profile") bindAccount();
+    if (S.modal === "profile") { bindAccount(); if (!SHOP.access) loadAccess().then(() => { if (S.modal === "profile") { renderModal(); bindModal(); } }); }
+    if (S.modal === "shop") bindShop();
     if (S.modal === "friends") bindFriends();
     if (S.modal === "daily") bindDaily();
     if (S.modal === "leaderboard") bindBoard();
@@ -6100,6 +6170,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (data && data.S && data.S.game && data.S.marketHist && data.S.game.companies[0].mission) { S = data.S; render(); return; }
     S = { screen: "title", opts: DEFAULT_OPTS, modal: null };
     try { const tv = new URLSearchParams(location.search).get("tv"); if (tv && /^[0-9a-f-]{36}\.[0-9a-f]{6,32}$/i.test(tv)) { const [id, code] = tv.split("."); tvStart(id, code); return; } } catch (e) {}
+    try { if (new URLSearchParams(location.search).get("paid") === "1") { history.replaceState(null, "", location.pathname); setTimeout(shopReturned, 0); } } catch (e) {}
     const back = readLoginFromUrl();
     if (back) S.modal = back;
     try { const pg = new URLSearchParams(location.search).get("page"); if (["privacy", "terms", "credits"].includes(pg)) S.modal = pg; } catch (e) {}
