@@ -151,7 +151,6 @@ button, input { font: inherit; color: inherit; }
 /* One-line bar (wide screens): drop the wordmark when the bar is tight; when the bar wraps there's room for it. */
 @media (min-width: 1200px) {
   @container topbar (max-width: 1190px) { .topbar .wordmark { display: none; } }
-  @container topbar (max-width: 1500px) { .topbar.has-mp .wordmark { display: none; } }
 }
 .topbar .logo { gap: 8px; }
 @media (min-width: 1200px) { .topbar { flex-wrap: nowrap; } .topbar .logo { min-width: 0; flex: 0 1 auto; } .topbar .logo > div { min-width: 0; } .topbar .logo h1, .topbar .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .topbar > * { flex-shrink: 0; } .topbar > .logo { flex-shrink: 1; } .topbar .spacer { flex: 1 1 0; min-width: 0; } }
@@ -726,6 +725,21 @@ td.gold { color: var(--gold); font-weight: 900; }
 .seg button:disabled { cursor: default; opacity: 0.85; }
 .mpchip { font-family: var(--font-display); font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 6px; background: var(--panel-3); }
 .mpchip b.low { color: var(--bad); }
+.agenda .mpchip { margin-left: auto; white-space: nowrap; }
+.agenda .mpchip + .mchip { margin-left: 0; }
+.app { position: relative; }
+.mpside { display: none; }
+/* Wide screens: the online chip moves out of the top bar into the empty margin on its left. */
+@media (min-width: 1600px) {
+  .mpside { display: grid; gap: 2px; justify-items: center; position: absolute; top: 0; right: calc(100% + 14px); width: 150px; padding: 10px 8px; border-radius: 12px; background: var(--panel); box-shadow: 0 0 0 3px var(--frame), 0 6px 0 rgba(0,0,0,0.25); text-align: center; }
+  .mps-k { font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .mps-k:first-child { color: var(--good); }
+  .mps-code { font-size: 24px; font-weight: 900; letter-spacing: 0.12em; color: var(--gold); margin-bottom: 4px; }
+  .mps-time { font-family: var(--font-display); font-size: 20px; font-variant-numeric: tabular-nums; }
+  .mps-time.low { color: var(--bad); }
+  .agenda .mpchip { display: none; }
+  .agenda .mpchip + .mchip { margin-left: auto; }
+}
 .btn.go.waiting { background: linear-gradient(#9fb3d9, #6b7aa8); }
 .ctl input[type="text"], select.sel { width: 100%; padding: 9px 10px; border-radius: 7px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); font: inherit; font-weight: 800; }
 .ogroup { display: grid; gap: 2px; }
@@ -1773,11 +1787,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
     } catch (e) {}
   }
   function mpTick() {
-    const el = $("#mp-timer");
-    if (!MP.game || MP.game.status !== "playing") { if (el) el.textContent = ""; return; }
+    const els = document.querySelectorAll("[data-mptimer]");
+    if (!MP.game || MP.game.status !== "playing") { els.forEach((el) => (el.textContent = "")); return; }
     const left = MP.game.round_deadline ? Math.max(0, Math.floor((new Date(MP.game.round_deadline).getTime() - Date.now()) / 1000)) : 0;
     const txt = left >= 3600 ? Math.floor(left / 3600) + "h " + String(Math.floor((left % 3600) / 60)).padStart(2, "0") + "m" : Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
-    if (el) { el.textContent = txt; el.classList.toggle("low", left <= 30); }
+    els.forEach((el) => { el.textContent = txt; el.classList.toggle("low", left <= 30); });
     const wt = $("#wait-timer"); if (wt) wt.textContent = txt;
     // Anyone may close the round once the time is up; the server makes sure it only happens once.
     if (left === 0 && MP.game.round_deadline && !MP.resolving) {
@@ -3750,7 +3764,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const offers = dealList().filter((d) => d.to === "you" && d.status === "offered" && d.round === g.round).length;
     if (offers) items.push(["chat", "gold", offers === 1 ? "A deal offer is waiting in Chat" : offers + " deal offers are waiting in Chat"]);
     const steps = `<span class="muted" style="font-size:12.5px;font-weight:800">Read the news, market and reports, go through the decision tabs, then press Submit.</span>`;
-    return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}${missionChip()}</section>`;
+    return `<section class="win agenda" aria-label="This round"><span class="lbl">Round ${g.round}</span>${items.map(([t, c, txt]) => `<button type="button" class="${c}" data-tab="${t}">${esc(txt)}</button>`).join("")}${items.length ? "" : steps}${S.mp ? `<span class="mpchip" title="Online game ${esc(MP.game ? MP.game.code : "")}">● ONLINE ${esc(MP.game ? MP.game.code : "")} · <b data-mptimer></b></span>` : ""}${missionChip()}</section>`;
   }
 
   function missionChip() {
@@ -3944,7 +3958,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.panes = (S.panes || []).filter((t) => t !== S.tab && TAB_TITLES[t]).slice(0, 2);
     for (const t of S.panes) S.visited[t] = true;
     const panes = [S.tab, ...S.panes];
-    app.innerHTML = topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}<div class="panes p${panes.length}" id="panes">${panes.map((t, i) => windowFor(t, i, panes.length)).join("")}</div></div>`;
+    app.innerHTML = mpSide() + topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}<div class="panes p${panes.length}" id="panes">${panes.map((t, i) => windowFor(t, i, panes.length)).join("")}</div></div>`;
     if (!S.mp) startLiveBots();
     if (!S.modal) S.flash = null;
     paintCanvases();
@@ -3954,6 +3968,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     runTv();
   }
 
+  // Online: on wide screens the game code and the timer sit in the free space left of the top bar.
+  function mpSide() {
+    const g = S.game;
+    if (!S.mp || !g || g.finished) return "";
+    const code = esc(MP.game ? MP.game.code : "");
+    return `<aside class="mpside" title="Online game ${code}"><span class="mps-k">● Online</span><b class="mps-code">${code}</b><span class="mps-k">Round ends in</span><b class="mps-time" data-mptimer></b></aside>`;
+  }
   function topbar() {
     const g = S.game;
     const r = Math.min(g.round, g.config.rounds);
@@ -3965,7 +3986,6 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <span class="sep" aria-hidden="true"></span>
       <div class="round">${g.finished ? "FINAL" : "ROUND " + r + " / " + roundsTxt(g)}</div>
       <span class="tools"><button class="btn snd chatbtn" id="btn-chat" type="button" aria-pressed="${TALK.open}"${tipAttr("Chat and private deals")}>Chat</button><button class="btn snd calcbtn" id="btn-calc" type="button" aria-pressed="${CALC.open}"${tipAttr("Calculator and notes")}>Calc</button><button class="btn snd" id="btn-options" type="button">Options</button><button class="btn snd" id="btn-help" type="button" aria-label="How to play">Help</button><button class="btn snd" id="btn-menu" type="button">Menu</button></span>
-      ${S.mp && !g.finished ? `<span class="mpchip" title="Online game ${esc(MP.game ? MP.game.code : "")}">ONLINE ${esc(MP.game ? MP.game.code : "")} · <b id="mp-timer"></b></span>` : ""}
       ${submitButton()}
     </header>`;
   }
