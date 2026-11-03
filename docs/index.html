@@ -310,6 +310,32 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .shopcard { display: flex; gap: 14px; align-items: center; }
 .shop-price { font-family: var(--font-display); font-size: 30px; color: var(--gold); }
 .shop-list { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-weight: 700; }
+.auth { width: min(460px, 100%); }
+.auth .win-body { gap: 12px; }
+.auth-hero { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.auth-hero canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+.auth-hero .wordmark b:first-child { font-size: 15px; }
+.auth-hero .wordmark b:last-child { font-size: 20px; }
+.auth-hero p { margin: 4px 0 0; color: var(--muted); font-weight: 700; font-size: 13px; }
+.auth .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.auth .seg button { padding: 10px; font-size: 14px; }
+.afield { display: grid; gap: 5px; }
+.afield label { font-weight: 900; font-size: 13.5px; }
+.afield .pw { position: relative; }
+.auth input[type="text"], .auth input[type="email"], .auth input[type="password"] { width: 100%; padding: 11px 12px; border-radius: 8px; border: 0; background: var(--bg-deep); color: var(--ink); box-shadow: inset 0 2px 0 rgba(0,0,0,0.4), 0 0 0 2px transparent; font: inherit; font-weight: 800; font-size: 15px; }
+.auth input:focus { outline: none; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4), 0 0 0 2px var(--gold); }
+.afield .pw input { padding-right: 64px; }
+.afield .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: var(--panel-3); color: var(--ink); font: inherit; font-size: 12px; font-weight: 900; border-radius: 6px; padding: 5px 8px; cursor: pointer; }
+.auth .perks { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; font-weight: 800; }
+.auth .perks li::before { content: "✓ "; color: var(--pos, #51cf66); }
+.auth .btn.go.wide { width: 100%; justify-content: center; padding: 12px; font-size: 16px; }
+.auth-links { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.auth-or { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; color: var(--muted); font-weight: 900; font-size: 12px; }
+.auth-or::before, .auth-or::after { content: ""; height: 2px; background: rgba(255,255,255,0.08); }
+.auth .mail { font-size: 44px; text-align: center; line-height: 1; }
+.pwmeter { height: 6px; border-radius: 3px; background: var(--bg-deep); overflow: hidden; }
+.pwmeter i { display: block; height: 100%; transition: width .2s; }
+.acc-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .redeem { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .redeem input { flex: 1 1 160px; min-width: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
 .gc-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; align-items: end; }
@@ -1478,7 +1504,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
     on("#t-new", "click", () => { S.modal = "setup"; S.setup = null; renderModal(); bindModal(); });
     on("#t-continue", "click", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
-    on("#t-online", "click", () => { S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
+    on("#t-online", "click", () => { if (authNeeded()) { openAuth("create", "online"); return; } S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
     on("#t-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
     bindAccountChip(); renderInviteBar();
     on("[data-title]", "click", (e) => {
@@ -1692,7 +1718,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!res.ok) {
       let msg = (j && (j.error || j.message || j.msg || j.error_description)) || "Online service error " + res.status;
       if (/rate limit/i.test(msg)) msg = "Too many emails were sent in the last hour. Try again later.";
-      if (/signups not allowed for otp|user not found/i.test(msg)) msg = "There's no saved account with that email yet. Save this one first (Profile → Save with email).";
+      if (/signups not allowed for otp|user not found/i.test(msg)) msg = "There's no account with that email yet. Create one first.";
+      if (/invalid login credentials/i.test(msg)) msg = "Wrong email or password.";
+      if (/email not confirmed/i.test(msg)) msg = "Confirm your email first: click the link we sent you.";
+      if (/already (been )?registered|email_exists|already exists/i.test(msg + " " + ((j && (j.error_code || j.code)) || ""))) msg = "That email already has an account. Log in instead.";
+      if (/same_password|should be different/i.test(msg + " " + ((j && j.error_code) || ""))) msg = "That's your current password. Pick a new one.";
       throw Object.assign(new Error(msg), { status: res.status, code: j && (j.error_code || j.code) });
     }
     return j;
@@ -1730,6 +1760,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async offerDeal(gameId, round, from, to, kind, terms) { await http("/rest/v1/deals", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, kind, terms }) }); },
     async myAchievements() { return (await http("/rest/v1/achievements?select=id,earned_at")) || []; },
     async linkEmail(email) { await http("/auth/v1/user?redirect_to=" + q(backUrl()), { method: "PUT", body: JSON.stringify({ email }) }); },
+    async passwordLogin(email, password) { saveAuth(await http("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) }, false)); },
+    async setPassword(password) { await http("/auth/v1/user", { method: "PUT", body: JSON.stringify({ password, data: { has_password: true } }) }); },
+    async recover(email) { await http("/auth/v1/recover?redirect_to=" + q(backUrl()), { method: "POST", body: JSON.stringify({ email }) }, false); },
+    async me() { return http("/auth/v1/user", { method: "GET" }); },
     async emailLogin(email) { await http("/auth/v1/otp?redirect_to=" + q(backUrl()), { method: "POST", body: JSON.stringify({ email, create_user: false }) }, false); },
     async logout() { try { await http("/auth/v1/logout", { method: "POST" }); } catch (e) {} AUTH = null; try { localStorage.removeItem("ft-auth"); } catch (e) {} },
     myId() { try { const a = loadAuth(); return a ? JSON.parse(atob(a.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub : null; } catch (e) { return null; } },
@@ -2830,19 +2864,25 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
       if (h.get("access_token")) {
         saveAuth({ access_token: h.get("access_token"), refresh_token: h.get("refresh_token"), expires_in: Number(h.get("expires_in")) || 3600 });
-        ACC.msg = h.get("type") === "email_change" ? "Your account is saved with your email. It now works on every device you log in on." : "You're logged in.";
+        const type = h.get("type");
         history.replaceState(null, "", location.pathname + location.search);
+        // Email confirmed (new account) or "forgot password": next step is picking a password.
+        if (type === "email_change" || type === "signup" || type === "recovery") {
+          Object.assign(AUTHUI, { tab: "password", err: "", msg: type === "recovery" ? "" : "Email confirmed! Your account is saved.", reset: type === "recovery" });
+          return "auth";
+        }
+        ACC.msg = "You're logged in.";
         return "profile";
       }
-      if (h.get("error_description")) { ACC.err = h.get("error_description").replace(/\+/g, " "); history.replaceState(null, "", location.pathname + location.search); return "profile"; }
+      if (h.get("error_description")) { const d = h.get("error_description").replace(/\+/g, " "); AUTHUI.err = /expired|invalid/i.test(d) ? "That email link has expired or was already used. Try again below." : d; AUTHUI.tab = "login"; history.replaceState(null, "", location.pathname + location.search); return "auth"; }
     } catch (e) {}
     return null;
   }
   function accountChip() {
     const p = ACC.profile;
-    return `<button class="acc-chip" id="t-account" type="button">${p ? `<b>${esc(p.name)}</b><span>${p.anonymous ? "Guest" : "Saved"} · ${esc(p.friend_code)}</span>` : `<b>Profile</b><span>${ACC.online ? "…" : ACC.wanted ? "connecting…" : "not online yet"}</span>`}${ACC.invites.length ? `<i class="badge">${ACC.invites.length}</i>` : ""}</button>`;
+    return `<button class="acc-chip" id="t-account" type="button">${p ? `<b>${esc(p.name)}</b><span>${p.anonymous ? "Guest · sign up / log in" : "Account · " + esc(p.friend_code)}</span>` : `<b>Log in</b><span>${ACC.wanted && !ACC.online ? "connecting…" : "or create an account"}</span>`}${ACC.invites.length ? `<i class="badge">${ACC.invites.length}</i>` : ""}</button>`;
   }
-  function bindAccountChip() { const c = $("#t-account"); if (c) c.addEventListener("click", () => openModal("profile")); }
+  function bindAccountChip() { const c = $("#t-account"); if (c) c.addEventListener("click", () => (ACC.profile && !ACC.profile.anonymous ? openModal("profile") : openAuth(ACC.profile ? "create" : "login", null))); }
   function openModal(m) {
     S.modal = m; ACC.err = "";
     if (["profile", "friends", "leaderboard"].includes(m) && !ACC.online) { ACC.wanted = true; accountSync(true).then(() => { if (S.modal === m) { if (m === "leaderboard") loadBoard(); renderModal(); bindModal(); } if (S.screen === "title") { const c = $("#t-account"); if (c) { c.outerHTML = accountChip(); bindAccountChip(); } } }); }
@@ -3034,17 +3074,148 @@ details.howto[open] summary::after { content: "▾ hide"; }
         <div class="ctl"><span class="lbl">Friend code</span><div class="bigcode" style="font-size:30px">${esc(p.friend_code)}</div><button class="btn small" type="button" id="p-copy-friend">Copy invite link</button></div></div>
       <div class="kv"><div><span>Games</span><b>${st.games || 0}</b></div><div><span>Wins</span><b>${st.wins || 0}</b></div><div><span>Online wins</span><b>${st.online_wins || 0}</b></div><div><span>Achievements</span><b>${ACC.ach.size} / ${ACH.length}</b></div></div>
       ${SHOP.access ? `<div class="card"><h3>Full game</h3>${accessLine()}</div>` : ""}
-      <div class="card"><h3>${p.anonymous ? "Save your account" : "Account"}</h3>
-        ${p.anonymous ? `<div class="hint">Right now you're a guest on this device. Add your email to keep your friends, achievements and scores, and to log in on your phone or another computer. We'll email you a link to confirm.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><input type="email" id="p-email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:200px"><button class="btn small go" type="button" id="p-link" ${ACC.busy ? "disabled" : ""}>Save with email</button></div>
-          <details><summary class="muted" style="cursor:pointer;font-weight:800">Already saved an account? Log in</summary>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><input type="email" id="p-login-email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:200px"><button class="btn small" type="button" id="p-login" ${ACC.busy ? "disabled" : ""}>Email me a login link</button></div>
-            <div class="hint">Logging in switches this device to that account; this guest profile stays behind.</div></details>`
-        : `<div class="sumline"><span class="muted">Email</span><b>${esc(p.email || "")}</b></div><div class="hint">Log in with this email on any device to play as ${esc(p.name)}.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" id="p-logout">Log out on this device</button><input type="email" id="p-login-email" placeholder="other account email" style="flex:1;min-width:180px"><button class="btn small" type="button" id="p-login" ${ACC.busy ? "disabled" : ""}>Switch account</button></div>`}
+      <div class="card"><h3>${p.anonymous ? "You're playing as a guest" : "Account"}</h3>
+        ${p.anonymous ? `<div class="hint">Your progress only lives on this device. Create an account to keep your friends, stats, achievements and the full game on every device.</div>
+          <div class="acc-cta"><button class="btn go" type="button" data-auth="create">Create account</button><button class="btn" type="button" data-auth="login">Log in</button></div>`
+        : `<div class="sumline"><span class="muted">Email</span><b>${esc(p.email || "")}</b></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-auth="password">Change password</button><button class="btn small" type="button" data-auth="login">Switch account</button><button class="btn small" type="button" id="p-logout">Log out</button></div>`}
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="linkbtn" type="button" data-legal="privacy" data-legal-delete="1">Delete my account and data</button><span style="display:flex;gap:8px"><button class="btn" type="button" data-open="friends">Friends</button><button class="btn" type="button" id="btn-close">Close</button></span></div>
     </div></div>`;
+  }
+  // ----- Log in / create account. Guests can play right away; an account (email + password) keeps everything on every device.
+  // Creating an account turns the current guest into a saved account, so nothing is lost (friends, stats, the full game).
+  const AUTHUI = { tab: "login", next: null, email: "", name: "", err: "", msg: "", busy: false, show: false, sent: "", reset: false };
+  function openAuth(tab, next) {
+    Object.assign(AUTHUI, { tab: tab || "login", next: next === undefined ? AUTHUI.next : next, err: "", msg: "", busy: false, show: false, reset: tab === "password", magic: false });
+    if (!AUTHUI.name && ACC.profile && ACC.profile.anonymous && ACC.profile.name) AUTHUI.name = ACC.profile.name;
+    if (next) { try { localStorage.setItem("ft-auth-seen", "1"); } catch (e) {} }  // the welcome offer shows once
+    S.modal = "auth"; renderModal(); bindModal();
+  }
+  const authNeeded = () => { try { return !localStorage.getItem("ft-auth-seen") && !(ACC.profile && !ACC.profile.anonymous); } catch (e) { return false; } };
+  const pwScore = (v) => { let n = 0; if ((v || "").length >= 8) n++; if (v.length >= 12) n++; if (/[A-Z]/.test(v) && /[a-z]/.test(v)) n++; if (/\d/.test(v)) n++; if (/[^A-Za-z0-9]/.test(v)) n++; return Math.min(4, n); };
+  function authModal() {
+    const A = AUTHUI, dis = A.busy ? "disabled" : "";
+    const notes = `${A.msg ? `<div class="note pos">${esc(A.msg)}</div>` : ""}${A.err ? `<div class="note neg">${esc(A.err)}</div>` : ""}`;
+    const pw = (id, label, auto) => `<div class="afield"><label for="${id}">${label}</label><div class="pw"><input type="${A.show ? "text" : "password"}" id="${id}" autocomplete="${auto}" minlength="8" maxlength="72" /><button type="button" data-showpw>${A.show ? "Hide" : "Show"}</button></div></div>`;
+    const field = (id, label, type, val, auto, ph) => `<div class="afield"><label for="${id}">${label}</label><input type="${type}" id="${id}" value="${esc(val || "")}" autocomplete="${auto}" placeholder="${ph || ""}" maxlength="${type === "email" ? 254 : 24}" /></div>`;
+    const hero = (title, sub) => `<div class="auth-hero"><canvas data-authlogo width="16" height="16" aria-hidden="true"></canvas><div><div class="wordmark"><b>Friendly</b><b>Takeover</b></div><p>${sub}</p></div></div>`;
+    const tabs = `<div class="seg" role="radiogroup"><button type="button" role="radio" aria-checked="${A.tab === "login"}" data-atab="login">Log in</button><button type="button" role="radio" aria-checked="${A.tab === "create"}" data-atab="create">Create account</button></div>`;
+    const guest = A.next ? `<div class="auth-or">or</div><button class="btn" type="button" id="a-guest" style="justify-content:center">Play as guest for now</button>` : "";
+    let body = "", title = "Account";
+    if (A.tab === "login") {
+      title = "Log in";
+      body = `${hero("", "Welcome back! Log in to play with your friends, stats and full game.")}${tabs}${notes}
+        <form id="a-form" class="win-body" style="padding:0" novalidate>
+          ${field("a-email", "Email", "email", A.email, "email", "you@example.com")}
+          ${pw("a-pw", "Password", "current-password")}
+          <button class="btn go wide" type="submit" ${dis}>${A.busy ? "Logging in…" : "Log in"}</button>
+        </form>
+        <div class="auth-links"><button class="linkbtn" type="button" data-atab="forgot">Forgot password?</button><button class="linkbtn" type="button" id="a-magic">Email me a login link</button></div>
+        ${ACC.profile && ACC.profile.anonymous ? `<div class="hint">Logging in switches this device to your account. Your guest progress on this device stays behind.</div>` : ""}${guest}`;
+    } else if (A.tab === "create") {
+      title = "Create account";
+      body = `${hero("", "Free, takes 20 seconds. Play with friends on any device.")}${tabs}${notes}
+        <ul class="perks"><li>Keep your friends, stats and achievements</li><li>Play on your phone, laptop or a friend's computer</li><li>Your full game is safe if you clear your browser</li></ul>
+        <form id="a-form" class="win-body" style="padding:0" novalidate>
+          ${field("a-name", "Player name", "text", A.name, "nickname", "What your friends see")}
+          ${field("a-email", "Email", "email", A.email, "email", "you@example.com")}
+          <button class="btn go wide" type="submit" ${dis}>${A.busy ? "Creating…" : "Create account"}</button>
+        </form>
+        <div class="hint">We'll email you a link to confirm. Then you pick your password. No spam, ever.</div>${guest}`;
+    } else if (A.tab === "sent") {
+      title = "Check your inbox";
+      body = `${notes}<div class="mail" aria-hidden="true">✉️</div><h2 style="margin:0;text-align:center;font-family:var(--font-display);font-weight:400">Check your inbox</h2>
+        <div class="hint" style="text-align:center">We sent an email to <b>${esc(A.sent)}</b>. ${A.reset ? "Click the link in it to pick a new password." : A.magic ? "Click the link in it to log in." : "Click the link to confirm it's you. Then you'll pick your password."}<br>Nothing there? Check your spam folder.</div>
+        <div class="auth-links"><button class="linkbtn" type="button" data-atab="${A.reset ? "forgot" : A.magic ? "login" : "create"}">Wrong email?</button><button class="linkbtn" type="button" id="a-resend" ${dis}>Send it again</button></div>
+        <button class="btn" type="button" id="${A.next ? "a-guest" : "btn-close"}" style="justify-content:center">${A.next ? "Keep playing" : "Close"}</button>`;
+    } else if (A.tab === "forgot") {
+      title = "Forgot password";
+      body = `${hero("", "No problem. We'll email you a link to pick a new password.")}${notes}
+        <form id="a-form" class="win-body" style="padding:0" novalidate>
+          ${field("a-email", "Email", "email", A.email, "email", "you@example.com")}
+          <button class="btn go wide" type="submit" ${dis}>${A.busy ? "Sending…" : "Send reset link"}</button>
+        </form>
+        <div class="auth-links"><button class="linkbtn" type="button" data-atab="login">← Back to log in</button></div>`;
+    } else if (A.tab === "password") {
+      title = A.reset ? "New password" : "Pick a password";
+      body = `${hero("", A.reset ? "Pick a new password for your account." : "Last step: pick a password so you can log in anywhere.")}${notes}
+        <form id="a-form" class="win-body" style="padding:0" novalidate>
+          ${pw("a-pw", A.reset ? "New password" : "Password", "new-password")}
+          <div class="pwmeter" aria-hidden="true"><i id="a-meter" style="width:0"></i></div>
+          <div class="hint" id="a-pwhint">At least 8 characters.</div>
+          <button class="btn go wide" type="submit" ${dis}>${A.busy ? "Saving…" : "Save password"}</button>
+        </form>
+        ${A.reset ? "" : `<div class="auth-links"><button class="linkbtn" type="button" id="btn-close">Skip: I'll log in with email links</button></div>`}`;
+    }
+    return `<div class="win auth"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body">${body}</div></div>`;
+  }
+  async function authRun(fn) {
+    AUTHUI.busy = true; AUTHUI.err = ""; AUTHUI.msg = ""; renderModal(); bindModal();
+    try { await fn(); } catch (e) { AUTHUI.err = e.message || "Something went wrong. Try again."; }
+    AUTHUI.busy = false; if (S.modal === "auth") { renderModal(); bindModal(); }
+  }
+  async function authDone(msg) {
+    try { localStorage.setItem("ft-auth-seen", "1"); } catch (e) {}
+    ACC.profile = null; ACC.online = false; ACC.friends = []; SHOP.access = null; ACC.wanted = true;
+    await accountSync(true); loadAccess();
+    if (S.screen === "title") { const c = $("#t-account"); if (c) { c.outerHTML = accountChip(); bindAccountChip(); } }
+    ACC.msg = msg; ACC.err = "";
+    const next = AUTHUI.next; AUTHUI.next = null;
+    S.modal = next || "profile"; if (next === "online") S.onlineError = "";
+    renderModal(); bindModal();
+  }
+  function bindAuth() {
+    const A = AUTHUI, q = (sel) => modal.querySelector(sel), val = (sel) => ((q(sel) || {}).value || "").trim();
+    const cv = q("[data-authlogo]"); if (cv) drawLogo(cv);
+    const keep = () => { if (q("#a-email")) A.email = val("#a-email"); if (q("#a-name")) A.name = val("#a-name"); };
+    modal.querySelectorAll("[data-atab]").forEach((b) => b.addEventListener("click", () => { keep(); A.tab = b.dataset.atab; A.err = ""; A.msg = ""; A.reset = A.tab === "forgot"; A.magic = false; renderModal(); bindModal(); }));
+    modal.querySelectorAll("[data-showpw]").forEach((b) => b.addEventListener("click", () => { A.show = !A.show; modal.querySelectorAll("#a-pw").forEach((i) => { i.type = A.show ? "text" : "password"; }); b.textContent = A.show ? "Hide" : "Show"; }));
+    const g = q("#a-guest");
+    if (g) g.addEventListener("click", () => { try { localStorage.setItem("ft-auth-seen", "1"); } catch (e) {} const next = A.next; A.next = null; S.modal = next; if (next === "online") S.onlineError = ""; renderModal(); bindModal(); });
+    const pwIn = q("#a-pw"), meter = q("#a-meter");
+    if (pwIn && meter) pwIn.addEventListener("input", () => {
+      const sc = pwScore(pwIn.value), cols = ["#ff6b6b", "#ff9f43", "#ffd166", "#8ce99a", "#51cf66"];
+      meter.style.width = (pwIn.value ? 12 + sc * 22 : 0) + "%"; meter.style.background = cols[sc];
+      const h = q("#a-pwhint"); if (h) h.textContent = pwIn.value.length < 8 ? "At least 8 characters." : ["Weak: add numbers or symbols.", "Okay.", "Good.", "Strong.", "Very strong."][sc];
+    });
+    const magic = q("#a-magic");
+    if (magic) magic.addEventListener("click", () => { keep(); if (!validEmail(A.email)) { A.err = "Type your email first."; renderModal(); bindModal(); return; }
+      authRun(async () => { await api().emailLogin(A.email); A.sent = A.email; A.magic = true; A.reset = false; A.tab = "sent"; }); });
+    const resend = q("#a-resend");
+    if (resend) resend.addEventListener("click", () => authRun(async () => {
+      if (A.reset) await api().recover(A.sent); else if (A.magic) await api().emailLogin(A.sent); else await api().linkEmail(A.sent);
+      A.msg = "Sent again.";
+    }));
+    const form = q("#a-form");
+    if (!form) return;
+    const first = form.querySelector("input"); if (first && !first.value) setTimeout(() => { try { first.focus(); } catch (e) {} }, 30);
+    form.addEventListener("submit", (e) => {
+      e.preventDefault(); keep();
+      if (A.tab === "login") {
+        const pwv = (q("#a-pw") || {}).value || "";
+        if (!validEmail(A.email)) { A.err = "That doesn't look like an email address."; renderModal(); bindModal(); return; }
+        if (!pwv) { A.err = "Type your password."; renderModal(); bindModal(); return; }
+        authRun(async () => { await api().passwordLogin(A.email, pwv); await authDone("Welcome back!"); });
+      } else if (A.tab === "create") {
+        if (!A.name) { A.err = "Pick a player name."; renderModal(); bindModal(); return; }
+        if (!validEmail(A.email)) { A.err = "That doesn't look like an email address."; renderModal(); bindModal(); return; }
+        authRun(async () => {
+          ACC.wanted = true; await api().signIn();
+          try { await api().rpc("ensure_profile", { p_name: A.name }); await api().rpc("set_profile_name", { p_name: A.name }); S.opts = { ...(S.opts || DEFAULT_OPTS), name: A.name.slice(0, 24) }; } catch (er) {}
+          await api().linkEmail(A.email);
+          try { localStorage.setItem("ft-auth-seen", "1"); } catch (er) {}
+          A.sent = A.email; A.magic = false; A.reset = false; A.tab = "sent";
+        });
+      } else if (A.tab === "forgot") {
+        if (!validEmail(A.email)) { A.err = "That doesn't look like an email address."; renderModal(); bindModal(); return; }
+        authRun(async () => { await api().recover(A.email); A.sent = A.email; A.reset = true; A.magic = false; A.tab = "sent"; });
+      } else if (A.tab === "password") {
+        const pwv = (q("#a-pw") || {}).value || "";
+        if (pwv.length < 8) { A.err = "Use at least 8 characters."; renderModal(); bindModal(); return; }
+        authRun(async () => { await api().setPassword(pwv); A.reset = false; await authDone("Password saved. You can log in with your email and password on any device."); });
+      }
+    });
   }
   async function accAction(fn, okMsg) {
     ACC.busy = true; ACC.err = ""; ACC.msg = ""; renderModal(); bindModal();
@@ -3056,8 +3227,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const on = (sel, fn) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", fn); };
     on("#p-save-name", () => accAction(async () => { const v = modal.querySelector("#p-name").value.trim(); if (!v) throw new Error("Type a name first."); await api().rpc("set_profile_name", { p_name: v }); ACC.profile.name = v.slice(0, 24); S.opts = { ...(S.opts || DEFAULT_OPTS), name: ACC.profile.name }; }, "Name saved."));
     on("#p-copy-friend", () => { const link = backUrl() + "?friend=" + ACC.profile.friend_code; try { navigator.clipboard.writeText(link); ACC.msg = "Link copied: send it to a friend."; } catch (e) { ACC.msg = link; } renderModal(); bindModal(); });
-    on("#p-link", () => accAction(async () => { const v = modal.querySelector("#p-email").value.trim(); if (!validEmail(v)) throw new Error("That doesn't look like an email address."); await api().linkEmail(v); }, "Check your inbox and click the link to confirm. Then you can log in with that email anywhere."));
-    on("#p-login", () => accAction(async () => { const v = modal.querySelector("#p-login-email").value.trim(); if (!validEmail(v)) throw new Error("That doesn't look like an email address."); await api().emailLogin(v); }, "Check your inbox: the login link opens the game logged in."));
+    modal.querySelectorAll("[data-auth]").forEach((b) => b.addEventListener("click", () => openAuth(b.dataset.auth, "profile")));
     on("#p-logout", () => accAction(async () => { await api().logout(); ACC.profile = null; ACC.online = false; ACC.friends = []; await accountSync(true); }, "Logged out. You're a guest on this device now."));
     modal.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", (e) => openModal(e.currentTarget.dataset.open)));
   }
@@ -5479,6 +5649,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "profile") inner = profileModal();
     if (S.modal === "shop") inner = shopModal();
     if (S.modal === "giftcodes") inner = giftModal();
+    if (S.modal === "auth") inner = authModal();
     if (S.modal === "friends") inner = friendsModal();
     if (S.modal === "achievements") inner = achievementsModal();
     if (S.modal === "daily") inner = dailyModal();
@@ -6250,6 +6421,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "profile") { bindAccount(); if (!SHOP.access) loadAccess().then(() => { if (S.modal === "profile") { renderModal(); bindModal(); } }); }
     if (S.modal === "shop") bindShop();
     if (S.modal === "giftcodes") bindGifts();
+    if (S.modal === "auth") bindAuth();
     if (S.modal === "friends") bindFriends();
     if (S.modal === "daily") bindDaily();
     if (S.modal === "leaderboard") bindBoard();

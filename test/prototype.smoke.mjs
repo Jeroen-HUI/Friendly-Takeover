@@ -26,7 +26,13 @@ await wait(50);
 if (!doc.querySelector(".title-screen")) throw new Error("title screen did not render");
 if (doc.querySelectorAll(".tcard").length !== 5) throw new Error("title cards missing");
 if (!doc.getElementById("t-continue").disabled) throw new Error("continue should be disabled without a save");
-click("#t-online"); if (!/Host a game/.test(doc.querySelector(".overlay").textContent)) throw new Error("online modal"); click("#btn-close");
+// First time online: the account screen (create / log in / guest), then the online menu.
+click("#t-online"); if (!/Create account/.test(doc.querySelector(".overlay").textContent) || !doc.querySelector("#a-name")) throw new Error("account screen first");
+click('[data-atab="login"]'); if (!doc.querySelector("#a-pw") || !/Forgot password/.test(doc.querySelector(".overlay").textContent)) throw new Error("login tab");
+click('[data-atab="forgot"]'); if (!/reset link/.test(doc.querySelector(".overlay").textContent)) throw new Error("forgot tab");
+click('[data-atab="login"]'); doc.querySelector("#a-form button[type=submit]").click(); if (!/email address/.test(doc.querySelector(".overlay").textContent)) throw new Error("login should check the email");
+click("#a-guest"); if (!/Host a game/.test(doc.querySelector(".overlay").textContent)) throw new Error("online modal"); click("#btn-close");
+click("#t-online"); if (!/Host a game/.test(doc.querySelector(".overlay").textContent)) throw new Error("account screen should show once"); click("#btn-close");
 click("#t-options"); click("#btn-close");
 // Menu screens open (offline here: they explain instead of crashing).
 for (const m of ["friends", "achievements", "daily", "leaderboard"]) {
@@ -34,7 +40,7 @@ for (const m of ["friends", "achievements", "daily", "leaderboard"]) {
   if (!doc.querySelector(".overlay .win")) throw new Error(m + " screen missing");
   click("#btn-close");
 }
-click("#t-account"); if (!/Profile/.test(doc.querySelector(".overlay").textContent)) throw new Error("profile missing"); click("#btn-close");
+click("#t-account"); if (!/Log in/.test(doc.querySelector(".overlay").textContent)) throw new Error("account chip should open log in"); doc.querySelector(".win-title .x").click();
 if (doc.querySelectorAll(".overlay .achcard").length) throw new Error("modal should be closed");
 click('[data-title="achievements"]');
 if (doc.querySelectorAll(".achcard").length < 20) throw new Error("achievement cards missing");

@@ -187,6 +187,14 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 **Before the web app can sign players in**, turn on anonymous sign-ins: Supabase dashboard → Authentication → Sign In / Providers → Anonymous.
 
+## Accounts
+
+- Everyone starts as a quiet guest (anonymous Supabase user), so the game works instantly.
+- **Create account** (player name + email) turns the guest into a saved account: Supabase emails a confirm link, the link brings you back to *Pick a password*. Nothing is lost (friends, stats, purchases, owner rights).
+- **Log in** with email + password; **Forgot password** sends a reset link; **Email me a login link** still works for accounts without a password.
+- The account screen is offered once, the first time someone opens Multiplayer; after that it's the chip in the top right of the menu.
+- Needs in Supabase → Authentication → URL Configuration: Site URL and Redirect URLs set to the GitHub Pages address.
+
 ## Full game and gift codes
 
 - **Price:** €8.99 once, through a Stripe payment link with Managed Payments (Stripe handles VAT, receipts and disputes). Single-player and the daily challenge are free; everyone gets one free online game.

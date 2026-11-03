@@ -129,6 +129,9 @@ const server = {
 const HOST = "user-host";
 const fakeApi = {
   async signIn() {},
+  async linkEmail(email: string) { (db as any).linkedEmail = email; },
+  async passwordLogin(email: string, pw: string) { if (pw !== "right-password") throw new Error("Wrong email or password."); },
+  async setPassword() {},
   async rpc(name: string, a: any) {
     if (name === "report_content") { (db as any).reportsSent = [...((db as any).reportsSent ?? []), a]; return null; }
     if (name === "redeem_gift_code") { if (String(a.p_code).toUpperCase() !== "FT-TEST-CODE") return { ok: false, error: "That code doesn't exist or was switched off." }; (db as any).owned = true; return { ok: true, already: false }; }
@@ -275,9 +278,28 @@ await wait(30);
 // The host's own game is the second one (the first is Kim's).
 const HG = () => db.games[1];
 const myIdNow = () => db.players.find((p) => p.user_id === HOST && p.game_id === HG().id)!.id;
-// Title → Multiplayer → create a game.
+// Title → Multiplayer: the first time, the account screen. Create an account (email link), then keep playing.
+click("#t-online");
+await until("account screen", () => $("#a-name"));
+type("#a-name", "Jeroen"); type("#a-email", "not-an-email");
+($("#a-form") as any).requestSubmit ? ($("#a-form") as any).requestSubmit() : $("#a-form button[type=submit]")!.click();
+await until("email check", () => /email address/.test($(".overlay")!.textContent!));
+type("#a-email", "jeroen@example.com");
+$("#a-form button[type=submit]")!.click();
+await until("check inbox", () => /Check your inbox/.test($(".overlay")!.textContent!) && (db as any).linkedEmail === "jeroen@example.com");
+click("#a-guest");
+await until("online menu after account", () => /Host a game/.test($(".overlay")?.textContent || ""));
+click("#btn-close");
+click("#t-account");
+await until("log in screen", () => $("[data-atab=login]"));
+click("[data-atab=login]"); type("#a-email", "jeroen@example.com"); type("#a-pw", "nope");
+$("#a-form button[type=submit]")!.click();
+await until("wrong password", () => /Wrong email or password/.test($(".overlay")!.textContent!));
+($(".win-title .x") as any).click();
 click("#t-online");
 if (!/Host a game/.test($(".overlay")!.textContent!)) throw new Error("online modal missing");
+if (($("#mp-name") as any).value !== "Jeroen") throw new Error("the account name should fill in the player name");
+type("#mp-name", "");
 click("#btn-mp-create");
 if (!/Fill in your name/.test($(".overlay")!.textContent!)) throw new Error("empty name should be refused");
 type("#mp-name", "Jeroen"); type("#mp-company", "Cocoa Loco");
