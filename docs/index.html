@@ -851,6 +851,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .overlay .win { animation: popin 220ms ease-out; }
+  .overlay.again .win, .overlay.again .win-body.enter > *, .overlay.again .kpi, .overlay.again .folder, .overlay.again .ds-stamp, .overlay.again .podium .row, .overlay.again .stamp { animation: none; }
   @keyframes popin { from { transform: scale(0.96); opacity: 0.6; } to { transform: none; opacity: 1; } }
 }
 
@@ -4180,6 +4181,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- render ----------------
+  let enterTimer = 0;
   function render() {
     if (!S) return;
     ageGate();
@@ -4222,6 +4224,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     paintCanvases();
     renderModal();
     bind();
+    clearTimeout(enterTimer);
+    if (document.querySelector(".win-body.enter")) enterTimer = setTimeout(() => document.querySelectorAll(".win-body.enter").forEach((el) => el.classList.remove("enter")), 450);
     animateSkyline();
     runTv();
   }
@@ -5633,7 +5637,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "final") setTimeout(() => { if (S.game && S.game.config) sfx(FT.standings(S.game)[0].companyId === "you" ? "win" : "lose"); }, 350);
   }
   function renderModal() {
-    if (!S.modal) { modal.innerHTML = ""; return; }
+    if (!S.modal) { modal.innerHTML = ""; modal.dataset.kind = ""; return; }
     modalSound();
     let inner = "";
     if (S.modal === "results") inner = resultsModal();
@@ -5662,10 +5666,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "terms") inner = termsModal();
     if (S.modal === "credits") inner = creditsModal();
     if (S.modal === "age") inner = ageModal();
-    modal.innerHTML = `<div class="overlay" role="dialog" aria-modal="true">${inner}</div>`;
+    // Refreshing the window that's already open (live updates, typing, a new step) must not replay the pop-in.
+    const again = modal.dataset.kind === S.modal && !!modal.firstElementChild;
+    modal.dataset.kind = S.modal;
+    modal.innerHTML = `<div class="overlay${again ? " again" : ""}" role="dialog" aria-modal="true">${inner}</div>`;
     modal.querySelectorAll("canvas[data-avatar]").forEach((cv) => drawAvatar(cv, cv.dataset.avatar, colRaw(cv.dataset.avatar)));
     modal.querySelectorAll("canvas[data-trait]").forEach((cv) => drawTrait(cv, cv.dataset.trait));
-    countUp(modal);
+    if (!modal.querySelector(".overlay.again")) countUp(modal);  // count up once, not on every refresh
     if (S.modal === "show") runShow();
     if (S.modal === "board") runBoard();
     if (S.modal === "wait") { mpTick(); mountMinigame(modal.querySelector("#mg-slot")); }
@@ -6280,7 +6287,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     refreshDerived();
   }
   function refreshDerived() {
-    const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); }); }
+    const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }); }
 
     const cn = $("#cap-note"); if (cn) cn.textContent = capNote();
     const mn = $("#morder-note"); if (mn) mn.textContent = morderNote();
