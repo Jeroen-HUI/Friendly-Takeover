@@ -1,6 +1,6 @@
 // Bot strategies used to test balance, and later for the tutorial match against bots.
 
-import { INDUSTRIES, difficultyOf, companyValues, sharePrices, type Company, type Decisions, type GameState } from "../engine";
+import { INDUSTRIES, difficultyOf, companyValues, sharePrices, hasStreet, type Company, type Decisions, type GameState } from "../engine";
 import { Rng } from "../engine/rng";
 import { smartDecisions, smartRaider, type Position } from "./smart";
 import { oracleDecisions } from "./oracle";
@@ -174,7 +174,22 @@ export function botDecisions(strategy: BotStrategy, state: GameState, c: Company
   const d = botDecisionsInner(strategy, state, c, rng);
   // Steady bots (premium and mainstream) pay a 25% dividend while their finances are healthy; the rest keep their cash.
   const steady = /^(smart|pro)-(premium|mainstream)$/.test(strategy);
-  return { ...d, dividendPolicy: steady && c.cash > 1_500_000 && c.debt < 2_000_000 ? 25 : 0 };
+  return { ...d, dividendPolicy: steady && c.cash > 1_500_000 && c.debt < 2_000_000 ? 25 : 0, ...botStreet(strategy, state, c, rng) };
+}
+/** Weed: bots pick security and a lawyer by how hot they are, and the sneaky ones make street moves. */
+function botStreet(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
+  if (!hasStreet(state)) return {};
+  const heat = c.heat ?? 0, rich = c.cash > 1_200_000, smart = /^(smart|pro)-/.test(strategy);
+  const security = (heat > 55 && rich ? 2 : heat > 25 || smart ? 1 : 0) as 0 | 1 | 2;
+  const lawyer = heat > (smart ? 30 : 45) && c.cash > 600_000;
+  let streetMove: Decisions["streetMove"] = null;
+  const rivals = state.companies.filter((o) => o.id !== c.id && !o.bankrupt && !o.merged);
+  if (rivals.length && state.round >= 2 && c.cash > 900_000) {
+    const leader = rivals.reduce((a, b) => ((b.history.at(-1)?.sold ?? 0) > (a.history.at(-1)?.sold ?? 0) ? b : a));
+    const sneaky = /raider|hype/.test(strategy);
+    if (rng.chance(sneaky ? 0.18 : smart ? 0.12 : 0.06)) streetMove = { kind: rng.chance(0.55) ? "tipoff" : "heist", target: leader.id };
+  }
+  return { security, lawyer, streetMove };
 }
 function botDecisionsInner(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
   if (strategy === "smart-raider") return smartRaider(state, c, rng);

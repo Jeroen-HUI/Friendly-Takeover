@@ -75,6 +75,30 @@ export interface Decisions {
   dividendPolicy?: 0 | 25 | 50;
   /** Extra loan above the bank's credit line: needs the board's approval (house rule "votes"), voted on next round. */
   boardLoan?: number;
+  /** Weed: security level 0..3 and a lawyer on retainer. Kept until changed. */
+  security?: 0 | 1 | 2 | 3;
+  lawyer?: boolean;
+  /** Weed: one street move a round against a rival: tip off the police, or hit their stash. */
+  streetMove?: { kind: "tipoff" | "heist"; target: string } | null;
+}
+
+/** Weed: what happened on the street this round. */
+export interface StreetReport {
+  heatStart: number;
+  heatEnd: number;
+  raidChance: number;
+  raided: boolean;
+  seized: number;
+  seizedValue: number;
+  fine: number;
+  security: number;
+  securityCost: number;
+  lawyer: boolean;
+  lawyerCost: number;
+  moveCost: number;
+  /** Units taken from you by a heist, and units your crew brought home. */
+  robbed: number;
+  stolen: number;
 }
 
 export type GuidanceResult = "hit" | "close" | "miss";
@@ -198,6 +222,10 @@ export interface Company {
   /** Dividend policy (0, 25 or 50% of each quarter's profit) and the last quarterly dividend paid. */
   dividendPolicy?: 0 | 25 | 50;
   lastDividend?: { round: number; amount: number } | null;
+  /** Weed: police attention 0..100 (private), security level (everyone sees the guards) and lawyer (private). */
+  heat?: number;
+  security?: 0 | 1 | 2 | 3;
+  lawyer?: boolean;
   /** Last decisions, used as defaults. */
   lastDecisions: Decisions;
   history: RoundReport[];
@@ -295,6 +323,9 @@ export interface RoundReport {
   credibility?: number;
   /** What critics and customers said about the product this round (public). */
   reviews?: { stars: number; quotes: string[] };
+  /** Weed: heat, raids, security and street moves (private). Its costs are in streetCost. */
+  street?: StreetReport;
+  streetCost?: number;
 }
 
 export interface NewsEffect {
@@ -312,6 +343,8 @@ export interface NewsEffect {
   randomCompanyBoost?: number;
   /** Extra sales attraction for the cheapest company. */
   cheapestBoost?: number;
+  /** Weed: multiplies the chance of police raids. */
+  raidMultiplier?: number;
 }
 
 export interface NewsEvent {

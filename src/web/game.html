@@ -326,6 +326,9 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .pwmeter { height: 6px; border-radius: 3px; background: var(--bg-deep); overflow: hidden; }
 .pwmeter i { display: block; height: 100%; transition: width .2s; }
 .acc-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.heatbar { position: relative; height: 22px; border-radius: 6px; background: var(--bg-deep); overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,0.4); }
+.heatbar i { position: absolute; inset: 0 auto 0 0; transition: width .4s; }
+.heatbar span { position: relative; display: block; text-align: center; line-height: 22px; font-family: var(--font-display); font-size: 12px; text-shadow: 0 1px 0 #000; }
 .redeem { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .redeem input { flex: 1 1 160px; min-width: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
 .gc-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; align-items: end; }
@@ -952,7 +955,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // Read first (like TOPSIM's reports), then fill in the decisions, then submit.
   const READ_TABS = [["news", "News"], ["market", "Market"], ["reports", "Reports"]];
   const DECIDE_TABS = [["production", "Production"], ["rnd", "R&D"], ["marketing", "Marketing"], ["retail", "Retail"], ["finance", "Finance"], ["takeovers", "Takeovers"], ["boardroom", "Boardroom"]];
-  const TABS = [...READ_TABS, ...DECIDE_TABS];
+  const TABS = [...READ_TABS, ...DECIDE_TABS, ["street", "Street"]];
+  const hasStreetUI = () => !!(S && S.game && FT.hasStreet && FT.hasStreet(S.game));
+  const decideTabs = () => (hasStreetUI() ? [...DECIDE_TABS.slice(0, 4), ["street", "Street"], ...DECIDE_TABS.slice(4)] : DECIDE_TABS);
   const INTRO = {
     news: "<b>Read:</b> this round's news and what it does to demand, costs or interest. Rivals' chatter is in the feed.",
     market: "<b>Read:</b> the market report, the history and what rivals charged and sold. The split per buyer group is in a paid Market study. <b>Decide:</b> which research is worth the money.",
@@ -962,6 +967,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     marketing: "<b>Decide:</b> your campaign type and budget, and how much to spend on brand building.",
     retail: "<b>Decide:</b> whether to open or close your own stores and what to charge in them.",
     finance: "<b>Decide:</b> borrow or repay, and your investor call: forecast your sales and profit. Hit it and investors trust you more.",
+    street: "<b>Decide:</b> how you protect your grow rooms (security and a lawyer) and whether to make a move against a rival. Selling a lot, selling cheap and going viral make you <b>hot</b>; hot companies get raided.",
     takeovers: "<b>Decide:</b> whether to buy shares in rivals, buy back your own, and how much to stake if it comes to a showdown.",
     boardroom: "<b>Decide:</b> your wildcard, auction bid and summit vote. Your secret mission and its progress are here too.",
   };
@@ -1065,6 +1071,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     retail: ["............", "rrwrrwrrwrrw", "rrwrrwrrwrrw", ".dddddddddd.", ".wwwwwwwwww.", ".wbbwwwwddw.", ".wbbwwwwddw.", ".wwwwwwwddw.", ".wbbwwwwddw.", ".wwwwwwwddw.", "gggggggggggg", "............"],
     market: ["............", "..........y.", ".........yy.", "........y...", "..b....y....", "..b..yy..r..", "..b.y.r..r..", "..by..r..r..", "..b...r..r..", "..b...r..r..", "wwwwwwwwwwww", "............"],
     reports: ["..wwwwwww...", "..wggggww...", "..wwwwwwww..", "..wggggggw..", "..wwwwwwww..", "..wggggggw..", "..wwwwwwww..", "..wgggggyw..", "..wwwwwyyw..", "..wwwwwwww..", "............", "............"],
+    street: ["............", ".....yy.....", "....rrbb....", "...rrrbbb...", "...rrrbbb...", "..rrrrbbbb..", "..rrwrbwbb..", "..rrrrbbbb..", ".wwwwwwwwww.", ".wggggggggw.", ".wwwwwwwwww.", "............"],
     boardroom: ["............", "......yy....", ".....yyyy...", "....yyyyyy..", "......dd....", "......dd....", "......dd....", "...wwwwwwww.", "..wwwwwwwwww", "..ggggggggg.", "..g.......g.", "............"],
     news: ["............", ".wwwwwwwwww.", ".wrrrrrrrrw.", ".wwwwwwwwww.", ".wggg.wgggw.", ".wggg.wwwww.", ".wggg.wgggw.", ".wwwww.wwww.", ".wgggg.gggw.", ".wwwwwwwwww.", "............", "............"],
     logo: ["....yy......", "...yyyy.....", "...yyyy.ww..", "..rrrrr.ww..", "..rwrwr.ww..", "..rrrrrwwww.", "..rwrwrwgww.", "..rrrrrwwww.", "..rwrwrwgww.", "..rrrrrwwww.", "..rrrrrwwww.", "............"],
@@ -4033,13 +4040,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (k === "boardroom" && liveLots().some((lot) => { const L = liveOf(), l = L && L.lots[lot.key]; return FT.liveLotOpen(S.game, lot.key, liveNow()) && !(l && l.high && l.high.bidder === "you"); })) return { text: "BID", cls: "gold" };
     if (k === "retail" && g.round === diff().retailUnlockRound && !(S.visited || {})[k]) return { text: "NEW", cls: "" };
     if (k === "takeovers" && g.round === diff().takeoverUnlockRound && !(S.visited || {})[k]) return { text: "NEW", cls: "" };
-    if (DECIDE_TABS.some(([t]) => t === k) && (S.visited || {})[k]) return { text: "✓", cls: "done" };
+    if (k === "street" && streetMood().raid >= 0.25 && !(S.visited || {})[k]) return { text: "HOT", cls: "req" };
+    if (decideTabs().some(([t]) => t === k) && (S.visited || {})[k]) return { text: "✓", cls: "done" };
     return null;
   }
   // What's special about this round, shown in a strip above the tabs.
   function agenda() {
     const g = S.game, items = [];
     if (g.finished) return "";
+    if (hasStreetUI() && !me().bankrupt && !me().merged) { const m = streetMood(); if (m.raid >= 0.2) items.push(["street", "req", `🚨 You're ${m.label[0].toLowerCase()}: ${Math.round(m.raid * 100)}% raid chance`]); }
     if (needsVote()) items.push(["boardroom", "req", "Vote at the industry summit (required)"]);
     else if (g.summit && g.summit.round === g.round) items.push(["boardroom", "", "Summit vote cast: " + FT.SUMMIT.regulations[g.summit.options[S.draft.vote === "b" ? 1 : 0]].name]);
     if (auctionOpen()) items.push(["boardroom", "gold", "Auction open: " + FT.AUCTION.items[g.auction.item].name]);
@@ -4108,7 +4117,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   function resetDraft() {
     const c = me(), d = c.lastDecisions;
-    S.draft = { ...d, loanChange: 0, buyShares: {}, sellShares: {}, bankruptBids: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, auctionBid: 0, vote: null, journalistTarget: null, hire: 0 };
+    S.draft = { ...d, loanChange: 0, buyShares: {}, sellShares: {}, bankruptBids: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, auctionBid: 0, vote: null, journalistTarget: null, hire: 0, streetMove: null };
     S.visited = {};
     // Everything starts as last round's plan: forecasting how much to make is the player's job.
     S.draft.production = Math.max(0, Math.min(c.capacity, Math.round(d.production || 0)));
@@ -4394,7 +4403,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const unread = k === "news" && S.tab !== "news" ? S.chat.length - (S.newsSeen || 0) : 0, st = tabStatus(k);
       return `<button class="mbtn" type="button" data-tab="${k}" aria-current="${S.tab === k}" ${(S.panes || []).includes(k) ? 'data-open="true"' : ""} title="Click to open. Hold and drag onto the screen to open it next to what you have open (up to 3)."><canvas data-icon="${k}" width="12" height="12" aria-hidden="true"></canvas>${n}${unread > 0 ? `<span class="badge" aria-label="${unread} new">${unread}</span>` : st ? `<span class="tag ${st.cls}">${st.text}</span>` : ""}</button>`;
     };
-    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${DECIDE_TABS.map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav>`;
+    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${decideTabs().map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav>`;
   }
 
   // Sliders that grow with your company: the budget sliders reach further as you get bigger, and you can type more than the slider shows.
@@ -4475,10 +4484,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="kv"><div><span>Your value</span><b>${eur(v.you || 0)}</b></div><div><span>Cash</span><b>${eur(c.cash)}</b></div>${stakes.map((o) => `<div><span>${esc(o.companyName)}</span><b>${o.shares.holders.you}%</b></div>`).join("")}</div>
       <div class="hint">What you can still do: sell (or buy) shares on the live stock exchange in Takeovers, make share deals in the chat, and talk your partner into running the company well.</div></div>`;
   }
-  const TAB_TITLES = { production: "Production & pricing", rnd: "Research & development", marketing: "Marketing", finance: "Finance", takeovers: "Takeovers", boardroom: "Boardroom: missions, wildcards, auctions, votes", retail: "Retail: your own stores", market: "Market research", reports: "Reports", news: "News" };
+  const TAB_TITLES = { production: "Production & pricing", rnd: "Research & development", marketing: "Marketing", finance: "Finance", takeovers: "Takeovers", boardroom: "Boardroom: missions, wildcards, auctions, votes", retail: "Retail: your own stores", street: "The street: heat, raids and security", market: "Market research", reports: "Reports", news: "News" };
   function windowFor(tab, idx = 0, count = 1) {
     const title = TAB_TITLES[tab];
-    const body = me().merged && ["production", "rnd", "marketing", "finance", "retail"].includes(tab) ? mergedPanel() : { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
+    const body = me().merged && ["production", "rnd", "marketing", "finance", "retail"].includes(tab) ? mergedPanel() : { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, street: tabStreet, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
     const close = count > 1 ? `<button type="button" class="x live" data-pane-close="${tab}" aria-label="Close ${title}"${tipAttr("Close this window")}>×</button>` : "";
     return `<section class="win pane" data-pane="${tab}" aria-label="${title}"><div class="win-title">${title}${close}</div><div class="win-body ${S.tabEnter && idx === 0 ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
   }
@@ -5221,6 +5230,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     "stoner-film": ["anchor", "sofa", "SOFA MOVIE TOPS BOX OFFICE"], "bargain-bin": ["anchor", "roll", "GRAMS NEXT TO TOILET PAPER"], "seed-shortage": ["anchor", "parrot", "PARROT RAIDS SEED STORE"],
     "wedding-season": ["anchor", "cake", "WEDDING GIFT BAGS"], "rates-weed-up": ["chart", "up", "RATES UP FOR A COOLER GRAPH"], "tourist-boom": ["anchor", "plane", "CHILLEST PLACE ON EARTH"],
     "grow-tech": ["anchor", "bulb", "SINGING LED LAMPS"], "dry-spell": ["anchor", "drop", "FISH QUEUE FOR WATER"], "pet-ban": ["anchor", "dog", "DOGS DISAGREE WITH VETS"],
+    "chief-vacation": ["press", "minister", "POLICE CHIEF GONE FISHING"], crackdown: ["press", "president", "MAYOR: TOUGHEST CRACKDOWN YET"], "legal-debate": ["press", "minister", "14-HOUR LEGALIZATION DEBATE"], "sniffer-dogs": ["anchor", "dog", "40 SNIFFER DOGS, 3 WANT SNACKS"],
     // Mega events (shown with the red "Mega event" tag)
     "mega-crash": ["chart", "down", "STOCK MARKET CRASH!"], "mega-boom": ["anchor", "coins", "HALF THE COUNTRY WINS LOTTO"], "mega-supply": ["anchor", "ship", "SHIP STUCK IN THE CANAL"],
     "mega-heat": ["heat", "", "THE SUMMER THAT NEVER ENDS"], "mega-rates": ["anchor", "parrot", "PARROT RUNS THE CENTRAL BANK"], "mega-free": ["anchor", "coins", "€500 FOR EVERYONE"],
@@ -5238,6 +5248,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (e.segmentMultiplier) for (const [k, v] of Object.entries(e.segmentMultiplier)) add(SEG[k] + " buyers", v - 1, true);
     if (e.randomCompanyBoost) chips.push({ label: (targetName || "One company") + " +" + Math.round(e.randomCompanyBoost * 100) + "% pull", good: true });
     if (e.cheapestBoost) chips.push({ label: "Cheapest sells more", good: true });
+    if (e.raidMultiplier) chips.push({ label: "Police raids " + signed(e.raidMultiplier - 1), good: e.raidMultiplier < 1 });
     return chips;
   }
 
@@ -5288,6 +5299,55 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
 
   // ---------------- retail tab ----------------
+  // ----- The street (Weed only): heat, raids, security, lawyer, tip-offs and heists.
+  function streetMood() {
+    const c = me(), heat = c.heat || 0, mult = FT.activeNewsEffects(S.game).raidMultiplier || 1;
+    const raid = FT.raidChance(heat, mult);
+    const label = heat < 20 ? ["Cool", "pos"] : heat < 40 ? ["Warm", ""] : heat < 65 ? ["Hot", "neg"] : ["On fire", "neg"];
+    return { heat, raid, mult, label };
+  }
+  function tabStreet() {
+    const c = me(), d = S.draft, ST = FT.STREET, g = S.game, i = ind(), u = i.labels.unit;
+    if (!hasStreetUI()) return `<div class="card"><div class="hint">The street only exists in the Weed industry.</div></div>`;
+    const scale = FT.streetScale(g, c), m = streetMood(), sec = d.security ?? c.security ?? 0, law = d.lawyer ?? !!c.lawyer;
+    const last = (c.history.at(-1) || {}).street;
+    const heatPct = Math.round(m.heat), col = m.heat < 20 ? "var(--good)" : m.heat < 40 ? "var(--gold)" : "var(--bad)";
+    const rivals = g.companies.filter((o) => o.id !== "you" && live(o));
+    const heatCard = `<div class="card street-heat"><h3>🌡 Heat <span class="tag ${m.label[1]}">${m.label[0]}</span></h3>
+      <div class="heatbar" aria-label="Heat ${heatPct} of 100"><i style="width:${heatPct}%;background:${col}"></i><span>${heatPct}/100</span></div>
+      <div class="kv"><div${tipAttr("Chance the police raid you this round, at your current heat" + (m.mult !== 1 ? " and this round's news" : ""))}><span>Raid chance now</span><b class="${m.raid >= 0.25 ? "neg" : m.raid > 0.08 ? "" : "pos"}">${Math.round(m.raid * 100)}%</b></div>
+        <div><span>Heat fades</span><b>${Math.round(ST.decay * 100)}% a round</b></div></div>
+      ${m.mult !== 1 ? `<div class="note ${m.mult < 1 ? "pos" : "neg"}">News: police raids ${m.mult < 1 ? "down" : "up"} ${Math.abs(Math.round((m.mult - 1) * 100))}% this round</div>` : ""}
+      <div class="hint">Heat goes up when you sell a lot (your share of the market), sell clearly cheaper than the rest, go viral, run stores or hire armed guards. A lawyer cools you down a little every round. After a raid the police leave you alone for a while.</div>
+      ${last ? `<div class="sumline"><span class="muted">Last round</span><b class="${last.raided || last.robbed ? "neg" : "pos"}">${last.raided ? `Raided: ${units(last.seized)} ${u} seized, fine ${eur(last.fine)}` : "No raid"}${last.robbed ? ` · robbed of ${units(last.robbed)} ${u}` : ""}${last.stolen ? ` · your crew took ${units(last.stolen)} ${u}` : ""}</b></div>` : ""}</div>`;
+    const secCards = ST.security.map((x, k) => `<label class="choice"><input type="radio" name="st-sec" value="${k}" ${sec === k ? "checked" : ""}><span><b>${x.icon} ${x.name}</b><em class="cost num">${k ? eur(Math.round(scale * x.upkeep)) + " / round" : "free"}</em>
+      <small>${k ? `Police take ${Math.round(x.seizeCut * 100)}% less in a raid · stops ${Math.round(x.stopHeist * 100)}% of heists${x.heat ? ` · <b>+${x.heat} heat</b> a round` : ""}` : `A raid takes ${Math.round(ST.seizeShare * 100)}% of your stock. Easy to rob.`}</small></span></label>`).join("");
+    const secCard = `<div class="card"><h3>Security</h3><div class="choices">${secCards}</div><div class="hint">Everyone can see your guards. Rivals think twice before hitting a guarded stash.</div></div>`;
+    const lawCard = `<div class="card"><h3>⚖️ Lawyer</h3><label class="choice gtoggle"><input type="checkbox" id="st-lawyer" ${law ? "checked" : ""}><span><b>Keep a lawyer on retainer</b><em class="cost num">${eur(Math.round(scale * ST.lawyer.upkeep))} / round</em></span></label>
+      <div class="hint">Fines ${Math.round(ST.lawyer.fineCut * 100)}% lower (a raid without one costs about ${eur(Math.round(scale * ST.fineRate))}), and ${-ST.lawyer.heat} heat less every round. Nobody else knows you have one.</div></div>`;
+    const mv = d.streetMove, tg = (mv && mv.target) || (rivals[0] && rivals[0].id);
+    const opt = (k, title, cost, text) => `<label class="choice"><input type="radio" name="st-move" value="${k}" ${(mv ? mv.kind : "") === k ? "checked" : ""}><span><b>${title}</b>${cost ? `<em class="cost num">${eur(cost)}</em>` : ""}<small>${text}</small></span></label>`;
+    const tSec = (o) => ST.security[o.security || 0];
+    const moveCard = `<div class="card"><h3>Street move <small class="muted">optional, one a round</small></h3><div class="choices">
+        ${opt("", "Keep it clean", 0, "No moves this round.")}
+        ${opt("tipoff", "🕵️ Anonymous tip-off", Math.round(scale * ST.tipoff.cost), `Tell the police about a rival: +${ST.tipoff.heat} heat for them right away. ${Math.round(ST.tipoff.backfire * 100)}% chance it's traced back to you.`)}
+        ${opt("heist", "🎭 Hit their stash", Math.round(scale * ST.heist.cost), `Send a crew to take ${Math.round(ST.heist.steal * 100)}% of their stock. Guards stop most crews; if it fails you get heat and a bad name.`)}
+      </div>
+      <div class="ctl" ${mv ? "" : "hidden"}><label for="st-target">Target</label><select id="st-target" class="sel">${rivals.map((o) => `<option value="${o.id}" ${tg === o.id ? "selected" : ""}>${esc(o.companyName)} · ${tSec(o).icon} ${tSec(o).short}${mv && mv.kind === "heist" ? ` (${Math.round((1 - tSec(o).stopHeist) * 100)}% chance)` : ""}</option>`).join("")}</select></div></div>`;
+    const crew = `<div class="card"><h3>Who's guarding what</h3>${rivals.map((o) => `<div class="sumline"><span>${esc(o.companyName)}</span><b>${tSec(o).icon} ${tSec(o).name}</b></div>`).join("")}<div class="hint">Raids and robberies make the news, so you'll hear when a rival gets hit.</div></div>`;
+    return `<div class="grid2"><div style="display:grid;gap:12px;align-content:start">${heatCard}${lawCard}${crew}</div><div style="display:grid;gap:12px;align-content:start">${secCard}${moveCard}</div></div>`;
+  }
+  function bindStreet() {
+    const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
+    on('input[name="st-sec"]', "change", (e) => { S.draft.security = Number(e.target.value); sfx("click"); render(); });
+    on("#st-lawyer", "change", (e) => { S.draft.lawyer = e.target.checked; sfx("click"); render(); });
+    on('input[name="st-move"]', "change", (e) => {
+      const k = e.target.value, sel = $("#st-target");
+      S.draft.streetMove = k ? { kind: k, target: (S.draft.streetMove && S.draft.streetMove.target) || (sel && sel.value) || (S.game.companies.find((o) => o.id !== "you" && live(o)) || {}).id } : null;
+      sfx("click"); render();
+    });
+    on("#st-target", "change", (e) => { if (S.draft.streetMove) S.draft.streetMove.target = e.target.value; });
+  }
   function tabRetail() {
     const c = me(), d = S.draft, i = ind(), R = FT.RETAIL, unlock = diff().retailUnlockRound, u = i.labels.unit, p = i.labels.product;
     const ref = FT.retailRefPrice(i), cap = FT.storeCapacity(i);
@@ -5570,14 +5630,14 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (rt === "income") body = `<div class="card"><h3>Income statement</h3>${roundTable([
       ["Sold to shops", (h) => h.wholesaleSold, "units"], ["Shop price", (h) => h.price], ["Sold in own stores", (h) => h.retailSold, "units"], ["Store price", (h) => (h.retailSold ? h.retailPrice : 0)],
       ["Sold to the bulk buyer", (h) => h.bulkSold || 0, "units"], ["Revenue from shops", (h) => h.revenue - h.retailRevenue - (h.bulkRevenue || 0)], ["Revenue from own stores", (h) => h.retailRevenue], ["Revenue from the bulk buyer", (h) => h.bulkRevenue || 0], ["Total revenue", (h) => h.revenue],
-      ["Cost of goods sold", (h) => -(h.revenue - h.profit - h.holdingCost - h.fixedCost - (h.idleCost || 0) - h.marketingCost - h.rndCost - h.brandCost - h.researchCost - h.storeUpkeep - h.interest - (h.wildcardCost || 0) - (h.legalCost || 0) - (h.staffCost || 0) - (h.auctionPaid || 0))],
+      ["Cost of goods sold", (h) => -(h.revenue - h.profit - h.holdingCost - h.fixedCost - (h.idleCost || 0) - h.marketingCost - h.rndCost - h.brandCost - h.researchCost - h.storeUpkeep - h.interest - (h.wildcardCost || 0) - (h.legalCost || 0) - (h.staffCost || 0) - (h.auctionPaid || 0) - (h.streetCost || 0))],
       ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
-      ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Profit", (h) => h.profit, "eur", true],
+      ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ...(hasStreetUI() ? [["Security and lawyer", (h) => -(h.street ? h.street.securityCost + h.street.lawyerCost : 0)], ["Fines and street moves", (h) => -(h.street ? h.street.fine + h.street.moveCost : 0)], ["Stock seized or stolen", (h) => -(h.street ? (h.streetCost || 0) - h.street.securityCost - h.street.lawyerCost - h.street.fine - h.street.moveCost : 0)]] : []), ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Profit", (h) => h.profit, "eur", true],
     ], true)}<div class="hint">Cost of goods sold = production cost of the ${esc(i.labels.unit)} you actually sold.</div></div>`;
     if (rt === "cash") body = `<div class="card"><h3>Cash flow</h3>${roundTable([
       ["Cash at start", (h) => h.cashStart, "eur", false, true], ["Loans (net)", (h) => h.loanChange], ["Sales revenue", (h) => h.revenue], ["Production", (h) => -h.productionCost], ["Materials for next round", (h) => -(h.materialOrderCost || 0)], ["Stock exchange (live)", (h) => h.exchangeCash || 0], ["Deals with players", (h) => h.dealCash || 0],
       ["Stock holding", (h) => -h.holdingCost], ["Factory upkeep", (h) => -h.fixedCost], ["Idle machines", (h) => -(h.idleCost || 0)], ["Marketing", (h) => -h.marketingCost], ["R&D", (h) => -h.rndCost],
-      ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Factory expansion", (h) => -h.capacityInvest], ["Store openings", (h) => -h.storeOpenCost],
+      ["Brand building", (h) => -h.brandCost], ["Market research", (h) => -h.researchCost], ["Store rent and staff", (h) => -h.storeUpkeep], ...(S.game.config.difficulty === "tycoon" ? [["Wages, hiring, layoffs", (h) => -(h.staffCost || 0)]] : []), ...(hasStreetUI() ? [["The street (security, lawyer, fines, moves)", (h) => -(h.street ? h.street.securityCost + h.street.lawyerCost + h.street.fine + h.street.moveCost : 0)]] : []), ["Wildcards", (h) => -(h.wildcardCost || 0)], ["Lawsuits", (h) => -(h.legalCost || 0)], ["Auctions won", (h) => -(h.auctionPaid || 0)], ["Interest", (h) => -h.interest], ["Factory expansion", (h) => -h.capacityInvest], ["Store openings", (h) => -h.storeOpenCost],
       ["Shares in rivals", (h) => -h.sharePurchases], ["Shares sold", (h) => h.shareSales || 0], ["Showdown stakes", (h) => -(h.showdownPaid || 0)], ["Share buyback", (h) => -h.buybackCost], ["Dividends received", (h) => h.dividendsReceived], ["Dividends paid", (h) => -h.dividendsPaid],
       ["Emergency loan", (h) => h.emergencyLoan], ["Emergency loan fee", (h) => -h.emergencyFee], ["Cash at end", (h) => h.cashEnd, "eur", true],
     ], true)}<div class="hint">Production is paid when you make it, not when you sell it; that's why cash and profit differ.</div></div>`;
@@ -6388,6 +6448,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#wc-target", "change", (e) => { if (S.draft.wildcard) S.draft.wildcard.target = e.target.value; });
     on('input[name="vote"]', "change", (e) => { S.draft.vote = e.target.value; render(); });
     on('input[name="jtarget"]', "change", (e) => { S.draft.journalistTarget = e.target.value; });
+    bindStreet();
     on("#g-on", "change", (e) => {
       S.guidanceOpen = e.target.checked;
       const f = $("#g-fields"); if (f) f.hidden = !e.target.checked;

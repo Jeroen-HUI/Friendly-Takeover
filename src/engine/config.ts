@@ -499,6 +499,10 @@ const WEED = deriveIndustry(CHOCOLATE, {
     { id: "grow-tech", headline: "New LED lamps make plants grow faster and sing (a little)", effect: { costMultiplier: 0.88 }, duration: 1 },
     { id: "dry-spell", headline: "Dry spell; reservoirs so low the fish are queueing for water", effect: { capacityMultiplier: 0.85 }, duration: 1 },
     { id: "pet-ban", headline: "Vets warn: keep edibles away from dogs. Dogs disagree", effect: { segmentMultiplier: { mainstream: 0.85 } }, duration: 1 },
+    { id: "chief-vacation", headline: "Police chief takes a three-week fishing trip; the station's phone goes straight to voicemail", effect: { raidMultiplier: 0.4 }, duration: 1 },
+    { id: "crackdown", headline: "Mayor up for re-election promises \"the toughest crackdown since the last one\"", effect: { raidMultiplier: 1.8 }, duration: 2 },
+    { id: "legal-debate", headline: "Parliament debates legalization for 14 hours; police told to \"wait and see\"", effect: { raidMultiplier: 0.5, demandMultiplier: 1.1 }, duration: 2 },
+    { id: "sniffer-dogs", headline: "Police unveil 40 new sniffer dogs. Three of them just want snacks", effect: { raidMultiplier: 1.4 }, duration: 1 },
   ],
 });
 
@@ -513,6 +517,7 @@ function soften(e: NewsEffect, k: number): NewsEffect {
   if (e.interestDelta !== undefined) out.interestDelta = Math.round(e.interestDelta * 0.5 * 10000) / 10000;
   if (e.randomCompanyBoost !== undefined) out.randomCompanyBoost = Math.round(e.randomCompanyBoost * k * 1000) / 1000;
   if (e.cheapestBoost !== undefined) out.cheapestBoost = Math.round(e.cheapestBoost * k * 1000) / 1000;
+  if (e.raidMultiplier !== undefined) out.raidMultiplier = e.raidMultiplier;  // raids keep their full strength
   if (e.segmentMultiplier) out.segmentMultiplier = Object.fromEntries(Object.entries(e.segmentMultiplier).map(([s, v]) => [s, m(v)]));
   return out;
 }
@@ -635,3 +640,40 @@ export const REVIEWS = {
   flop: ["Comment section: \"{c}'s new ad is the cringiest thing I've seen in years.\""],
   launch: ["Customer: \"The new {c} launch is unhinged and I love it.\""],
 };
+
+// ---------------------------------------------------------------------------
+// The street (Weed only): heat, police raids, security, lawyers, tip-offs and heists.
+// Selling a lot, selling cheap, going viral and armed guards all draw the police's attention (heat).
+// Heat fades every round; the hotter you are, the likelier a raid. Costs scale with your grow rooms.
+// ---------------------------------------------------------------------------
+export const STREET = {
+  industries: ["weed"] as IndustryId[],
+  /** Heat is 0..100 and fades by this share every round. */
+  decay: 0.3,
+  /** Heat from sales: this much for an average share of the market (scales with your share). */
+  salesHeat: 12,
+  /** Selling clearly below the average price (more than 10% under) draws attention. */
+  cheapHeat: 3,
+  viralHeat: 5,
+  storeHeat: 2,
+  /** Raid chance: (heat - floor) x perPoint, capped. */
+  raidFloor: 15,
+  raidPerPoint: 0.0075,
+  raidMax: 0.6,
+  /** Base share of the stock the police take in a raid, before security. */
+  seizeShare: 0.25,
+  /** Fine as a share of the grow rooms' scale (capacity x base unit cost). */
+  fineRate: 0.07,
+  raidBrand: 3,
+  /** The police are satisfied for a while after a raid. */
+  raidCoolDown: 35,
+  security: [
+    { name: "No security", short: "None", upkeep: 0, seizeCut: 0, stopHeist: 0, heat: 0, icon: "🚪" },
+    { name: "Cameras & alarm", short: "Cameras", upkeep: 0.012, seizeCut: 0.3, stopHeist: 0.35, heat: 0, icon: "📹" },
+    { name: "Security guards", short: "Guards", upkeep: 0.03, seizeCut: 0.55, stopHeist: 0.7, heat: 0, icon: "💂" },
+    { name: "Armed guards", short: "Armed", upkeep: 0.055, seizeCut: 0.7, stopHeist: 1, heat: 6, icon: "🔫" },
+  ],
+  lawyer: { name: "Lawyer on retainer", upkeep: 0.02, fineCut: 0.7, heat: -6 },
+  tipoff: { name: "Anonymous tip-off", cost: 0.025, heat: 30, backfire: 0.15, backfireHeat: 20, backfireBrand: 4 },
+  heist: { name: "Stash heist", cost: 0.035, steal: 0.18, failHeat: 20, failBrand: 3 },
+} as const;

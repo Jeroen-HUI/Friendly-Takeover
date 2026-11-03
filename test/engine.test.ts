@@ -165,13 +165,14 @@ test("bought research costs money and delivers the reports", () => {
 });
 
 test("every euro is accounted for: the cash flow adds up each round", () => {
-  for (const industry of ["chocolate", "ai"] as const) {
+  for (const industry of ["chocolate", "ai", "weed"] as const) {
     const res = runMatch(["budget", "mainstream", "premium", "hype", "raider", "dumper"], 77, industry, "cutthroat");
     for (const c of res.state.companies) {
       for (const h of c.history) {
         const flow = h.cashStart + h.loanChange + h.revenue - h.productionCost - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost
           - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - (h.materialOrderCost ?? 0) + (h.exchangeCash ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
-          + h.emergencyLoan - h.emergencyFee + (h.dealCash ?? 0) - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales;
+          + h.emergencyLoan - h.emergencyFee + (h.dealCash ?? 0) - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales
+          - (h.street ? h.street.securityCost + h.street.lawyerCost + h.street.fine + h.street.moveCost : 0);
         assert.ok(Math.abs(flow - h.cashEnd) < 0.01, `${industry} ${c.id} round ${h.round}: ${flow} vs ${h.cashEnd}`);
       }
     }
@@ -847,4 +848,68 @@ test("research goes up to quality 8; a custom start can begin higher", () => {
   assert.equal(g.companies[0].history.at(-1)!.quality, 8);
   const s = createGame({ industry: "chocolate", difficulty: "standard", rounds: 8, seed: 3, rules: { startQuality: 7 } }, players);
   assert.equal(s.companies[0].qualityCap, 7);
+});
+
+test("weed: heat builds up, raids seize stock and fine you, security and lawyers soften it", () => {
+  const weed = (seed: number) => createGame({ industry: "weed", difficulty: "standard", rounds: 8, seed }, players);
+  const g0 = weed(7);
+  assert.ok(g0.companies.every((c) => (c.heat ?? 0) > 0), "year 0 sales already draw some heat");
+  // Chocolate has no street at all.
+  assert.ok(newGame().companies.every((c) => c.heat === undefined));
+  const choco = resolveRound(newGame(), { a: { security: 3, lawyer: true, streetMove: { kind: "tipoff", target: "b" } } });
+  assert.equal(choco.companies[0].history.at(-1)!.street, undefined);
+  // Very hot companies get raided a lot; with armed guards they lose much less stock, with a lawyer much smaller fines.
+  let raids = 0, seizedBare = 0, seizedArmed = 0, fineBare = 0, fineLawyer = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const g = weed(seed);
+    for (const c of g.companies) c.heat = 90;
+    const r = resolveRound(g, { a: {}, b: { security: 3 }, c: { lawyer: true }, d: {} });
+    for (const id of ["a", "b", "c", "d"]) {
+      const st = r.companies.find((c) => c.id === id)!.history.at(-1)!.street!;
+      assert.ok(st, "weed reports have a street section");
+      if (!st.raided) continue;
+      raids++;
+      if (id === "a") { seizedBare += st.seized; fineBare += st.fine; }
+      if (id === "b") seizedArmed += st.seized;
+      if (id === "c") fineLawyer += st.fine;
+      assert.ok(r.feed.some((f) => f.round === g.round && /raid|Sirens/i.test(f.headline)), "raids make the news");
+    }
+  }
+  assert.ok(raids > 40 && raids < 140, "about half of the very hot companies get raided: " + raids);
+  assert.ok(seizedArmed < seizedBare * 0.6, "armed guards protect the stash");
+  assert.ok(fineLawyer < fineBare * 0.6, "lawyers cut the fines");
+  // A cool company is left alone.
+  const cool = weed(3); for (const c of cool.companies) c.heat = 0;
+  const rc = resolveRound(cool, {});
+  assert.ok(rc.companies.every((c) => !c.history.at(-1)!.street!.raided));
+});
+
+test("weed: tip-offs heat up a rival, heists steal stock unless armed guards are there; costs hit cash and profit", () => {
+  const weed = (seed: number) => createGame({ industry: "weed", difficulty: "standard", rounds: 8, seed }, players);
+  let tipped = 0, backfired = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const g = weed(seed);
+    for (const c of g.companies) c.heat = 0;
+    const r = resolveRound(g, { a: { streetMove: { kind: "tipoff", target: "b" } } });
+    const a = r.companies.find((c) => c.id === "a")!, b = r.companies.find((c) => c.id === "b")!;
+    if ((b.heat ?? 0) > (a.heat ?? 0) + 10) tipped++; else backfired++;
+    assert.ok(a.history.at(-1)!.street!.moveCost > 0);
+  }
+  assert.ok(tipped > 18 && backfired > 0, `tip-offs mostly work, sometimes backfire (${tipped}/${backfired})`);
+  let stolen = 0, blocked = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const g = weed(seed);
+    const open = resolveRound(g, { a: { streetMove: { kind: "heist", target: "b" } }, b: { security: 0 } });
+    stolen += open.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.stolen;
+    const armed = resolveRound(g, { a: { streetMove: { kind: "heist", target: "b" } }, b: { security: 3 } });
+    blocked += armed.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.stolen;
+    const rb = armed.companies.find((c) => c.id === "b")!.history.at(-1)!;
+    assert.ok(rb.streetCost! > 0 && rb.street!.securityCost > 0, "guards cost money every round");
+  }
+  assert.ok(stolen > 0, "unguarded stashes get robbed");
+  assert.equal(blocked, 0, "armed guards stop every heist");
+  // Bots play the street too.
+  const m = runMatch(["smart-premium", "hype", "smart-raider", "mainstream"] as never, 11, "weed", "standard", 8);
+  assert.ok(m.state.companies.some((c) => (c.security ?? 0) > 0), "bots hire security");
+  assert.ok(m.state.companies.some((c) => c.history.some((h) => h.street?.raided)), "someone gets raided in a full match");
 });

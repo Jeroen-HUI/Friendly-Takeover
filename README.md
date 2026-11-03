@@ -187,6 +187,14 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 **Before the web app can sign players in**, turn on anonymous sign-ins: Supabase dashboard → Authentication → Sign In / Providers → Anonymous.
 
+## The street (Weed only)
+
+- **Heat** (0–100, private) builds up from your share of sales, selling >10% under the average price, viral campaigns, stores and armed guards; it fades 30% a round. A lawyer takes 6 off every round.
+- **Police raids**: chance = (heat − 15) × 0.75%, max 60%, moved by news (crackdowns, a police chief on holiday, legalization debates). A raid seizes 25% of your stock before the market (less with security), fines you, costs 3 brand and cools you down.
+- **Security** (everyone sees it): cameras & alarm, guards, armed guards — less seized in a raid and fewer heists; armed guards stop every heist but add heat. **Lawyer** (private): fines 70% lower.
+- **Street moves** (one a round): an anonymous tip-off (+30 heat for a rival, 15% chance it's traced back to you) or a heist (steal 18% of a rival's stock unless their guards stop the crew).
+- Costs scale with your grow rooms; they're in the income statement and cash flow. Bots play it too.
+
 ## Accounts
 
 - Everyone starts as a quiet guest (anonymous Supabase user), so the game works instantly.

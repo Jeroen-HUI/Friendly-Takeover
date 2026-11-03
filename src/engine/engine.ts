@@ -4,7 +4,7 @@
 
 import {
   AUCTION, BALANCE, BANKRUPTCY_SALE, BOARD_SEAT_SHARES, BULK, CAMPAIGNS, COSTS, DEALS, ECONOMY, EXCHANGE, GUIDANCE, LIVE_AUCTION, EVENTS, DIFFICULTIES, INDUSTRIES, JOURNALIST, MISSION_BONUS, MISSIONS, RESEARCH, RETAIL, SHOWDOWN, SUMMIT, TRAIT_EFFECTS, TYCOON,
-  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, UNLIMITED_ROUNDS, START_LEVELS, SCENARIOS, DIVIDENDS, BOARD, RUNNER_UP, MEGA, type IndustryConfig, type DifficultyConfig,
+  WILDCARD_EFFECTS, WILDCARDS, HOUSE_RULES, MERGER, HOSTILE_BID_SHARES, REVIEWS, UNLIMITED_ROUNDS, START_LEVELS, SCENARIOS, DIVIDENDS, BOARD, RUNNER_UP, MEGA, STREET, type IndustryConfig, type DifficultyConfig,
 } from "./config";
 import { Rng } from "./rng";
 import {
@@ -23,6 +23,7 @@ import {
   type ResearchId,
   type ResearchResult,
   type RoundReport,
+  type StreetReport,
   type SegmentId,
   type SegmentSales,
   type Standing,
@@ -371,6 +372,7 @@ export function activeNewsEffects(state: GameState) {
   const segmentMultiplier: Record<SegmentId, number> = { budget: 1, mainstream: 1, premium: 1, hype: 1 };
   const companyBoost: Record<string, number> = {};
   let cheapestBoost = 0;
+  let raidMultiplier = 1;
   for (const n of state.news) {
     const e = n.event.effect;
     if (e.costMultiplier) costMultiplier *= e.costMultiplier;
@@ -380,8 +382,9 @@ export function activeNewsEffects(state: GameState) {
     if (e.segmentMultiplier) for (const s of SEGMENTS) segmentMultiplier[s] *= e.segmentMultiplier[s] ?? 1;
     if (e.randomCompanyBoost && n.targetCompanyId) companyBoost[n.targetCompanyId] = (companyBoost[n.targetCompanyId] ?? 0) + e.randomCompanyBoost;
     if (e.cheapestBoost) cheapestBoost += e.cheapestBoost;
+    if (e.raidMultiplier) raidMultiplier *= e.raidMultiplier;
   }
-  return { costMultiplier, demandMultiplier, interestDelta, capacityMultiplier, segmentMultiplier, companyBoost, cheapestBoost };
+  return { costMultiplier, demandMultiplier, interestDelta, capacityMultiplier, segmentMultiplier, companyBoost, cheapestBoost, raidMultiplier };
 }
 
 /** Clean up player input: fill defaults, clamp to what the company can actually do. */
@@ -449,8 +452,20 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     style: Number.isInteger(d.style) && (d.style as number) >= 0 && (d.style as number) <= 11 ? d.style : undefined,
     dividendPolicy: d.dividendPolicy === 0 || d.dividendPolicy === 25 || d.dividendPolicy === 50 ? d.dividendPolicy : c.dividendPolicy ?? 0,
     boardLoan: Math.max(0, Math.min(BALANCE.maxDebt, Math.round(num(d.boardLoan, 0)))),
+    ...(hasStreet(state) ? {
+      security: ([0, 1, 2, 3] as const).includes(d.security as 0) ? d.security : c.security ?? 0,
+      lawyer: typeof d.lawyer === "boolean" ? d.lawyer : !!c.lawyer,
+      streetMove: d.streetMove && typeof d.streetMove === "object" && (d.streetMove.kind === "tipoff" || d.streetMove.kind === "heist") && typeof d.streetMove.target === "string" && d.streetMove.target !== c.id
+        && state.companies.some((o) => o.id === d.streetMove!.target && !o.bankrupt && !o.merged) ? { kind: d.streetMove.kind, target: d.streetMove.target } : null,
+    } : {}),
   };
 }
+/** Weed only: the street (heat, raids, security). */
+export const hasStreet = (state: GameState) => (STREET.industries as readonly string[]).includes(state.config.industry);
+/** Scale for street costs: the grow rooms (capacity x base unit cost). */
+export const streetScale = (state: GameState, c: Company) => Math.max(500_000, c.capacity * INDUSTRIES[state.config.industry].baseUnitCost);
+/** Chance of a police raid at a given heat. */
+export const raidChance = (heat: number, mult = 1) => Math.min(STREET.raidMax, Math.max(0, (heat - STREET.raidFloor) * STREET.raidPerPoint) * mult);
 /** Names typed by players: no control characters or angle brackets, at most 28 characters. */
 export function cleanName(name: string): string { return String(name ?? "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 28); }
 
@@ -657,8 +672,8 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   }
   const cashAtStart: Record<string, number> = Object.fromEntries(alive.map((c) => [c.id, c.cash - (exNet[c.id] ?? 0)]));
   const byIdAll = new Map(state.companies.map((c) => [c.id, c]));
-  const special: Record<string, { wildcard: number; legal: number; staff: number; auction: number; events: string[] }> = {};
-  for (const c of alive) special[c.id] = { wildcard: 0, legal: 0, staff: 0, auction: 0, events: [] };
+  const special: Record<string, { wildcard: number; legal: number; staff: number; auction: number; street: number; events: string[] }> = {};
+  for (const c of alive) special[c.id] = { wildcard: 0, legal: 0, staff: 0, auction: 0, street: 0, events: [] };
 
   // Deals between players: loan repayments that fall due, then this round's agreed deals. ----------
   const dealCash: Record<string, number> = {};
@@ -1107,6 +1122,86 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     };
   });
 
+  // 2b. The street (Weed): upkeep, tip-offs, heists, then police raids. ----------------------------
+  const street: Record<string, StreetReport> = {};
+  const seizedCost: Record<string, number> = {};
+  if (hasStreet(state) && round >= 1) {
+    const S = STREET;
+    for (const w of work) {
+      const { c, d } = w, scale = streetScale(state, c);
+      c.security = d.security ?? 0; c.lawyer = !!d.lawyer;
+      const sec = S.security[c.security];
+      const securityCost = Math.round(scale * sec.upkeep), lawyerCost = c.lawyer ? Math.round(scale * S.lawyer.upkeep) : 0;
+      c.cash -= securityCost + lawyerCost; special[c.id].street += securityCost + lawyerCost;
+      street[c.id] = { heatStart: Math.round(c.heat ?? 0), heatEnd: 0, raidChance: 0, raided: false, seized: 0, seizedValue: 0, fine: 0, security: c.security, securityCost, lawyer: c.lawyer, lawyerCost, moveCost: 0, robbed: 0, stolen: 0 };
+    }
+    const byW = Object.fromEntries(work.map((w) => [w.c.id, w]));
+    // Street moves, in a fair random order.
+    for (const w of rng.shuffle([...work])) {
+      const m = w.d.streetMove, t = m && byW[m.target];
+      if (!m || !t) continue;
+      const c = w.c, scale = streetScale(state, c);
+      if (m.kind === "tipoff") {
+        const cost = Math.round(scale * S.tipoff.cost);
+        c.cash -= cost; special[c.id].street += cost; street[c.id].moveCost += cost;
+        if (rng.chance(S.tipoff.backfire)) {
+          c.heat = clamp((c.heat ?? 0) + S.tipoff.backfireHeat, 0, 100);
+          c.brand = clamp(c.brand - S.tipoff.backfireBrand, 0, 100);
+          w.events.push(`Your anonymous tip about ${t.c.companyName} was traced back to you. The police are now curious about you too`);
+          state.feed.push({ round, headline: `"Anonymous" tip about ${t.c.companyName} turns out to come from ${c.companyName}'s office phone` });
+        } else {
+          t.c.heat = clamp((t.c.heat ?? 0) + S.tipoff.heat, 0, 100);
+          w.events.push(`Tip-off sent: the police are taking a closer look at ${t.c.companyName}`);
+        }
+      } else {
+        const cost = Math.round(scale * S.heist.cost);
+        c.cash -= cost; special[c.id].street += cost; street[c.id].moveCost += cost;
+        const guard = S.security[t.c.security ?? 0];
+        const stash = Math.max(0, t.available);
+        if (stash > 0 && !rng.chance(guard.stopHeist)) {
+          const take = Math.floor(stash * S.heist.steal);
+          t.available -= take;
+          // The stolen goods join your stock at what they cost the victim.
+          w.avgCost = (w.available * w.avgCost + take * t.avgCost) / Math.max(1, w.available + take);
+          w.available += take;
+          seizedCost[t.c.id] = (seizedCost[t.c.id] ?? 0) + take * t.avgCost;
+          street[t.c.id].robbed += take; street[c.id].stolen += take;
+          w.events.push(`Heist on ${t.c.companyName}: your crew came back with ${take.toLocaleString("en")} ${INDUSTRIES[state.config.industry].labels.unit}`);
+          t.events.push(`Your stash was hit overnight: ${take.toLocaleString("en")} ${INDUSTRIES[state.config.industry].labels.unit} gone. Nobody saw a thing`);
+          state.feed.push({ round, headline: `Masked crew empties a ${t.c.companyName} storeroom; police find only a half-eaten sandwich` });
+        } else {
+          c.heat = clamp((c.heat ?? 0) + S.heist.failHeat, 0, 100);
+          c.brand = clamp(c.brand - S.heist.failBrand, 0, 100);
+          w.events.push(`Heist on ${t.c.companyName} failed: ${t.c.security === 3 ? "your crew ran at the sight of their armed guards" : "the alarm went off and your crew dropped everything"}. The police noticed`);
+          t.events.push(`Someone tried to rob your stash. ${guard.short === "None" ? "They tripped over a bucket and fled" : "Your " + guard.name.toLowerCase() + " scared them off"}`);
+          state.feed.push({ round, headline: `Botched break-in at ${t.c.companyName}: getaway scooter traced to ${c.companyName}` });
+        }
+      }
+    }
+    // Police raids.
+    for (const w of work) {
+      const { c } = w, rep = street[c.id], sec = S.security[c.security ?? 0];
+      if (c.lawyer) c.heat = clamp((c.heat ?? 0) + S.lawyer.heat, 0, 100);
+      rep.raidChance = raidChance(c.heat ?? 0, fx.raidMultiplier);
+      if (!rng.chance(rep.raidChance)) continue;
+      const seized = Math.floor(Math.max(0, w.available) * S.seizeShare * (1 - sec.seizeCut));
+      const fine = Math.round(streetScale(state, c) * S.fineRate * (c.lawyer ? 1 - S.lawyer.fineCut : 1));
+      w.available -= seized;
+      seizedCost[c.id] = (seizedCost[c.id] ?? 0) + seized * w.avgCost;
+      c.cash -= fine; special[c.id].street += fine;
+      c.brand = clamp(c.brand - S.raidBrand, 0, 100);
+      c.heat = clamp((c.heat ?? 0) - S.raidCoolDown, 0, 100);
+      Object.assign(rep, { raided: true, seized, seizedValue: Math.round(seized * w.avgCost), fine });
+      const unit = INDUSTRIES[state.config.industry].labels.unit;
+      w.events.push(`🚨 Police raid! They took ${seized.toLocaleString("en")} ${unit}${fine ? ` and fined you ${Math.round(fine / 1000)}k` : ""}.${sec.seizeCut ? ` Your ${sec.name.toLowerCase()} saved most of the stash.` : ""}${c.lawyer ? " Your lawyer talked the fine down." : ""}`);
+      state.feed.push({ round, headline: rng.pick([
+        `Police raid ${c.companyName}'s grow rooms; officers leave with ${seized.toLocaleString("en")} ${unit} and a "for evidence" bag of snacks`,
+        `Sirens at ${c.companyName}! Raid ends with a fine, a confiscated lava lamp and one very calm guard dog`,
+        `${c.companyName} raided at dawn; CEO answers the door in a bathrobe that says "Employee of the Month"`,
+      ]) });
+    }
+  }
+
   // 2. Market -----------------------------------------------------------------
   const cheapest = work.length ? work.reduce((a, b) => (b.d.price < a.d.price ? b : a)) : null;
   const marketSize = industry.potentialPerCompany * n * marketScale(state, round) * fx.demandMultiplier;
@@ -1227,7 +1322,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const sp = special[c.id];
     // Same array as w.events, so share trades and takeovers added later still show up in the report.
     w.events.unshift(...sp.events);
-    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction;
+    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction - sp.street - (seizedCost[c.id] ?? 0);
     c.cash += revenue - productionCost - materialOrderCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
     c.cumProduced = (c.cumProduced ?? 0) + w.produced;
     // Investor call: compare the guidance with what actually happened.
@@ -1324,7 +1419,23 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       idleCost: w.idleCost,
       guidance,
       credibility: c.credibility ?? 0,
+      ...(street[c.id] ? { street: street[c.id], streetCost: sp.street + Math.round(seizedCost[c.id] ?? 0) } : {}),
     };
+  }
+
+  // The street: heat builds up from selling a lot, selling cheap, going viral, stores and armed guards; it fades every round.
+  if (hasStreet(state)) {
+    const total = work.reduce((a, w) => a + w.sold + w.retailSold, 0), avgP = work.length ? work.reduce((a, w) => a + w.d.price, 0) / work.length : 0;
+    for (const w of work) {
+      const { c, d } = w, S = STREET;
+      const share = total > 0 ? (w.sold + w.retailSold) / total : 0;
+      let gain = S.salesHeat * share * work.length;
+      if (avgP > 0 && d.price < avgP * 0.9) gain += S.cheapHeat;
+      if (d.campaign === "viral" && d.marketingBudget > 0) gain += S.viralHeat;
+      gain += c.stores * S.storeHeat + S.security[c.security ?? 0].heat;
+      c.heat = clamp(Math.round(((c.heat ?? 0) * (1 - S.decay) + gain) * 10) / 10, 0, 100);
+      if (reports[c.id]?.street) reports[c.id].street!.heatEnd = Math.round(c.heat);
+    }
   }
 
   reportsRef.r = reports;
