@@ -16,7 +16,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 // Bundle of src/server/core.ts (supabase/functions/game/engine.js), pinned to a commit so a deploy is reproducible.
-import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound, botDealOnline, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@b8bf8fc68e11525d70a53c924b58d07ef8eb83d2/supabase/functions/game/engine.js";
+import { startOnlineGame, resolveOnlineRound, viewFor, publicData, publicLive, renameCompany, exchangeTrade, liveBid, castVote, endAfterThisRound, botDealOnline, INDUSTRIES } from "https://cdn.jsdelivr.net/gh/Jeroen-HUI/Friendly-Takeover@d5324452ac9911241c79dcfa1e1d49ab602a29ae/supabase/functions/game/engine.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
