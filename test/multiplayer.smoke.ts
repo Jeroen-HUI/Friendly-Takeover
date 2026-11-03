@@ -131,7 +131,10 @@ const fakeApi = {
   async signIn() {},
   async rpc(name: string, a: any) {
     if (name === "report_content") { (db as any).reportsSent = [...((db as any).reportsSent ?? []), a]; return null; }
-    if (name === "my_access") return { signed_in: true, owned: false, free_left: (db as any).paywall ? 0 : 1, paywall: { enabled: !!(db as any).paywall, price: "€8.99", payment_link: "https://buy.stripe.com/test_fake" } };
+    if (name === "redeem_gift_code") { if (String(a.p_code).toUpperCase() !== "FT-TEST-CODE") return { ok: false, error: "That code doesn't exist or was switched off." }; (db as any).owned = true; return { ok: true, already: false }; }
+    if (name === "admin_list_gift_codes") return ((db as any).gifts ?? []);
+    if (name === "admin_create_gift_codes") { const made = Array.from({ length: a.p_count }, (_, i) => "FT-NEW" + i + "-ABCD"); (db as any).gifts = [...made.map((code) => ({ code, uses: 0, max_uses: a.p_uses, note: a.p_note, disabled: false, players: [] })), ...((db as any).gifts ?? [])]; return made; }
+    if (name === "my_access") return { signed_in: true, owned: !!(db as any).owned, admin: true, free_left: (db as any).paywall ? 0 : 1, paywall: { enabled: !!(db as any).paywall, price: "€8.99", payment_link: "https://buy.stripe.com/test_fake" } };
     if (name === "create_game" && (db as any).paywall) throw new Error("PAYWALL: Your free online game is used up. Get the full game to keep playing online.");
     if (name === "create_game") return server.createGame(HOST, a.p_player_name, a.p_company_name, a.p_trait, a);
     if (name === "respond_deal") { const d = db.deals.find((x) => x.id === a.p_deal_id && x.status === "offered"); if (!d) throw new Error("That offer is no longer open"); d.status = a.p_accept ? "accepted" : "declined"; return null; }
@@ -469,6 +472,23 @@ click("#t-online");
 click("#btn-mp-create");
 await until("shop opens", () => /Get the full game/.test($(".overlay")?.textContent || "") && $("#shop-buy") && !($("#shop-buy") as any).disabled, 6000);
 if (!/€8\.99/.test($(".overlay")!.textContent!)) throw new Error("shop should show the price");
+// Gift codes: a wrong code shows an error, the right one unlocks the game; the owner can make codes.
+($("#shop-code") as any).value = "FT-NOPE-NOPE"; click("#shop-redeem");
+await until("bad code message", () => /doesn't exist/.test($(".overlay")?.textContent || ""));
+($("#shop-code") as any).value = "ft-test-code"; click("#shop-redeem");
+await until("code unlocks", () => /The full game is yours/.test($(".overlay")?.textContent || ""));
+click("#btn-close");
+await until("title again", () => $("#t-online"));
+click("#t-online");
+($("#mp-name") as any).value = "Jeroen"; ($("#mp-company") as any).value = "Cocoa Loco";
+click("#btn-mp-create");
+await until("shop again", () => $("[data-giftcodes]"));
+click("[data-giftcodes]");
+await until("gift codes panel", () => /No codes yet/.test($(".overlay")?.textContent || ""));
+($("#gc-count") as any).value = "2"; ($("#gc-count") as any).dispatchEvent(new (doc.defaultView as any).Event("input"));
+($("#gc-note") as any).value = "Tim"; ($("#gc-note") as any).dispatchEvent(new (doc.defaultView as any).Event("input"));
+click("#gc-make");
+await until("codes made", () => (doc.querySelectorAll(".gc-row").length === 2) && /Tim/.test($(".overlay")!.textContent!) && $("#gc-copy-new"));
 if (errors.length) throw new Error("script errors: " + errors.join(" | "));
 console.log(`multiplayer smoke ok: lobby code ${code}, 6 online rounds with a friend and a bot, chat, a loan deal, season table and rematch; ${db.reports.length} reports written`);
 process.exit(0);

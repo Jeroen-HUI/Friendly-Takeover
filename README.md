@@ -187,6 +187,13 @@ Row-level security was tested with three simulated users (host, friend, outsider
 
 **Before the web app can sign players in**, turn on anonymous sign-ins: Supabase dashboard → Authentication → Sign In / Providers → Anonymous.
 
+## Full game and gift codes
+
+- **Price:** €8.99 once, through a Stripe payment link with Managed Payments (Stripe handles VAT, receipts and disputes). Single-player and the daily challenge are free; everyone gets one free online game.
+- **Unlock:** the link carries the player's account id (`client_reference_id`); the `stripe-webhook` edge function checks Stripe's signature (`STRIPE_WEBHOOK_SECRET`, an edge function secret, never in the repo) and adds a row to `purchases`.
+- **Switch:** `app_settings.paywall` holds `enabled`, `price` and `payment_link`.
+- **Gift codes:** the owner (accounts in `app_admins`) opens *Gift codes* from the shop or profile, makes codes (`FT-XXXX-XXXX`, 1–1000 uses each, with a note), copies `?code=` links and can switch codes off. Players redeem in the shop or by opening a link (`redeem_gift_code`; 10 wrong tries per hour max).
+
 ## Not built yet
 
 - Payments and a desktop build for Steam.

@@ -300,6 +300,15 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .shopcard { display: flex; gap: 14px; align-items: center; }
 .shop-price { font-family: var(--font-display); font-size: 30px; color: var(--gold); }
 .shop-list { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-weight: 700; }
+.redeem { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.redeem input { flex: 1 1 160px; min-width: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+.gc-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; align-items: end; }
+.gc-form label { display: grid; gap: 4px; font-weight: 700; font-size: 13px; }
+.gc-list { display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+.gc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; border: 2px solid var(--line, #2a3360); border-radius: 8px; }
+.gc-row.off { opacity: 0.5; }
+.gc-code { font-family: ui-monospace, monospace; font-weight: 800; letter-spacing: 1px; font-size: 15px; word-break: break-all; }
+.gc-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .cs { display: grid; gap: 8px; }
 .cs-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cs-chip { border: 0; cursor: pointer; padding: 7px 11px; border-radius: 999px; font-weight: 900; font-size: 12.5px; background: var(--panel-3); color: var(--ink); box-shadow: 0 0 0 2px #0b1027; }
@@ -1640,7 +1649,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
     });
   }
-  document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); });
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); if (e.target.closest("[data-giftcodes]") && S) openGifts(); });
   // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-legal]");
@@ -2875,7 +2884,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // ----- Profile & account.
   // ----- The full game (Stripe). First online game free; after that, hosting or joining online needs the full game.
   // Single-player and the daily challenge stay free. Payment runs on Stripe's own page; a webhook unlocks the account.
-  const SHOP = { access: null, busy: false, err: "", waiting: false };
+  const SHOP = { access: null, busy: false, err: "", waiting: false, code: "", codeMsg: "", gift: { list: null, made: [], err: "", busy: false, count: 1, uses: 1, note: "" } };
   async function loadAccess() {
     try { await api().signIn(); SHOP.access = await api().rpc("my_access", {}); } catch (e) { SHOP.err = e.message; }
     return SHOP.access;
@@ -2885,9 +2894,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function accessLine() {
     const a = SHOP.access;
     if (!a) return "";
-    if (a.owned) return `<div class="sumline"><span class="muted">Full game</span><b class="pos">✓ Yours: unlimited online games</b></div>`;
-    if (!paywall().enabled) return `<div class="sumline"><span class="muted">Online games</span><b class="pos">Free during early access</b></div>`;
-    return `<div class="sumline"><span class="muted">Online games</span><b>${a.free_left ? "1 free game left" : "Free game used"}</b></div><button class="btn small go" type="button" data-shop style="justify-self:start">Get the full game · ${esc(paywall().price || "€8.99")}</button>`;
+    const owner = a.admin ? `<button class="btn small" type="button" data-giftcodes style="justify-self:start">🎟 Gift codes (owner)</button>` : "";
+    if (a.owned) return `<div class="sumline"><span class="muted">Full game</span><b class="pos">✓ Yours: unlimited online games</b></div>${owner}`;
+    if (!paywall().enabled) return `<div class="sumline"><span class="muted">Online games</span><b class="pos">Free during early access</b></div><button class="btn small" type="button" data-shop style="justify-self:start">Have a code?</button>${owner}`;
+    return `<div class="sumline"><span class="muted">Online games</span><b>${a.free_left ? "1 free game left" : "Free game used"}</b></div><button class="btn small go" type="button" data-shop style="justify-self:start">Get the full game · ${esc(paywall().price || "€8.99")}</button>${owner}`;
   }
   function shopModal() {
     const pw = paywall(), price = pw.price || "€8.99", a = SHOP.access;
@@ -2903,11 +2913,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <ul class="shop-list"><li>Host and join unlimited online games with friends</li><li>Seasons, rematches, party TV mode and everything in the custom start</li><li>All future updates of the base game</li><li>Single-player and the daily challenge stay free for everyone</li></ul>
       ${guest ? `<div class="hint">Tip: save your account with your email first (Profile), so you can play your full game on any device and never lose it.</div>` : ""}
       <div class="hint">Payment runs on Stripe's secure page. Stripe handles VAT and sends your receipt.</div>
+      <div class="card"><b>Got a gift code?</b><div class="redeem"><input type="text" id="shop-code" maxlength="20" placeholder="FT-ABCD-1234" value="${esc(SHOP.code)}" autocomplete="off" spellcheck="false" /><button class="btn" type="button" id="shop-redeem" ${SHOP.busy ? "disabled" : ""}>Redeem</button></div>${SHOP.codeMsg ? `<div class="note neg">${esc(SHOP.codeMsg)}</div>` : ""}</div>
+      ${a && a.admin ? `<button class="btn small" type="button" data-giftcodes style="justify-self:start">🎟 Gift codes (owner)</button>` : ""}
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Not now</button>${guest ? `<button class="btn" type="button" id="shop-profile">Save my account first</button>` : ""}<button class="btn go" type="button" id="shop-buy" ${SHOP.busy || !pw.payment_link ? "disabled" : ""}>${pw.payment_link ? "Pay " + esc(price) + " with Stripe" : "Coming soon"}</button></div>
     </div></div>`;
   }
   async function openShop() {
-    SHOP.err = ""; SHOP.waiting = false; S.modal = "shop"; renderModal(); bindModal();
+    SHOP.err = ""; SHOP.codeMsg = ""; SHOP.waiting = false; S.modal = "shop"; renderModal(); bindModal();
     await loadAccess(); if (S.modal === "shop") { renderModal(); bindModal(); }
   }
   async function shopBuy() {
@@ -2931,7 +2943,72 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function bindShop() {
     const on = (sel, fn) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", fn); };
     on("#shop-buy", shopBuy);
+    on("#shop-redeem", shopRedeem);
+    const ci = modal.querySelector("#shop-code");
+    if (ci) { ci.addEventListener("input", () => { SHOP.code = ci.value; }); ci.addEventListener("keydown", (e) => { if (e.key === "Enter") shopRedeem(); }); }
     on("#shop-profile", () => { S.modal = "profile"; renderModal(); bindModal(); });
+  }
+  // Gift codes: friends and testers redeem a code (or open a ?code= link) to get the full game for free.
+  async function shopRedeem() {
+    const inp = modal.querySelector("#shop-code"); SHOP.code = ((inp && inp.value) || SHOP.code || "").trim();
+    if (!SHOP.code) { SHOP.codeMsg = "Type your code first."; renderModal(); bindModal(); return; }
+    SHOP.busy = true; SHOP.codeMsg = ""; renderModal(); bindModal();
+    try {
+      await api().signIn();
+      const r = await api().rpc("redeem_gift_code", { p_code: SHOP.code });
+      if (r && r.ok === false) throw new Error(r.error || "That code didn't work.");
+      await loadAccess(); SHOP.code = ""; SHOP.waiting = true; sfx("profit");
+    } catch (e) { SHOP.codeMsg = e.message || "That code didn't work."; }
+    SHOP.busy = false; if (S.modal === "shop") { renderModal(); bindModal(); }
+  }
+  const giftLink = (code) => backUrl() + "?code=" + encodeURIComponent(code);
+  function giftModal() {
+    const G = SHOP.gift, list = G.list;
+    const row = (c) => `<div class="gc-row${c.disabled ? " off" : ""}"><div><div class="gc-code">${esc(c.code)}</div>
+        <div class="hint">${c.uses}/${c.max_uses} used${c.note ? " · " + esc(c.note) : ""}${c.disabled ? " · switched off" : ""}${c.players && c.players.length ? " · " + esc(c.players.join(", ")) : ""}</div></div>
+        <div class="gc-btns"><button class="btn small" type="button" data-gc-copy="${esc(c.code)}">Copy link</button><button class="btn small" type="button" data-gc-toggle="${esc(c.code)}" data-off="${c.disabled ? "0" : "1"}">${c.disabled ? "Switch on" : "Switch off"}</button></div></div>`;
+    return `<div class="win"><div class="win-title">Gift codes<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="hint">Give friends and testers the full game for free. Each code unlocks one account per use. Send the link: it opens the game with the code filled in.</div>
+      ${G.err ? `<div class="note neg">${esc(G.err)}</div>` : ""}
+      <div class="card"><div class="gc-form">
+        <label>How many codes<input type="number" id="gc-count" min="1" max="50" value="${G.count}" /></label>
+        <label>Uses per code<input type="number" id="gc-uses" min="1" max="1000" value="${G.uses}" /></label>
+        <label style="grid-column:span 2">Note (who it's for)<input type="text" id="gc-note" maxlength="80" placeholder="e.g. Tim, playtest group" value="${esc(G.note)}" /></label>
+      </div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
+        ${G.made.length ? `<button class="btn small" type="button" id="gc-copy-new">Copy ${G.made.length > 1 ? "all " + G.made.length + " new links" : "new link"}</button>` : ""}
+        <button class="btn go" type="button" id="gc-make" ${G.busy ? "disabled" : ""}>Make codes</button></div></div>
+      <div class="gc-list">${list === null ? `<div class="hint">Loading codes…</div>` : list.length ? list.map(row).join("") : `<div class="hint">No codes yet.</div>`}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Done</button></div>
+    </div></div>`;
+  }
+  async function loadGifts() {
+    try { SHOP.gift.list = await api().rpc("admin_list_gift_codes", {}); SHOP.gift.err = ""; } catch (e) { SHOP.gift.err = e.message; SHOP.gift.list = []; }
+    if (S.modal === "giftcodes") { renderModal(); bindModal(); }
+  }
+  function openGifts() { SHOP.gift.list = null; SHOP.gift.made = []; SHOP.gift.err = ""; S.modal = "giftcodes"; renderModal(); bindModal(); loadGifts(); }
+  async function copyOut(text, btn) {
+    try { await navigator.clipboard.writeText(text); if (btn) btn.textContent = "Copied!"; }
+    catch (e) { SHOP.gift.err = "Couldn't copy automatically. Here it is: " + text; renderModal(); bindModal(); }
+  }
+  function bindGifts() {
+    const G = SHOP.gift, q = (sel) => modal.querySelector(sel);
+    const keep = () => { G.count = Math.max(1, Math.min(50, +((q("#gc-count") || {}).value) || 1)); G.uses = Math.max(1, Math.min(1000, +((q("#gc-uses") || {}).value) || 1)); G.note = ((q("#gc-note") || {}).value || "").slice(0, 80); };
+    ["#gc-count", "#gc-uses", "#gc-note"].forEach((sel) => { const el = q(sel); if (el) el.addEventListener("input", keep); });
+    const make = q("#gc-make");
+    if (make) make.addEventListener("click", async () => {
+      keep(); G.busy = true; G.err = ""; renderModal(); bindModal();
+      try { G.made = (await api().rpc("admin_create_gift_codes", { p_count: G.count, p_uses: G.uses, p_note: G.note })) || []; G.note = ""; }
+      catch (e) { G.err = e.message; }
+      G.busy = false; await loadGifts();
+    });
+    const cn = q("#gc-copy-new");
+    if (cn) cn.addEventListener("click", () => copyOut(G.made.map(giftLink).join("\n"), cn));
+    modal.querySelectorAll("[data-gc-copy]").forEach((b) => b.addEventListener("click", () => copyOut(giftLink(b.dataset.gcCopy), b)));
+    modal.querySelectorAll("[data-gc-toggle]").forEach((b) => b.addEventListener("click", async () => {
+      b.disabled = true;
+      try { await api().rpc("admin_set_gift_code", { p_code: b.dataset.gcToggle, p_disabled: b.dataset.off === "1" }); } catch (e) { G.err = e.message; }
+      loadGifts();
+    }));
   }
   const isPaywall = (e) => /^PAYWALL:/.test((e && e.message) || "");
   function profileModal() {
@@ -5390,6 +5467,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "mission") inner = briefingModal();
     if (S.modal === "profile") inner = profileModal();
     if (S.modal === "shop") inner = shopModal();
+    if (S.modal === "giftcodes") inner = giftModal();
     if (S.modal === "friends") inner = friendsModal();
     if (S.modal === "achievements") inner = achievementsModal();
     if (S.modal === "daily") inner = dailyModal();
@@ -6160,6 +6238,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("#btn-menu-final", "click", goTitle);
     if (S.modal === "profile") { bindAccount(); if (!SHOP.access) loadAccess().then(() => { if (S.modal === "profile") { renderModal(); bindModal(); } }); }
     if (S.modal === "shop") bindShop();
+    if (S.modal === "giftcodes") bindGifts();
     if (S.modal === "friends") bindFriends();
     if (S.modal === "daily") bindDaily();
     if (S.modal === "leaderboard") bindBoard();
@@ -6225,6 +6304,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (data && data.S && data.S.game && data.S.marketHist && data.S.game.companies[0].mission) { S = data.S; render(); return; }
     S = { screen: "title", opts: DEFAULT_OPTS, modal: null };
     try { const tv = new URLSearchParams(location.search).get("tv"); if (tv && /^[0-9a-f-]{36}\.[0-9a-f]{6,32}$/i.test(tv)) { const [id, code] = tv.split("."); tvStart(id, code); return; } } catch (e) {}
+    try { const gc = new URLSearchParams(location.search).get("code"); if (gc && /^[A-Za-z0-9 -]{8,20}$/.test(gc)) { history.replaceState(null, "", location.pathname); SHOP.code = gc.toUpperCase(); setTimeout(() => { openShop().then(() => { if (SHOP.code && S.modal === "shop" && !ownsGame()) shopRedeem(); }); }, 0); } } catch (e) {}
     try { if (new URLSearchParams(location.search).get("paid") === "1") { history.replaceState(null, "", location.pathname); setTimeout(shopReturned, 0); } } catch (e) {}
     const back = readLoginFromUrl();
     if (back) S.modal = back;
