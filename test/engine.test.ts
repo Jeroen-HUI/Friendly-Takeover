@@ -172,7 +172,7 @@ test("every euro is accounted for: the cash flow adds up each round", () => {
         const flow = h.cashStart + h.loanChange + h.revenue - h.productionCost - h.holdingCost - h.fixedCost - h.marketingCost - h.rndCost
           - h.brandCost - h.researchCost - h.interest - (h.idleCost ?? 0) - (h.materialOrderCost ?? 0) + (h.exchangeCash ?? 0) - h.capacityInvest - h.storeOpenCost - h.storeUpkeep - h.sharePurchases - h.buybackCost - h.dividendsPaid + h.dividendsReceived
           + h.emergencyLoan - h.emergencyFee + (h.dealCash ?? 0) - h.wildcardCost - h.legalCost - h.staffCost - h.auctionPaid - h.showdownPaid + h.shareSales
-          - (h.street ? h.street.securityCost + h.street.lawyerCost + h.street.fine + h.street.moveCost : 0);
+          - (h.street ? h.street.securityCost + h.street.lawyerCost + h.street.fine + h.street.moveCost + h.street.cashSeized + h.street.launderFee + h.street.auditFine : 0) - (h.exciseTax ?? 0);
         assert.ok(Math.abs(flow - h.cashEnd) < 0.01, `${industry} ${c.id} round ${h.round}: ${flow} vs ${h.cashEnd}`);
       }
     }
@@ -910,6 +910,56 @@ test("weed: tip-offs heat up a rival, heists steal stock unless armed guards are
   assert.equal(blocked, 0, "armed guards stop every heist");
   // Bots play the street too.
   const m = runMatch(["smart-premium", "hype", "smart-raider", "mainstream"] as never, 11, "weed", "standard", 8);
-  assert.ok(m.state.companies.some((c) => (c.security ?? 0) > 0), "bots hire security");
+  assert.ok(m.state.companies.some((c) => c.history.some((h) => (h.street?.security ?? 0) > 0)), "bots hire security");
   assert.ok(m.state.companies.some((c) => c.history.some((h) => h.street?.raided)), "someone gets raided in a full match");
+});
+
+test("weed: legalization needs 3 in 4 votes; once legal there are no raids, more buyers and an excise tax", () => {
+  const five = [...players, { id: "e", playerName: "Sam", companyName: "High Five", trait: "ruthless" as const }];
+  let g = createGame({ industry: "weed", difficulty: "standard", rounds: 12, seed: 4 }, five);
+  g = resolveRound(g, {}); g = resolveRound(g, {});
+  assert.equal(g.round, 3);
+  // 3 of 5 is not enough.
+  const vote = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, { legalVote: true }]));
+  const fail = resolveRound(g, vote(["a", "b", "c"]));
+  assert.equal(fail.legal ?? null, null);
+  assert.deepEqual(fail.referendums!.at(-1), { round: 3, yes: 3, needed: 4, voters: 5, passed: false });
+  // 4 of 5 passes; from the next round it's legal.
+  const pass = resolveRound(g, vote(["a", "b", "c", "d"]));
+  assert.deepEqual(pass.legal, { since: 4 });
+  for (const c of pass.companies) c.heat = 100;
+  const next = resolveRound(pass, { a: { streetMove: { kind: "heist", target: "b" }, security: 3 } });
+  for (const c of next.companies) {
+    const h = c.history.at(-1)!;
+    assert.ok(!h.street, "no street once it's legal");
+    assert.ok(h.exciseTax! > 0 && Math.abs(h.exciseTax! - h.revenue * 0.15) < 1, "15% excise tax");
+    assert.equal(c.heat, 0);
+  }
+  // Bigger market once legal.
+  assert.ok(segmentPotential(pass).mainstream > segmentPotential(g).mainstream * 1.2);
+  // No referendum outside the schedule, and none in chocolate.
+  assert.equal(g.referendums, undefined);
+  const choco = resolveRound(resolveRound(newGame(), {}), {});
+  assert.equal(resolveRound(choco, vote(["a", "b", "c", "d"])).legal, undefined);
+});
+
+test("weed: laundered cash is safe in a raid; districts go to the biggest seller per buyer group", () => {
+  const weed = (seed: number) => createGame({ industry: "weed", difficulty: "standard", rounds: 8, seed }, players);
+  let dirtyLoss = 0, cleanLoss = 0, raidsA = 0, raidsB = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const g = weed(seed);
+    for (const c of g.companies) c.heat = 95;
+    const r = resolveRound(g, { a: {}, b: { launder: 10_000_000 } });
+    const ha = r.companies.find((c) => c.id === "a")!.history.at(-1)!.street!, hb = r.companies.find((c) => c.id === "b")!.history.at(-1)!.street!;
+    assert.ok(hb.laundered > 0 && hb.launderFee > 0, "laundering is capped, with a fee");
+    if (ha.raided) { raidsA++; dirtyLoss += ha.cashSeized; }
+    if (hb.raided) { raidsB++; cleanLoss += hb.cashSeized; }
+  }
+  assert.ok(raidsA > 5 && raidsB > 5);
+  assert.ok(cleanLoss / raidsB < (dirtyLoss / raidsA) * 0.9, "laundered money can't be seized");
+  const g = weed(9);
+  assert.ok(g.turf && Object.keys(g.turf.holders).length >= 0);
+  const r = resolveRound(g, { a: { price: 4, marketingBudget: 600_000, campaign: "discount" } });
+  assert.equal(r.turf!.holders.budget!.id, "a", "the cheap big spender runs Campus");
+  assert.deepEqual(r.companies.find((c) => c.id === "a")!.history.at(-1)!.street!.turf.includes("budget"), true);
 });

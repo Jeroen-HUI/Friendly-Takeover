@@ -384,6 +384,13 @@ export function activeNewsEffects(state: GameState) {
     if (e.cheapestBoost) cheapestBoost += e.cheapestBoost;
     if (e.raidMultiplier) raidMultiplier *= e.raidMultiplier;
   }
+  // Weed after legalization: more (and different) buyers, and no police raids.
+  if (state.legal && hasStreet(state)) {
+    const L = STREET.legal;
+    demandMultiplier *= L.demand;
+    for (const s of SEGMENTS) segmentMultiplier[s] *= L.segment[s];
+    raidMultiplier = 0;
+  }
   return { costMultiplier, demandMultiplier, interestDelta, capacityMultiplier, segmentMultiplier, companyBoost, cheapestBoost, raidMultiplier };
 }
 
@@ -456,7 +463,9 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
       security: ([0, 1, 2, 3] as const).includes(d.security as 0) ? d.security : c.security ?? 0,
       lawyer: typeof d.lawyer === "boolean" ? d.lawyer : !!c.lawyer,
       streetMove: d.streetMove && typeof d.streetMove === "object" && (d.streetMove.kind === "tipoff" || d.streetMove.kind === "heist") && typeof d.streetMove.target === "string" && d.streetMove.target !== c.id
-        && state.companies.some((o) => o.id === d.streetMove!.target && !o.bankrupt && !o.merged) ? { kind: d.streetMove.kind, target: d.streetMove.target } : null,
+        && state.companies.some((o) => o.id === d.streetMove!.target && !o.bankrupt && !o.merged) && !state.legal ? { kind: d.streetMove.kind, target: d.streetMove.target } : null,
+      launder: state.legal ? 0 : Math.max(0, Math.min(launderCap(state, c), Math.round(num(d.launder, 0)))),
+      legalVote: isReferendumRound(state) ? d.legalVote === true : null,
     } : {}),
   };
 }
@@ -464,6 +473,17 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
 export const hasStreet = (state: GameState) => (STREET.industries as readonly string[]).includes(state.config.industry);
 /** Scale for street costs: the grow rooms (capacity x base unit cost). */
 export const streetScale = (state: GameState, c: Company) => Math.max(500_000, c.capacity * INDUSTRIES[state.config.industry].baseUnitCost);
+/** Weed: legal yet? And is this round a legalization referendum (announced a round ahead)? */
+export const isLegal = (state: GameState) => !!state.legal;
+export function isReferendumRound(state: GameState, round = state.round): boolean {
+  if (!hasStreet(state) || state.legal) return false;
+  const R = STREET.referendum;
+  return round >= R.first && (round - R.first) % R.every === 0 && round <= state.config.rounds;
+}
+/** Yes votes a legalization referendum needs: three in four of the companies still in business (5 → 4, 4 → 3, 3 → 3). */
+export const referendumNeeded = (voters: number) => Math.max(1, Math.ceil(voters * STREET.referendum.needed - 1e-9));
+/** How much cash a company can launder this round: a car wash plus every store. */
+export const launderCap = (state: GameState, c: Company) => Math.round(streetScale(state, c) * STREET.launder.perFront * (1 + c.stores));
 /** Chance of a police raid at a given heat. */
 export const raidChance = (heat: number, mult = 1) => Math.min(STREET.raidMax, Math.max(0, (heat - STREET.raidFloor) * STREET.raidPerPoint) * mult);
 /** Names typed by players: no control characters or angle brackets, at most 28 characters. */
@@ -1125,7 +1145,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   // 2b. The street (Weed): upkeep, tip-offs, heists, then police raids. ----------------------------
   const street: Record<string, StreetReport> = {};
   const seizedCost: Record<string, number> = {};
-  if (hasStreet(state) && round >= 1) {
+  if (hasStreet(state) && round >= 1 && !state.legal) {
     const S = STREET;
     for (const w of work) {
       const { c, d } = w, scale = streetScale(state, c);
@@ -1133,7 +1153,23 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       const sec = S.security[c.security];
       const securityCost = Math.round(scale * sec.upkeep), lawyerCost = c.lawyer ? Math.round(scale * S.lawyer.upkeep) : 0;
       c.cash -= securityCost + lawyerCost; special[c.id].street += securityCost + lawyerCost;
-      street[c.id] = { heatStart: Math.round(c.heat ?? 0), heatEnd: 0, raidChance: 0, raided: false, seized: 0, seizedValue: 0, fine: 0, security: c.security, securityCost, lawyer: c.lawyer, lawyerCost, moveCost: 0, robbed: 0, stolen: 0 };
+      street[c.id] = { heatStart: Math.round(c.heat ?? 0), heatEnd: 0, raidChance: 0, raided: false, seized: 0, seizedValue: 0, fine: 0, security: c.security, securityCost, lawyer: c.lawyer, lawyerCost, moveCost: 0, robbed: 0, stolen: 0, cashSeized: 0, laundered: 0, launderFee: 0, auditFine: 0, turf: [] };
+      // Laundering through the car wash and your stores: the money is clean (safe from raids) from now on.
+      const amount = Math.max(0, Math.min(d.launder ?? 0, launderCap(state, c), c.cash - (c.cleanCash ?? 0)));
+      if (amount > 0) {
+        const fee = Math.round(amount * S.launder.fee);
+        c.cash -= fee; special[c.id].street += fee;
+        c.cleanCash = Math.min(c.cash, (c.cleanCash ?? 0) + amount - fee);
+        Object.assign(street[c.id], { laundered: Math.round(amount), launderFee: fee });
+        w.events.push(`Laundered ${Math.round(amount / 1000)}k through your fronts (fee ${Math.round(fee / 1000)}k). That money is safe from raids now`);
+        if (rng.chance(S.launder.auditChance * amount / Math.max(1, launderCap(state, c)))) {
+          const fine = Math.round(amount * S.launder.auditFine);
+          c.cash -= fine; special[c.id].street += fine; street[c.id].auditFine = fine;
+          c.heat = clamp((c.heat ?? 0) + S.launder.auditHeat, 0, 100);
+          w.events.push(`Tax audit! An inspector wondered why your car wash earns more than an airport. Fine: ${Math.round(fine / 1000)}k`);
+          state.feed.push({ round, headline: `Tax inspectors puzzled by ${c.companyName}'s car wash: "It washed 40,000 cars. In a week. With one sponge."` });
+        }
+      }
     }
     const byW = Object.fromEntries(work.map((w) => [w.c.id, w]));
     // Street moves, in a fair random order.
@@ -1186,14 +1222,19 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       if (!rng.chance(rep.raidChance)) continue;
       const seized = Math.floor(Math.max(0, w.available) * S.seizeShare * (1 - sec.seizeCut));
       const fine = Math.round(streetScale(state, c) * S.fineRate * (c.lawyer ? 1 - S.lawyer.fineCut : 1));
+      // They also empty the safe: unlaundered cash only.
+      // The safe holds all your cash; only the unlaundered part of what they find can be taken.
+      const dirtyShare = c.cash > 0 ? Math.max(0, c.cash - (c.cleanCash ?? 0)) / c.cash : 0;
+      const cashSeized = Math.round(Math.min(Math.max(0, c.cash) * S.cashSeize, streetScale(state, c) * S.cashSeizeCap) * dirtyShare);
       w.available -= seized;
       seizedCost[c.id] = (seizedCost[c.id] ?? 0) + seized * w.avgCost;
-      c.cash -= fine; special[c.id].street += fine;
+      c.cash -= fine + cashSeized; special[c.id].street += fine + cashSeized;
+      rep.cashSeized = cashSeized;
       c.brand = clamp(c.brand - S.raidBrand, 0, 100);
       c.heat = clamp((c.heat ?? 0) - S.raidCoolDown, 0, 100);
       Object.assign(rep, { raided: true, seized, seizedValue: Math.round(seized * w.avgCost), fine });
       const unit = INDUSTRIES[state.config.industry].labels.unit;
-      w.events.push(`🚨 Police raid! They took ${seized.toLocaleString("en")} ${unit}${fine ? ` and fined you ${Math.round(fine / 1000)}k` : ""}.${sec.seizeCut ? ` Your ${sec.name.toLowerCase()} saved most of the stash.` : ""}${c.lawyer ? " Your lawyer talked the fine down." : ""}`);
+      w.events.push(`🚨 Police raid! They took ${seized.toLocaleString("en")} ${unit}${cashSeized ? `, ${Math.round(cashSeized / 1000)}k from the safe` : ""}${fine ? ` and fined you ${Math.round(fine / 1000)}k` : ""}.${sec.seizeCut ? ` Your ${sec.name.toLowerCase()} saved most of the stash.` : ""}${c.lawyer ? " Your lawyer talked the fine down." : ""}`);
       state.feed.push({ round, headline: rng.pick([
         `Police raid ${c.companyName}'s grow rooms; officers leave with ${seized.toLocaleString("en")} ${unit} and a "for evidence" bag of snacks`,
         `Sirens at ${c.companyName}! Raid ends with a fine, a confiscated lava lamp and one very calm guard dog`,
@@ -1239,6 +1280,7 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       if (boost) u += Math.log(1 + boost);
       if (fx.cheapestBoost && cheapest === w) u += Math.log(1 + fx.cheapestBoost);
       if (crazyBoost[c.id]) u += crazyBoost[c.id] * (s === "hype" ? 1 : s === "mainstream" ? 0.3 : 0);
+      if (state.turf?.holders?.[s]?.id === c.id) u += STREET.turf.pull;
       return Math.exp(Math.min(u, 30));
     });
     const denom = BALANCE.outsideOptionWeight * n + attraction.reduce((a, b) => a + b, 0);
@@ -1322,8 +1364,9 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const sp = special[c.id];
     // Same array as w.events, so share trades and takeovers added later still show up in the report.
     w.events.unshift(...sp.events);
-    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction - sp.street - (seizedCost[c.id] ?? 0);
-    c.cash += revenue - productionCost - materialOrderCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
+    const exciseTax = state.legal && hasStreet(state) ? Math.round(revenue * STREET.legal.tax) : 0;
+    const profit = revenue - cogs - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - storeUpkeep - w.interest - sp.wildcard - sp.legal - sp.staff - sp.auction - sp.street - (seizedCost[c.id] ?? 0) - exciseTax;
+    c.cash += -exciseTax + revenue - productionCost - materialOrderCost - holdingCost - fixedCost - w.idleCost - d.marketingBudget - d.investRnd - d.investBrand - researchCost - d.investCapacity - storeOpenCost - storeUpkeep - w.interest;
     c.cumProduced = (c.cumProduced ?? 0) + w.produced;
     // Investor call: compare the guidance with what actually happened.
     let guidance: RoundReport["guidance"];
@@ -1420,21 +1463,47 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
       guidance,
       credibility: c.credibility ?? 0,
       ...(street[c.id] ? { street: street[c.id], streetCost: sp.street + Math.round(seizedCost[c.id] ?? 0) } : {}),
+      ...(exciseTax ? { exciseTax } : {}),
     };
   }
 
   // The street: heat builds up from selling a lot, selling cheap, going viral, stores and armed guards; it fades every round.
   if (hasStreet(state)) {
-    const total = work.reduce((a, w) => a + w.sold + w.retailSold, 0), avgP = work.length ? work.reduce((a, w) => a + w.d.price, 0) / work.length : 0;
+    // Districts: the biggest seller to each buyer group (with at least 30% of it) runs that part of town.
+    const T = STREET.turf, before = state.turf?.holders ?? {}, holders: NonNullable<GameState["turf"]>["holders"] = {};
+    for (const s of SEGMENTS) {
+      if (segSold[s] <= 0) continue;
+      const top = work.map((w) => ({ w, share: segOf(w, s) / segSold[s] })).reduce((a, b) => (b.share > a.share ? b : a));
+      if (top.share >= T.minShare) holders[s] = { id: top.w.c.id, share: Math.round(top.share * 1000) / 1000 };
+      if (round >= 1 && holders[s] && before[s]?.id !== holders[s]!.id) state.feed.push({ round, headline: `${top.w.c.companyName} now runs ${T.names[s]}${before[s] ? `, pushing out ${state.companies.find((o) => o.id === before[s]!.id)?.companyName ?? "the old crew"}` : ""}` });
+    }
+    state.turf = { round, holders };
+    // Heat follows the money: your share of the industry's sales revenue.
+    const revOf = (w: Work) => w.sold * w.d.price + w.retailSold * w.d.retailPrice;
+    const total = work.reduce((a, w) => a + revOf(w), 0), avgP = work.length ? work.reduce((a, w) => a + w.d.price, 0) / work.length : 0;
     for (const w of work) {
       const { c, d } = w, S = STREET;
-      const share = total > 0 ? (w.sold + w.retailSold) / total : 0;
+      const runs = SEGMENTS.filter((s) => holders[s]?.id === c.id);
+      if (reports[c.id]?.street) reports[c.id].street!.turf = runs;
+      c.cleanCash = Math.max(0, Math.min(c.cleanCash ?? 0, c.cash));
+      if (state.legal) { c.heat = 0; c.security = 0; c.lawyer = false; c.cleanCash = 0; continue; }
+      const share = total > 0 ? revOf(w) / total : 0;
       let gain = S.salesHeat * share * work.length;
       if (avgP > 0 && d.price < avgP * 0.9) gain += S.cheapHeat;
       if (d.campaign === "viral" && d.marketingBudget > 0) gain += S.viralHeat;
-      gain += c.stores * S.storeHeat + S.security[c.security ?? 0].heat;
+      gain += c.stores * S.storeHeat + S.security[c.security ?? 0].heat + runs.length * T.heat;
       c.heat = clamp(Math.round(((c.heat ?? 0) * (1 - S.decay) + gain) * 10) / 10, 0, 100);
       if (reports[c.id]?.street) reports[c.id].street!.heatEnd = Math.round(c.heat);
+    }
+    // Legalization referendum: secret ballot, three in four companies must vote yes.
+    if (isReferendumRound(state, round)) {
+      const voters = work.length, yes = work.filter((w) => w.d.legalVote === true).length, needed = referendumNeeded(voters), passed = yes >= needed;
+      state.referendums = [...(state.referendums ?? []), { round, yes, needed, voters, passed }];
+      if (passed) {
+        state.legal = { since: round + 1 };
+        state.feed.push({ round, headline: `IT'S LEGAL! Referendum passes ${yes} to ${voters - yes}. Police dogs reassigned to "emotional support"; the tax office opens a new department` });
+      } else state.feed.push({ round, headline: `Legalization falls short: ${yes} of ${voters} voted yes, ${needed} needed. ${isReferendumRound(state, round + STREET.referendum.every) ? `Next try in round ${round + STREET.referendum.every}` : "Maybe next game"}` });
+      for (const w of work) w.events.push(passed ? "Legalization passed! From next round: no more raids, more customers, and a 15% excise tax on revenue" : `Legalization vote failed (${yes} of ${voters} yes, ${needed} needed)`);
     }
   }
 

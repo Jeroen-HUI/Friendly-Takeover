@@ -1,6 +1,6 @@
 // Bot strategies used to test balance, and later for the tutorial match against bots.
 
-import { INDUSTRIES, difficultyOf, companyValues, sharePrices, hasStreet, type Company, type Decisions, type GameState } from "../engine";
+import { INDUSTRIES, difficultyOf, companyValues, sharePrices, hasStreet, isReferendumRound, launderCap, type Company, type Decisions, type GameState } from "../engine";
 import { Rng } from "../engine/rng";
 import { smartDecisions, smartRaider, type Position } from "./smart";
 import { oracleDecisions } from "./oracle";
@@ -189,7 +189,13 @@ function botStreet(strategy: BotStrategy, state: GameState, c: Company, rng: Rng
     const sneaky = /raider|hype/.test(strategy);
     if (rng.chance(sneaky ? 0.18 : smart ? 0.12 : 0.06)) streetMove = { kind: rng.chance(0.55) ? "tipoff" : "heist", target: leader.id };
   }
-  return { security, lawyer, streetMove };
+  // Legalization: volume sellers and hot companies want it; premium growers like the fence that keeps rivals out. Some vote on gut feeling.
+  const wantsLegal = heat > 45 || (/budget/.test(strategy) && heat > 25);
+  const legalVote = isReferendumRound(state) ? (rng.chance(0.2) ? !wantsLegal : wantsLegal) : null;
+  // Launder some cash when the police are getting interested.
+  const launder = !state.legal && heat > 30 && c.cash > 800_000 ? Math.round(launderCap(state, c) * 0.6) : 0;
+  if (state.legal) return { legalVote };
+  return { security, lawyer, streetMove, launder, legalVote };
 }
 function botDecisionsInner(strategy: BotStrategy, state: GameState, c: Company, rng: Rng): Partial<Decisions> {
   if (strategy === "smart-raider") return smartRaider(state, c, rng);

@@ -193,7 +193,10 @@ Row-level security was tested with three simulated users (host, friend, outsider
 - **Police raids**: chance = (heat − 15) × 0.75%, max 60%, moved by news (crackdowns, a police chief on holiday, legalization debates). A raid seizes 25% of your stock before the market (less with security), fines you, costs 3 brand and cools you down.
 - **Security** (everyone sees it): cameras & alarm, guards, armed guards — less seized in a raid and fewer heists; armed guards stop every heist but add heat. **Lawyer** (private): fines 70% lower.
 - **Street moves** (one a round): an anonymous tip-off (+30 heat for a rival, 15% chance it's traced back to you) or a heist (steal 18% of a rival's stock unless their guards stop the crew).
-- Costs scale with your grow rooms; they're in the income statement and cash flow. Bots play it too.
+- **Laundering**: a raid also empties part of the safe (15% of cash, capped). Cash laundered through your car wash and stores (each launders up to 40% of the grow-room scale a round, 10% fee, small audit risk) can't be seized.
+- **The turf**: four districts, one per buyer group (Campus, Main Street, Uptown, Club District). Whoever sells the most to that group (30%+) runs it: a little more pull there next round, +3 heat per district.
+- **Legalization referendum**: round 3 and every 4 rounds after, secret ballot, needs 3 in 4 companies (5 players: 4). Voting is required before you submit. Once legal: no heat, raids, security or street moves; 20% more buyers (mostly mainstream and premium) and a 15% excise tax on revenue.
+- Costs scale with your grow rooms; they're in the income statement and cash flow. Bots play it too. Chocolate and AI are unchanged.
 
 ## Accounts
 

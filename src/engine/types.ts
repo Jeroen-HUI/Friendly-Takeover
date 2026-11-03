@@ -80,6 +80,10 @@ export interface Decisions {
   lawyer?: boolean;
   /** Weed: one street move a round against a rival: tip off the police, or hit their stash. */
   streetMove?: { kind: "tipoff" | "heist"; target: string } | null;
+  /** Weed: cash to launder through your stores and fronts this round (safe from raids afterwards). */
+  launder?: number;
+  /** Weed: your secret ballot in a legalization referendum (no vote counts as no). */
+  legalVote?: boolean | null;
 }
 
 /** Weed: what happened on the street this round. */
@@ -99,6 +103,13 @@ export interface StreetReport {
   /** Units taken from you by a heist, and units your crew brought home. */
   robbed: number;
   stolen: number;
+  /** Cash the police took from the safe in a raid, money laundered (and its fee), and an audit fine. */
+  cashSeized: number;
+  laundered: number;
+  launderFee: number;
+  auditFine: number;
+  /** Districts you run after this round. */
+  turf: SegmentId[];
 }
 
 export type GuidanceResult = "hit" | "close" | "miss";
@@ -226,6 +237,8 @@ export interface Company {
   heat?: number;
   security?: 0 | 1 | 2 | 3;
   lawyer?: boolean;
+  /** Weed: cash that's been laundered (part of cash, can't be seized). */
+  cleanCash?: number;
   /** Last decisions, used as defaults. */
   lastDecisions: Decisions;
   history: RoundReport[];
@@ -326,6 +339,8 @@ export interface RoundReport {
   /** Weed: heat, raids, security and street moves (private). Its costs are in streetCost. */
   street?: StreetReport;
   streetCost?: number;
+  /** Weed after legalization: excise tax on revenue. */
+  exciseTax?: number;
 }
 
 export interface NewsEffect {
@@ -478,6 +493,10 @@ export interface GameState {
   monopolyBy?: string | null;
   /** Big decisions waiting for a board vote this round (house rule "votes"). Shareholders vote live during the round. */
   board?: BoardProposal[];
+  /** Weed: legal since this round (after a referendum passed), the referendums held (counts only; ballots are secret), and who runs each district. */
+  legal?: { since: number } | null;
+  referendums?: { round: number; yes: number; needed: number; voters: number; passed: boolean }[];
+  turf?: { round: number; holders: Partial<Record<SegmentId, { id: string; share: number }>> } | null;
   /** Scenario chosen at the start (shown in the UI). */
   scenarioCompany?: string | null;
   /** Sealed-bid auction held this round, if any. */

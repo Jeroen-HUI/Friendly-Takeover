@@ -506,6 +506,20 @@ if (!doc.getElementById("age-yes")) throw new Error("continuing a weed game shou
 click("#age-yes");
 if (doc.getElementById("age-yes") || !doc.querySelector("#btn-submit")) throw new Error("18+ confirmation should open the game");
 if (window.localStorage.getItem("ft-18") !== "1") throw new Error("18+ should be remembered");
+// Weed has the street: turf map, security, laundering, and a legalization referendum that must be voted on.
+while (doc.querySelector("#btn-tv-next")) click("#btn-tv-next");
+for (const id of ["#btn-tv-done", "#btn-mission-ok", "#btn-close"]) if (doc.querySelector(id)) click(id);
+click('.menu [data-tab="street"]');
+if (!/The turf/.test(doc.querySelector(".pane").textContent) || !doc.getElementById("f-launder")) throw new Error("street tab incomplete");
+click('input[name="st-sec"][value="2"]');
+if (window.__ftDebug.S.draft.security !== 2) throw new Error("security choice not saved");
+window.__ftDebug.S.game.round = 3; window.__ftDebug.render();
+click('.menu [data-tab="street"]');
+if (!doc.getElementById("legal-vote") || !/Vote, then submit/.test(doc.getElementById("btn-submit").textContent)) throw new Error("referendum round should ask for a vote");
+click('input[name="legal-vote"][value="yes"]');
+if (window.__ftDebug.S.draft.legalVote !== true || /Vote, then/.test(doc.getElementById("btn-submit").textContent)) throw new Error("legal vote not saved");
+window.__ftDebug.S.game.legal = { since: 3 }; window.__ftDebug.render();
+if (!/Legal since round 3/.test(doc.querySelector(".pane").textContent)) throw new Error("legal street view missing");
 click("#btn-menu"); window.localStorage.removeItem("ft-save");
 click("#t-new");
 click('input[name="industry"][value="ai"]');

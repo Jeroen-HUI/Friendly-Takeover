@@ -650,10 +650,10 @@ export const STREET = {
   industries: ["weed"] as IndustryId[],
   /** Heat is 0..100 and fades by this share every round. */
   decay: 0.3,
-  /** Heat from sales: this much for an average share of the market (scales with your share). */
+  /** Heat from sales: this much for an average share of the sales revenue (scales with your share). */
   salesHeat: 12,
   /** Selling clearly below the average price (more than 10% under) draws attention. */
-  cheapHeat: 3,
+  cheapHeat: 2,
   viralHeat: 5,
   storeHeat: 2,
   /** Raid chance: (heat - floor) x perPoint, capped. */
@@ -676,4 +676,15 @@ export const STREET = {
   lawyer: { name: "Lawyer on retainer", upkeep: 0.02, fineCut: 0.7, heat: -6 },
   tipoff: { name: "Anonymous tip-off", cost: 0.025, heat: 30, backfire: 0.15, backfireHeat: 20, backfireBrand: 4 },
   heist: { name: "Stash heist", cost: 0.035, steal: 0.18, failHeat: 20, failBrand: 3 },
+  /** In a raid the police also empty the safe: a share of your unlaundered cash, capped by the grow rooms' scale. */
+  cashSeize: 0.15,
+  cashSeizeCap: 0.6,
+  /** Laundering through fronts: one car wash plus every store, each can clean this share of the scale per round. */
+  launder: { perFront: 0.4, fee: 0.1, auditChance: 0.12, auditFine: 0.25, auditHeat: 10 },
+  /** Legalization referendum: from round 3, every 4 rounds while it's still illegal. Needs 3 in 4 voters (5 players: 4). */
+  referendum: { first: 3, every: 4, needed: 0.75 },
+  /** Once legal: no raids, heat or street moves; more buyers, but an excise tax on revenue. */
+  legal: { tax: 0.15, demand: 1.2, segment: { budget: 1, mainstream: 1.2, premium: 1.2, hype: 1.05 } },
+  /** Districts: whoever sells most to a buyer group (at least 30%) runs that district: a bit more pull there next round, and some heat. */
+  turf: { minShare: 0.3, pull: 0.04, heat: 3, names: { budget: "Campus", mainstream: "Main Street", premium: "Uptown", hype: "Club District" } },
 } as const;
