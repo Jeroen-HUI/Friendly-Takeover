@@ -13,11 +13,13 @@ const fonts = [
 const html = readFileSync("src/web/game.html", "utf8").replace("/*__FONTS__*/", () => fonts).replace("/*__ENGINE__*/", () => engine);
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/friendly-takeover.html", html);
-// GitHub Pages: the same game as index.html in docs/ and at the repo root, so it works
+// Hosting (Vercel serves docs/, see vercel.json; GitHub Pages works too): the same game as index.html in docs/ and at the repo root, so it works
 // whichever folder Pages is set to publish. .nojekyll serves the files as they are.
 mkdirSync("docs", { recursive: true });
 // (a full page with a charset, so a saved copy opened from disk shows € and emoji correctly)
-const page = `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n${html}`;
+// Vercel Web Analytics (cookieless visit counts); only on the hosted page, not the single-file copy.
+const analytics = `<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>\n<script defer src="/_vercel/insights/script.js"></script>\n`;
+const page = `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n${analytics}${html}`;
 writeFileSync("docs/index.html", page);
 writeFileSync("index.html", page);
 writeFileSync(".nojekyll", "");
