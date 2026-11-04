@@ -108,7 +108,20 @@ Deno.serve(async (req) => {
     const { data: overdue } = await admin.from("games").select("*").eq("status", "playing").lt("round_deadline", new Date().toISOString()).order("round_deadline").limit(20);
     const results = [];
     for (const g of overdue ?? []) {
-      try { results.push({ game: g.code, ...(await resolveGame(admin, g, null)) }); } catch (e) { results.push({ game: g.code, status: 500, body: String(e) }); }
+      try {
+        // Abandoned game: nobody submitted anything for the last 3 rounds, so this round becomes the final one
+        // (otherwise an unlimited game keeps playing itself every few minutes, forever).
+        if ((g.current_round ?? 0) >= 3) {
+          const { count } = await admin.from("decisions").select("player_id", { count: "exact", head: true }).eq("game_id", g.id).gte("round", g.current_round - 2);
+          if (!count) {
+            const { data: row } = await admin.from("game_states").select("state, updated_at").eq("game_id", g.id).single();
+            if (row && row.state.round === g.current_round && row.state.config.rounds > g.current_round) {
+              await admin.from("game_states").update({ state: endAfterThisRound(row.state), updated_at: new Date().toISOString() }).eq("game_id", g.id).eq("updated_at", row.updated_at);
+            }
+          }
+        }
+        results.push({ game: g.code, ...(await resolveGame(admin, g, null)) });
+      } catch (e) { results.push({ game: g.code, status: 500, body: String(e) }); }
     }
     return json({ ok: true, closed: results.filter((r) => r.status === 200).length, results });
   }
