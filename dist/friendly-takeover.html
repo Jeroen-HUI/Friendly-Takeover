@@ -1979,6 +1979,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
       if (rep && rep.report && rep.report.view && (rep.round > MP.applied || !S || S.screen !== "game")) applyServer(rep.round, rep.report.view);
       else if (sig !== MP.sig && S && S.screen === "game") { MP.sig = sig; if (S.modal === "wait") { renderModal(); bindModal(); } const sb2 = $("#btn-submit"); if (sb2) sb2.outerHTML = submitButton(); bindSubmit(); }
       MP.sig = sig;
+      // A TV switched on or off: redraw so the skyline moves to (or back from) the big screen.
+      const tvNow = tvOn();
+      if (S && S.screen === "game" && tvNow !== !!MP.tvWas) { MP.tvWas = tvNow; render(); }
     } catch (e) { MP.error = e.message; } finally { MP.busy = false; if (MP.again) { MP.again = false; setTimeout(mpRefresh, 0); } }
   }
   // Chat, reactions and deals online: new messages since the last one, and the deals I'm part of.
@@ -4607,7 +4610,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.panes = (S.panes || []).filter((t) => t !== S.tab && TAB_TITLES[t]).slice(0, 2);
     for (const t of S.panes) S.visited[t] = true;
     const panes = [S.tab, ...S.panes];
-    app.innerHTML = mpSide() + topbar() + players() + skyline() + agenda() + tickerHtml() + `<div class="main">${menu()}<div class="panes p${panes.length}" id="panes">${panes.map((t, i) => windowFor(t, i, panes.length)).join("")}</div></div>`;
+    app.innerHTML = mpSide() + topbar() + players() + (tvOn() ? "" : skyline()) + agenda() + tickerHtml() + `<div class="main">${menu()}<div class="panes p${panes.length}" id="panes">${panes.map((t, i) => windowFor(t, i, panes.length)).join("")}</div></div>`;
     if (!S.mp) startLiveBots();
     if (!S.modal) S.flash = null;
     paintCanvases();
