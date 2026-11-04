@@ -1757,7 +1757,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <p>To run the game you ask to play (GDPR article 6(1)(b)), and to keep it safe and fair, for example handling reports and stopping abuse (our legitimate interest, article 6(1)(f)).</p>
       <h3>Who helps us</h3>
       <ul><li><b>Supabase</b> runs the database, login and game server. Data is stored in Ireland (EU). Login emails are sent through Supabase.</li>
-        <li><b>Vercel</b> (USA) hosts the website files. Like any web host it receives your IP address when the page loads. Vercel Web Analytics counts visits anonymously: no cookies, no account or IP address stored, and visitors can't be recognised across days or other sites.</li></ul>
+        <li><b>Vercel</b> (USA) hosts the website files. Like any web host it receives your IP address when the page loads. Vercel Web Analytics counts visits anonymously, including which steps of the game are reached (for example "started a game", "reached round 5", "finished a game"): no cookies, no account or IP address stored, and visitors can't be recognised across days or other sites.</li></ul>
       <p>The fonts are built into the game, so loading it sends nothing to Google or other font services.</p>
       <h3>Cookies and browser storage</h3>
       <p>We don't use tracking cookies. The game keeps only what it needs to work in your browser's storage: your saved game, settings and online login. That kind of storage doesn't need a cookie banner.</p>
@@ -3027,7 +3027,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.coach = done ? null : 0;
     if (!coachTimer) coachTimer = setInterval(coachTick, 400);
   }
-  function coachEnd() { S.coach = null; try { localStorage.setItem("ft-coach-done", "1"); } catch (e) {} coachTick(); }
+  function coachEnd() { track("/tutorial-done"); S.coach = null; try { localStorage.setItem("ft-coach-done", "1"); } catch (e) {} coachTick(); }
   function coachTick() {
     document.querySelectorAll(".coach-hl").forEach((el) => el.classList.remove("coach-hl"));
     const show = S && S.screen === "game" && S.coach != null && S.game && !S.game.finished && !S.modal;
@@ -3346,7 +3346,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       keep();
       if (BUG.text.trim().length < 3) { BUG.err = "Tell us a bit more about the bug."; renderModal(); bindModal(); return; }
       BUG.busy = true; BUG.err = ""; renderModal(); bindModal();
-      try { await api().reportBug(BUG.text.trim(), BUG.contact.trim(), bugContext()); BUG.sent = true; BUG.text = ""; }
+      try { await api().reportBug(BUG.text.trim(), BUG.contact.trim(), bugContext()); BUG.sent = true; track("/bug-report-sent"); BUG.text = ""; }
       catch (e) { BUG.err = /fetch|network/i.test(e.message || "") ? "Couldn't reach the server. Check your connection and try again." : e.message || "Couldn't send it."; }
       BUG.busy = false; if (S.modal === "bug") { renderModal(); bindModal(); }
     });
@@ -4576,9 +4576,39 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const y = p.getBoundingClientRect().top + scrollY - (tb ? tb.offsetHeight : 0) - 8;
     window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
   }
+  // Anonymous "virtual pages" for Vercel Web Analytics: the whole game is one page, so each step a player reaches
+  // (new game, round 2, finished, online lobby, TV…) is reported once per visit as its own path. No cookies, no ids.
+  const TRACKED = new Set();
+  function track(path) {
+    if (!path || TRACKED.has(path)) return;
+    TRACKED.add(path);
+    try { if (typeof window.va === "function" && /^https?:/.test(location.protocol)) window.va("pageview", { route: path, path }); } catch (e) {}
+  }
+  function trackState() {
+    if (!S) return;
+    if (S.screen === "tv") return track("/tv");
+    if (S.screen === "lobby") return track("/online/lobby");
+    if (S.screen === "title") {
+      if (S.modal === "setup") track("/new-game");
+      else if (S.modal === "online") track("/online");
+      else if (S.modal === "shop") track("/shop");
+      return;
+    }
+    if (S.screen === "game" && S.game) {
+      const mode = S.mp ? "/online" : "/solo", r = S.game.round;
+      track(mode + "/started");
+      if (S.game.config && S.game.config.industry) track(mode + "/industry-" + S.game.config.industry);
+      if (S.game.finished) track(mode + "/finished");
+      else if (r >= 5) track(mode + "/round-5");
+      else if (r >= 2) track(mode + "/round-2");
+      if (S.modal === "shop") track("/shop");
+    }
+    if (typeof ownsGame === "function" && ownsGame() && SHOP.waiting) track("/bought");
+  }
   function render() {
     if (!S) return;
     rememberWhere();
+    trackState();
     ageGate();
     if (S.screen === "tv") {
       app.innerHTML = tvScreen();
@@ -6136,6 +6166,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "final") setTimeout(() => { if (S.game && S.game.config) sfx(FT.standings(S.game)[0].companyId === "you" ? "win" : "lose"); }, 350);
   }
   function renderModal() {
+    trackState();
     if (!S.modal) { modal.innerHTML = ""; modal.dataset.kind = ""; return; }
     modalSound();
     let inner = "";
