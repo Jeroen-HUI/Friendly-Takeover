@@ -714,9 +714,13 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .beta-stamp { position: absolute; top: -12px; right: -14px; transform: rotate(9deg); padding: 3px 10px 4px; border-radius: 6px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 0 0 3px #7a3e14, 0 4px 0 rgba(0,0,0,0.35); }
 .beta-note { position: absolute; left: 14px; top: 14px; z-index: 2; max-width: min(300px, calc(50% - 280px)); padding: 4px 10px; border-radius: 6px; background: rgba(10, 15, 36, 0.8); color: #c8d0f0; font-size: 12px; font-weight: 700; line-height: 1.35; }
 .beta-note b { color: #3d1c00; background: var(--gold); border-radius: 4px; padding: 0 5px; margin-right: 4px; font-family: var(--font-display); font-weight: 400; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
-.beta-note a { color: var(--gold); font-weight: 900; }
+.beta-note a, .beta-note .linkbtn { color: var(--gold); font-weight: 900; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; }
+.bug-row { padding: 10px 12px; border-radius: 8px; background: rgba(0,0,0,0.22); display: grid; gap: 6px; }
+.bug-row.done { opacity: 0.55; }
+.bug-row .bug-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 1100px) { .beta-note { position: static; max-width: none; margin: 8px 12px 0; } .beta-stamp { right: -6px; font-size: 12px; } }
-.beta-pill { align-self: flex-start; margin-left: -4px; padding: 1px 5px; border-radius: 4px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
+.beta-pill { border: 0; cursor: pointer; align-self: flex-start; margin-left: -4px; padding: 1px 5px; border-radius: 4px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
 @container topbar (max-width: 1190px) { .topbar .beta-pill { display: none; } }
 .title-foot { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 2px; z-index: 2; }
 .title-foot button { border: 0; background: rgba(10, 15, 36, 0.75); color: #c8d0f0; font: inherit; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px; cursor: pointer; }
@@ -1411,7 +1415,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
           </div>
         </div>
       </div>
-      <div class="beta-note"><b>Beta</b> Still being built: expect bugs, balance changes and the odd reset. <a href="${LEGAL.issues}" target="_blank" rel="noopener">Report a bug</a></div>
+      <div class="beta-note"><b>Beta</b> Still being built: expect bugs, balance changes and the odd reset. <button type="button" class="linkbtn" data-bug>Report a bug</button></div>
       <nav class="title-foot" aria-label="Legal"><button type="button" data-legal="privacy">Privacy</button><button type="button" data-legal="terms">Terms</button><button type="button" data-legal="credits">Credits</button></nav>
     </section>`;
   }
@@ -1626,7 +1630,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     email: "",   // add a contact email for privacy requests here
     issues: "https://github.com/Jeroen-HUI/Friendly-Takeover/issues",
   };
-  const contactHtml = () => (LEGAL.email ? `email <a href="mailto:${esc(LEGAL.email)}">${esc(LEGAL.email)}</a> or ` : "") + `open an issue on <a href="${LEGAL.issues}" target="_blank" rel="noopener">GitHub</a> (public) or use the in-game feedback`;
+  const contactHtml = () => (LEGAL.email ? `email <a href="mailto:${esc(LEGAL.email)}">${esc(LEGAL.email)}</a> or ` : "") + `use <b>Report a bug</b> in the game, or open an issue on <a href="${LEGAL.issues}" target="_blank" rel="noopener">GitHub</a> (public) or use the in-game feedback`;
   function legalWin(title, body, extra = "") {
     return `<div class="win legalwin"><div class="win-title">${title}<span class="x" aria-hidden="true">×</span></div><div class="win-body legal">
       <div class="legal-tabs"><button type="button" class="btn small ${S.modal === "privacy" ? "go" : ""}" data-legal="privacy">Privacy</button><button type="button" class="btn small ${S.modal === "terms" ? "go" : ""}" data-legal="terms">Terms</button><button type="button" class="btn small ${S.modal === "credits" ? "go" : ""}" data-legal="credits">Credits</button></div>
@@ -1749,7 +1753,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
     });
   }
-  document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); if (e.target.closest("[data-giftcodes]") && S) openGifts(); });
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); if (e.target.closest("[data-giftcodes]") && S) openGifts(); if (e.target.closest("[data-bug]") && S) openBug(); if (e.target.closest("[data-bugs]") && S) openBugs(); });
   // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-legal]");
@@ -1830,6 +1834,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async emailLogin(email) { await http("/auth/v1/otp?redirect_to=" + q(backUrl()), { method: "POST", body: JSON.stringify({ email, create_user: false }) }, false); },
     async logout() { try { await http("/auth/v1/logout", { method: "POST" }); } catch (e) {} AUTH = null; try { localStorage.removeItem("ft-auth"); } catch (e) {} },
     myId() { try { const a = loadAuth(); return a ? JSON.parse(atob(a.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub : null; } catch (e) { return null; } },
+    async reportBug(body, contact, context) { return http("/rest/v1/rpc/report_bug", { method: "POST", body: JSON.stringify({ p_body: body, p_contact: contact || null, p_context: context || {} }) }, !!loadAuth()); },
     async feedback(row) { await http("/rest/v1/feedback", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(row) }, !!loadAuth()); },
   };
   const api = () => window.__ftApi || realApi;
@@ -3083,7 +3088,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   function accessLine() {
     const a = SHOP.access;
     if (!a) return "";
-    const owner = a.admin ? `<button class="btn small" type="button" data-giftcodes style="justify-self:start">🎟 Gift codes (owner)</button>` : "";
+    const owner = a.admin ? `<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-giftcodes>🎟 Gift codes (owner)</button><button class="btn small" type="button" data-bugs>🐞 Bug reports (owner)</button></div>` : "";
     if (a.owned) return `<div class="sumline"><span class="muted">Full game</span><b class="pos">✓ Yours: unlimited online games</b></div>${owner}`;
     if (!paywall().enabled) return `<div class="sumline"><span class="muted">Online games</span><b class="pos">Free during early access</b></div><button class="btn small" type="button" data-shop style="justify-self:start">Have a code?</button>${owner}`;
     return `<div class="sumline"><span class="muted">Online games</span><b>${a.free_left ? "1 free game left" : "Free game used"}</b></div><button class="btn small go" type="button" data-shop style="justify-self:start">Get the full game · ${esc(paywall().price || "€8.99")}</button>${owner}`;
@@ -3103,7 +3108,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       ${guest ? `<div class="hint">Tip: save your account with your email first (Profile), so you can play your full game on any device and never lose it.</div>` : ""}
       <div class="hint">Payment runs on Stripe's secure page. Stripe handles VAT and sends your receipt.</div>
       <div class="card"><b>Got a gift code?</b><div class="redeem"><input type="text" id="shop-code" maxlength="20" placeholder="FT-ABCD-1234" value="${esc(SHOP.code)}" autocomplete="off" spellcheck="false" /><button class="btn" type="button" id="shop-redeem" ${SHOP.busy ? "disabled" : ""}>Redeem</button></div>${SHOP.codeMsg ? `<div class="note neg">${esc(SHOP.codeMsg)}</div>` : ""}</div>
-      ${a && a.admin ? `<button class="btn small" type="button" data-giftcodes style="justify-self:start">🎟 Gift codes (owner)</button>` : ""}
+      ${a && a.admin ? `<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-giftcodes>🎟 Gift codes (owner)</button><button class="btn small" type="button" data-bugs>🐞 Bug reports (owner)</button></div>` : ""}
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="btn-close">Not now</button>${guest ? `<button class="btn" type="button" id="shop-profile">Save my account first</button>` : ""}<button class="btn go" type="button" id="shop-buy" ${SHOP.busy || !pw.payment_link ? "disabled" : ""}>${pw.payment_link ? "Pay " + esc(price) + " with Stripe" : "Coming soon"}</button></div>
     </div></div>`;
   }
@@ -3197,6 +3202,64 @@ details.howto[open] summary::after { content: "▾ hide"; }
       b.disabled = true;
       try { await api().rpc("admin_set_gift_code", { p_code: b.dataset.gcToggle, p_disabled: b.dataset.off === "1" }); } catch (e) { G.err = e.message; }
       loadGifts();
+    }));
+  }
+  // ----- Bug reports: typed in the game, stored in Supabase (bug_reports), read by the owner in the admin panel.
+  const BUG = { text: "", contact: "", busy: false, sent: false, err: "", list: null, listErr: "" };
+  function bugContext() {
+    const g = S && S.game;
+    return { screen: S ? S.screen : "", tab: S ? S.tab || "" : "", round: g ? g.round : null, industry: g ? g.config.industry : null, mode: S && S.mp ? "online" : g ? "single" : null,
+      game_id: S && S.mp ? MP.gameId : null, url: location.host + location.pathname, ua: navigator.userAgent.slice(0, 200), size: innerWidth + "x" + innerHeight, at: new Date().toISOString() };
+  }
+  function bugModal() {
+    if (BUG.sent) return `<div class="win"><div class="win-title">Report a bug<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="note pos">Thanks! Your report went straight to the developer.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" id="bug-again">Report another</button><button class="btn go" type="button" id="btn-close">Done</button></div></div></div>`;
+    return `<div class="win"><div class="win-title">Report a bug<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="hint">What went wrong? What did you click, and what did you expect to happen? We add the screen and round you're on automatically.</div>
+      ${BUG.err ? `<div class="note neg">${esc(BUG.err)}</div>` : ""}
+      <textarea id="bug-text" class="notes" style="min-height:130px" maxlength="2000" placeholder="e.g. In round 3 the Finance tab showed a negative loan after I paid it back." data-autofocus>${esc(BUG.text)}</textarea>
+      <div class="form"><div class="ctl"><label for="bug-contact">Email or Discord (optional, if we may ask you about it)</label><input type="text" id="bug-contact" maxlength="120" value="${esc(BUG.contact)}"></div></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" id="btn-close">Cancel</button><button class="btn go" type="button" id="bug-send" ${BUG.busy ? "disabled" : ""}>${BUG.busy ? "Sending…" : "Send report"}</button></div>
+    </div></div>`;
+  }
+  function openBug() { BUG.sent = false; BUG.err = ""; BUG.wasModal = S.modal && S.modal !== "bug" ? S.modal : BUG.wasModal || null; S.modal = "bug"; renderModal(); bindModal(); }
+  function bindBug() {
+    const q = (sel) => modal.querySelector(sel);
+    const keep = () => { BUG.text = ((q("#bug-text") || {}).value || "").slice(0, 2000); BUG.contact = ((q("#bug-contact") || {}).value || "").slice(0, 120); };
+    ["#bug-text", "#bug-contact"].forEach((sel) => { const el = q(sel); if (el) el.addEventListener("input", keep); });
+    const again = q("#bug-again"); if (again) again.addEventListener("click", () => { BUG.sent = false; renderModal(); bindModal(); });
+    const send = q("#bug-send");
+    if (send) send.addEventListener("click", async () => {
+      keep();
+      if (BUG.text.trim().length < 3) { BUG.err = "Tell us a bit more about the bug."; renderModal(); bindModal(); return; }
+      BUG.busy = true; BUG.err = ""; renderModal(); bindModal();
+      try { await api().reportBug(BUG.text.trim(), BUG.contact.trim(), bugContext()); BUG.sent = true; BUG.text = ""; }
+      catch (e) { BUG.err = /fetch|network/i.test(e.message || "") ? "Couldn't reach the server. Check your connection and try again." : e.message || "Couldn't send it."; }
+      BUG.busy = false; if (S.modal === "bug") { renderModal(); bindModal(); }
+    });
+  }
+  function bugsModal() {
+    const list = BUG.list, open = list ? list.filter((b) => !b.done).length : 0;
+    const ctx = (c) => [c.screen, c.tab, c.round != null ? "round " + c.round : "", c.industry, c.mode, c.size].filter(Boolean).join(" · ");
+    const row = (b) => `<div class="bug-row${b.done ? " done" : ""}"><div class="hint">#${b.id} · ${new Date(b.created_at).toLocaleString()}${b.name ? " · " + esc(b.name) : ""}${b.contact ? " · " + esc(b.contact) : ""}</div>
+      <div class="bug-body">${esc(b.body)}</div><div class="hint">${esc(ctx(b.context || {}))}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn small" type="button" data-bug-done="${b.id}" data-done="${b.done ? "0" : "1"}">${b.done ? "Reopen" : "Mark fixed"}</button></div></div>`;
+    return `<div class="win"><div class="win-title">Bug reports${list ? ` (${open} open)` : ""}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      ${BUG.listErr ? `<div class="note neg">${esc(BUG.listErr)}</div>` : ""}
+      <div style="display:grid;gap:8px">${list === null ? `<div class="hint">Loading…</div>` : list.length ? list.map(row).join("") : `<div class="hint">No bug reports yet.</div>`}</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" type="button" id="btn-close">Done</button></div></div></div>`;
+  }
+  async function loadBugs() {
+    try { BUG.list = (await api().rpc("admin_list_bug_reports", {})) || []; BUG.listErr = ""; } catch (e) { BUG.listErr = e.message; BUG.list = []; }
+    if (S.modal === "bugs") { renderModal(); bindModal(); }
+  }
+  function openBugs() { BUG.list = null; S.modal = "bugs"; renderModal(); bindModal(); loadBugs(); }
+  function bindBugs() {
+    modal.querySelectorAll("[data-bug-done]").forEach((b) => b.addEventListener("click", async () => {
+      b.disabled = true;
+      try { await api().rpc("admin_set_bug_done", { p_id: +b.dataset.bugDone, p_done: b.dataset.done === "1" }); } catch (e) { BUG.listErr = e.message; }
+      loadBugs();
     }));
   }
   const isPaywall = (e) => /^PAYWALL:/.test((e && e.message) || "");
@@ -4390,7 +4453,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const r = Math.min(g.round, g.config.rounds);
     const industryLine = { chocolate: "Chocolate company tycoon", ai: "AI company tycoon", weed: "Weed company tycoon (18+)" }[g.config.industry];
     return `<header class="win topbar ${S.mp && !g.finished ? "has-mp" : ""}">
-      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeovers</b></div><span class="beta-pill" title="Beta: still being built">Beta</span><div class="logo-full"><h1>Friendly Takeovers</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
+      <div class="logo"><canvas data-icon="logo" width="16" height="16" aria-hidden="true"></canvas><div class="wordmark" aria-hidden="true"><b>Friendly</b><b>Takeovers</b></div><button type="button" class="beta-pill" data-bug title="Beta: still being built. Click to report a bug">Beta</button><div class="logo-full"><h1>Friendly Takeovers</h1><div class="sub">${industryLine} · You vs ${g.companies.length - 1} players${g.config.difficulty !== "standard" ? " · " + (g.config.difficulty === "cutthroat" ? "Cutthroat" : "Tycoon") : ""}</div></div></div>
       <span class="spacer"></span>
       ${walletHtml()}
       <span class="sep" aria-hidden="true"></span>
@@ -5902,6 +5965,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "profile") inner = profileModal();
     if (S.modal === "shop") inner = shopModal();
     if (S.modal === "giftcodes") inner = giftModal();
+    if (S.modal === "bug") inner = bugModal();
+    if (S.modal === "bugs") inner = bugsModal();
     if (S.modal === "auth") inner = authModal();
     if (S.modal === "friends") inner = friendsModal();
     if (S.modal === "achievements") inner = achievementsModal();
@@ -6712,6 +6777,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "profile") { bindAccount(); if (!SHOP.access) loadAccess().then(() => { if (S.modal === "profile") { renderModal(); bindModal(); } }); }
     if (S.modal === "shop") bindShop();
     if (S.modal === "giftcodes") bindGifts();
+    if (S.modal === "bug") bindBug();
+    if (S.modal === "bugs") bindBugs();
     if (S.modal === "auth") bindAuth();
     if (S.modal === "friends") bindFriends();
     if (S.modal === "daily") bindDaily();
