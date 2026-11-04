@@ -482,8 +482,8 @@ await until("final screen", () => /Final results/.test(doc.body.textContent || "
   const t0 = Date.now();
   // (#app, not body: the page's own script text mentions "Final results" too)
   const tvText = () => tdoc.getElementById("app")!.textContent || "";
-  while (Date.now() - t0 < 4000 && !(/Final results/.test(tvText()) && tdoc.querySelector(".tv-bld"))) await wait(20);
-  if (!/Final results/.test(tvText()) || !tdoc.querySelector(".tv-bld")) throw new Error("TV screen should show the skyline and final results: " + errors.join(" / ") + " :: " + (tdoc.getElementById("app") || tdoc.body).textContent!.replace(/\s+/g, " ").slice(0, 300));
+  while (Date.now() - t0 < 4000 && !(/Final results/.test(tvText()) && tdoc.querySelector("#city") && tdoc.querySelector(".pm-card"))) await wait(20);
+  if (!/Final results/.test(tvText()) || !tdoc.querySelector("#city") && tdoc.querySelector(".pm-card")) throw new Error("TV screen should show the skyline and final results: " + errors.join(" / ") + " :: " + (tdoc.getElementById("app") || tdoc.body).textContent!.replace(/\s+/g, " ").slice(0, 300));
   if (!tvText().includes(code)) throw new Error("TV should show the game code");
   tvDom.window.close();
 }

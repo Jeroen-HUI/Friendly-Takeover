@@ -165,7 +165,7 @@ export function publicData(state: GameState, round: number) {
     round,
     finished: state.finished,
     headlines: state.feed.filter((f) => f.round === round).map((f) => f.headline),
-    nextNews: state.finished ? [] : state.news.map((n) => ({ headline: n.event.headline + (n.targetCompanyId ? ` (it's ${names.get(n.targetCompanyId)})` : ""), effect: n.event.effect, roundsLeft: n.roundsLeft })),
+    nextNews: state.finished ? [] : state.news.map((n) => ({ headline: n.event.headline + (n.targetCompanyId ? ` (it's ${names.get(n.targetCompanyId)})` : ""), effect: n.event.effect, roundsLeft: n.roundsLeft, id: n.event.id, kind: n.event.kind, title: n.event.headline, targetCompanyId: n.targetCompanyId ?? null })),
     companies: publicInfo(state),
     values: companyValues(state),
     valueHistory: Object.fromEntries(state.companies.map((c) => [c.id, c.history.map((h) => Math.round(h.value))])),
