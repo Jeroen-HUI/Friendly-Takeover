@@ -7061,7 +7061,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
   try { document.fonts && document.fonts.ready.then(() => S && drawCity(1)); } catch (e) {}
 
   // Test hook (only in the automated smoke test).
-  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick(), mountMinigame: (el) => mountMinigame(el), MG, SCENES, NEWS_TV };
+  if (window.__ftFast) window.__ftDebug = { get S() { return S; }, render: () => render(), endRound: () => endRound(), liveBotTick: () => liveBotTick(), mountMinigame: (el) => mountMinigame(el), MG, SCENES, NEWS_TV, drawAvatar: (cv, id, bg) => drawAvatar(cv, id, bg) };
   window.claude?.hot?.snapshot?.(() => (S ? { S: JSON.parse(JSON.stringify({ ...S, anim: null })) } : {}));
   function start(data) {
     if (data && data.S && data.S.screen === "title") { S = data.S; render(); return; }
