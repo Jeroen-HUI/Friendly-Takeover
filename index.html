@@ -4410,8 +4410,25 @@ details.howto[open] summary::after { content: "▾ hide"; }
 
   // ---------------- render ----------------
   let enterTimer = 0;
+  // Refreshing the page keeps you where you were (this tab only; a new visit starts on the menu).
+  function rememberWhere() {
+    try {
+      const w = S.screen === "game" ? (S.mp ? "mp" : "solo") : S.screen === "lobby" ? "mp" : S.screen === "title" ? "" : null;
+      if (w === null) return;
+      if (w) sessionStorage.setItem("ft-where", JSON.stringify({ w, tab: S.tab || null })); else sessionStorage.removeItem("ft-where");
+    } catch (e) {}
+  }
+  function resumeWhere() {
+    let r = null; try { r = JSON.parse(sessionStorage.getItem("ft-where") || "null"); } catch (e) {}
+    if (!r) return false;
+    if (r.w === "solo") { const save = loadSave(); if (!save) return false; S = save; S.screen = "game"; S.modal = null; if (r.tab) S.tab = r.tab; render(); return true; }
+    if (r.w === "mp") { const sv = mpLocal(); if (!sv || !sv.gameId) return false; render(); mpEnter(sv.gameId, sv.playerId).catch(() => {}); return true; }
+    return false;
+  }
+  window.addEventListener("pagehide", () => { try { saveGame(); } catch (e) {} });
   function render() {
     if (!S) return;
+    rememberWhere();
     ageGate();
     if (S.screen === "tv") {
       app.innerHTML = tvScreen();
@@ -6877,6 +6894,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     let join = null;
     try { join = new URLSearchParams(location.search).get("join"); } catch (e) {}
     if (join && /^[A-Za-z0-9]{6}$/.test(join)) { S.modal = "online"; S.joinCode = join.toUpperCase(); }
+    if (!S.modal && !location.search && resumeWhere()) return;
     render();
   }
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
