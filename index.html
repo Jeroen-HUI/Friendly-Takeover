@@ -782,6 +782,17 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 @media (max-width: 640px) { .title-foot { position: static; justify-content: center; margin-top: 6px; grid-row: 4; } }
 /* Phone main menu: all five players fit in one row, manage buttons wrap, beta note gets its own spot. */
 @media (max-width: 640px) {
+  body { margin: 0; padding: 6px 6px calc(78px + env(safe-area-inset-bottom)); }
+  .title-screen { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  .title-screen > * { min-width: 0; }
+  .title-screen .title-logo { max-width: 100%; padding: 10px 12px; }
+  .title-screen .title-logo h1 { font-size: clamp(20px, 7.6vw, 40px); }
+  .title-screen .title-logo canvas { width: clamp(36px, 11vw, 48px); height: clamp(36px, 11vw, 48px); }
+  .agenda { padding: 7px 8px; gap: 6px; }
+  .agenda .mchip { flex-wrap: wrap; gap: 4px 8px; padding: 6px 8px; }
+  .mchip b { font-size: 11px; white-space: normal; }
+  .mchip .mc-bar { width: 44px; }
+  .mchip .mc-v { white-space: normal; font-size: 11.5px; }
   .title-screen > .beta-note { position: relative; left: auto; top: auto; grid-row: 2; align-self: start; justify-self: stretch; max-width: none; margin: 0; background: rgba(10, 15, 36, 0.92); font-size: 11.5px; padding: 6px 10px; }
   .title-screen .title-cards { grid-auto-flow: row; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; gap: 5px; padding: 2px 0 4px; }
   .title-screen .tcard { padding: 6px 2px 5px; border-width: 2px; border-radius: 9px; }
