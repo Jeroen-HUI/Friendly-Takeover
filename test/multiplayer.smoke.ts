@@ -184,6 +184,11 @@ const fakeApi = {
     if (name === "lobby_invites") return db.invites.filter((i) => i.game_id === a.p_game_id).map((i) => ({ to_user: i.to, status: i.status }));
     throw new Error("unknown rpc " + name);
   },
+  // The one-request poll (mp_poll); NO_POLL=1 makes it fail so the old five-request path is tested too.
+  async poll(this: any, gameId: string, after: number) {
+    if (process.env.NO_POLL) throw new Error("mp_poll unavailable");
+    return { game: await this.game(gameId), players: await this.players(gameId), messages: await this.messagesSince(gameId, after), market: await this.marketLive(gameId), deals: await this.deals(gameId) };
+  },
   async game(id: string) { return JSON.parse(JSON.stringify(db.games.find((g) => g.id === id) ?? null)); },
   async players(id: string) { return JSON.parse(JSON.stringify(db.players.filter((p) => p.game_id === id))); },
   async latestReport(gameId: string, playerId: string) {

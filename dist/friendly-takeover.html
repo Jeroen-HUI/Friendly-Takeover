@@ -1924,6 +1924,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     async sendMessage(gameId, round, from, to, body, kind) { await http("/rest/v1/messages", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, body, kind }) }); },
     async tvSnapshot(id, code) { return http("/rest/v1/rpc/tv_snapshot", { method: "POST", body: JSON.stringify({ p_game_id: id, p_tv: code }) }, false); },
     async marketLive(gameId) { return ((await http(`/rest/v1/market_live?game_id=eq.${q(gameId)}&select=round,data`)) || [])[0] || null; },
+    // Everything the phone checks every few seconds, in one request (game, players, new chat, live market, deals).
+    async poll(gameId, after) { return http("/rest/v1/rpc/mp_poll", { method: "POST", body: JSON.stringify({ p_game_id: gameId, p_after: Number(after) || 0 }) }); },
     async deals(gameId) { return (await http(`/rest/v1/deals?game_id=eq.${q(gameId)}&select=*&order=id`)) || []; },
     async offerDeal(gameId, round, from, to, kind, terms) { await http("/rest/v1/deals", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ game_id: gameId, round, from_player_id: from, to_player_id: to, kind, terms }) }); },
     async myAchievements() { return (await http("/rest/v1/achievements?select=id,earned_at")) || []; },
@@ -1953,7 +1955,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     mpStop();
     Object.assign(MP, { gameId, playerId, applied: -1, submitted: 0, sig: "", error: "", talk: [], deals: [], lastMsg: 0, league: null, leagueLobby: null });
     try { MP.unsub = await api().subscribe(gameId, () => mpRefresh()); } catch (e) {}
-    MP.poll = setInterval(() => mpRefresh(), 2500);
+    MP.poll = setInterval(() => { if (document.hidden && (MP.hiddenTicks = (MP.hiddenTicks || 0) + 1) % 6) return; mpRefresh(); }, 2500);
     MP.tick = setInterval(mpTick, 1000);
     await mpRefresh();
     mpSaveLocal();
@@ -1963,7 +1965,9 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (MP.busy) { MP.again = true; return; }
     MP.busy = true;
     try {
-      const [g, ps] = await Promise.all([api().game(MP.gameId), api().players(MP.gameId)]);
+      let g, ps; MP.pre = null;
+      if (api().poll) { try { const p = await api().poll(MP.gameId, MP.lastMsg); if (p && typeof p === "object") { MP.pre = p; g = p.game || null; ps = p.players || []; } } catch (e) { MP.pre = null; } }
+      if (!MP.pre) [g, ps] = await Promise.all([api().game(MP.gameId), api().players(MP.gameId)]);
       if (!g || !ps.some((p) => p.id === MP.playerId)) { mpStop(); mpForget(); S = { screen: "title", opts: (S && S.opts) || DEFAULT_OPTS, modal: "online", onlineError: "That game has closed." }; render(); return; }
       MP.game = g; MP.players = ps;
       const sig = JSON.stringify([g.status, g.current_round, g.round_deadline, g.industry, g.difficulty, g.rounds, g.round_seconds, g.bot_count, g.bot_skill, ps.map((p) => [p.id, p.submitted_round, p.company_name])]);
@@ -1987,7 +1991,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
   // Chat, reactions and deals online: new messages since the last one, and the deals I'm part of.
   async function mpSocial(g) {
     try {
-      const msgs = await api().messagesSince(MP.gameId, MP.lastMsg);
+      const pre = MP.pre; MP.pre = null;
+      const msgs = pre ? pre.messages || [] : await api().messagesSince(MP.gameId, MP.lastMsg);
       let changed = false;
       for (const m of msgs) {
         MP.lastMsg = Math.max(MP.lastMsg, m.id);
@@ -1997,10 +2002,10 @@ details.howto[open] summary::after { content: "▾ hide"; }
         changed = true;
       }
       if (api().marketLive && S && S.screen === "game" && S.game && !S.game.finished) {
-        const ml = await api().marketLive(MP.gameId);
+        const ml = pre ? pre.market : await api().marketLive(MP.gameId);
         if (ml && ml.round === S.game.round) { const sig = ml.round + ":" + JSON.stringify(ml.data.trades.length) + JSON.stringify(ml.data.lots) + ml.data.trades.slice(-1).map((t) => t.t).join() + JSON.stringify((ml.data.board || []).map((p) => [p.id, p.votes])) + (ml.data.rounds || ""); if (sig !== MP.liveSig) { MP.liveSig = sig; applyLive(ml.data); } }
       }
-      const rows = await api().deals(MP.gameId);
+      const rows = pre ? pre.deals || [] : await api().deals(MP.gameId);
       const next = rows.map((d) => ({ id: String(d.id), t: new Date(d.created_at).getTime(), round: d.round, from: cid(d.from_player_id), to: cid(d.to_player_id), kind: d.kind, terms: JSON.parse(JSON.stringify(d.terms).split(MP.playerId).join("you")), status: d.status, note: d.note }));
       if (JSON.stringify(next) !== JSON.stringify(MP.deals)) { MP.deals = next; changed = true; }
       if (g.status === "finished") {
@@ -4552,6 +4557,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return false;
   }
   window.addEventListener("pagehide", () => { try { saveGame(); } catch (e) {} });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && MP.gameId && MP.poll) { MP.hiddenTicks = 0; mpRefresh(); } });
   const isPhone = () => matchMedia("(max-width: 760px)").matches;
   // Phone tab bar: keep the open tab in view and fade the edge where more tabs are hidden.
   let menuScroll = 0;
