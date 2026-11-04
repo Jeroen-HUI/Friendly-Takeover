@@ -732,8 +732,9 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .bug-row.done { opacity: 0.55; }
 .bug-row .bug-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 1100px) { .beta-note { position: static; max-width: none; margin: 8px 12px 0; } .beta-stamp { right: -6px; font-size: 12px; } }
-.beta-pill { border: 0; cursor: pointer; align-self: flex-start; margin-left: -4px; padding: 1px 5px; border-radius: 4px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
-@container topbar (max-width: 1190px) { .topbar .beta-pill { display: none; } }
+.topbar > .logo { position: relative; }
+.beta-pill { position: absolute; left: 24px; top: -9px; z-index: 2; transform: rotate(-8deg); border: 0; cursor: pointer; padding: 1px 5px; border-radius: 4px; background: var(--gold); color: #3d1c00; font-family: var(--font-display); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: 0 0 0 2px #7a3e14; line-height: 1.4; }
+.beta-pill:hover { filter: brightness(1.1); }
 .title-foot { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 2px; z-index: 2; }
 .title-foot button { border: 0; background: rgba(10, 15, 36, 0.75); color: #c8d0f0; font: inherit; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px; cursor: pointer; }
 .title-foot button:hover, .title-foot button:focus-visible { color: var(--gold); outline: none; }
