@@ -249,6 +249,10 @@ button, input { font: inherit; color: inherit; }
   .pcard .face { width: 40px; height: 40px; }
   .menu { position: fixed; left: 0; right: 0; bottom: 0; z-index: 13; border-radius: 12px 12px 0 0; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); grid-auto-columns: 66px; gap: 5px; box-shadow: 0 -8px 24px rgba(0,0,0,0.45), 0 0 0 3px var(--frame-dark); scrollbar-width: none; }
   .menu::-webkit-scrollbar { display: none; }
+  .main .menu-fade { display: block; position: fixed; bottom: 0; z-index: 14; width: 46px; height: calc(70px + env(safe-area-inset-bottom)); pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+  .menu-fade.r { right: 0; background: linear-gradient(90deg, transparent, rgba(8, 12, 30, 0.95)); }
+  .menu-fade.l { left: 0; background: linear-gradient(270deg, transparent, rgba(8, 12, 30, 0.95)); }
+  body.menu-more-r .menu-fade.r, body.menu-more-l .menu-fade.l { opacity: 1; }
   .menu .mbtn { padding: 6px 1px 5px; gap: 3px; font-size: 7.5px; letter-spacing: 0; }
   .menu .mbtn canvas { width: 26px; height: 26px; }
   .menu .mbtn .badge { top: 1px; right: 2px; }
@@ -334,6 +338,7 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .mbtn[data-open="true"] { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3), 0 0 0 2px var(--gold); }
 .menu-tip { font-size: 10.5px; font-weight: 800; color: var(--muted); text-align: center; line-height: 1.3; padding: 2px; }
 @media (max-width: 760px) { .menu-tip { display: none; } }
+.menu-fade { display: none; }
 .flashpane { animation: flashPane 0.7s ease-out; }
 @keyframes flashPane { 0% { box-shadow: 0 0 0 4px var(--gold); } 100% { box-shadow: none; } }
 .mg { display: grid; gap: 8px; }
@@ -775,6 +780,21 @@ html.tvmode .tv-row .n { font-family: var(--font-display); color: var(--gold); }
 .title-foot button { border: 0; background: rgba(10, 15, 36, 0.75); color: #c8d0f0; font: inherit; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px; cursor: pointer; }
 .title-foot button:hover, .title-foot button:focus-visible { color: var(--gold); outline: none; }
 @media (max-width: 640px) { .title-foot { position: static; justify-content: center; margin-top: 6px; grid-row: 4; } }
+/* Phone main menu: all five players fit in one row, manage buttons wrap, beta note gets its own spot. */
+@media (max-width: 640px) {
+  .title-screen > .beta-note { position: relative; left: auto; top: auto; grid-row: 2; align-self: start; justify-self: stretch; max-width: none; margin: 0; background: rgba(10, 15, 36, 0.92); font-size: 11.5px; padding: 6px 10px; }
+  .title-screen .title-cards { grid-auto-flow: row; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; gap: 5px; padding: 2px 0 4px; }
+  .title-screen .tcard { padding: 6px 2px 5px; border-width: 2px; border-radius: 9px; }
+  .title-screen .tcard .face { width: min(46px, 100%); margin-bottom: 2px; padding: 3px; }
+  .title-screen .tcard .ring, .tcard .co, .tcard .wave { display: none; }
+  .title-screen .tcard .name { font-size: 9px; letter-spacing: 0; }
+  .title-screen .tcard .val { font-size: 11.5px; }
+  .title-screen .title-side { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-columns: auto; padding: 6px; gap: 6px; }
+  .title-screen .tside { font-size: 8.5px; letter-spacing: 0; padding: 7px 2px 6px; }
+  .title-screen .tside canvas { width: 24px; height: 24px; }
+  .title-screen .title-btns { gap: 10px; }
+  .title-screen .title-btns .btn { font-size: 13px; padding: 12px 6px; }
+}
 .calcwin { position: fixed; right: 16px; bottom: 16px; width: 292px; z-index: 30; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .calcwin[hidden] { display: none; }
 .calcwin .win-title { cursor: move; gap: 8px; user-select: none; touch-action: none; }
@@ -4460,6 +4480,17 @@ details.howto[open] summary::after { content: "▾ hide"; }
   }
   window.addEventListener("pagehide", () => { try { saveGame(); } catch (e) {} });
   const isPhone = () => matchMedia("(max-width: 760px)").matches;
+  // Phone tab bar: keep the open tab in view and fade the edge where more tabs are hidden.
+  let menuScroll = 0;
+  function phoneMenu() {
+    const m = document.querySelector(".menu");
+    if (!m || !isPhone()) return;
+    const edges = () => { document.body.classList.toggle("menu-more-l", m.scrollLeft > 4); document.body.classList.toggle("menu-more-r", m.scrollLeft + m.clientWidth < m.scrollWidth - 4); menuScroll = m.scrollLeft; };
+    m.scrollLeft = menuScroll;
+    const a = m.querySelector('[aria-current="true"]');
+    if (a && (a.offsetLeft < m.scrollLeft || a.offsetLeft + a.offsetWidth > m.scrollLeft + m.clientWidth)) m.scrollLeft = a.offsetLeft - (m.clientWidth - a.offsetWidth) / 2;
+    edges(); m.addEventListener("scroll", edges, { passive: true });
+  }
   function phoneToPane() {
     const p = document.getElementById("panes"), tb = document.querySelector(".topbar");
     if (!p) return;
@@ -4639,7 +4670,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const unread = k === "news" && S.tab !== "news" ? S.chat.length - (S.newsSeen || 0) : 0, st = tabStatus(k);
       return `<button class="mbtn" type="button" data-tab="${k}" aria-current="${S.tab === k}" ${(S.panes || []).includes(k) ? 'data-open="true"' : ""} title="Click to open. Hold and drag onto the screen to open it next to what you have open (up to 3)."><canvas data-icon="${k}" width="12" height="12" aria-hidden="true"></canvas>${n}${unread > 0 ? `<span class="badge" aria-label="${unread} new">${unread}</span>` : st ? `<span class="tag ${st.cls}">${st.text}</span>` : ""}</button>`;
     };
-    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${decideTabs().map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav>`;
+    return `<nav class="win menu" aria-label="Sections"><h2 class="grp">1 · Read</h2>${READ_TABS.map(btn).join("")}<h2 class="grp">2 · Decide</h2>${decideTabs().map(btn).join("")}<div class="menu-tip">Drag a tab onto the screen to open up to 3 at once</div></nav><div class="menu-fade l" aria-hidden="true"></div><div class="menu-fade r" aria-hidden="true"></div>`;
   }
 
   // Sliders that grow with your company: the budget sliders reach further as you get bigger, and you can type more than the slider shows.
@@ -6734,6 +6765,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       S.tab = t; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; if (isPhone()) phoneToPane();
     });
     on(".menu [data-tab]", "pointerdown", tabDragStart);
+    phoneMenu();
     on("[data-pane-close]", "click", (e) => { const t = e.currentTarget.dataset.paneClose; if (t === S.tab) { S.tab = S.panes[0]; S.panes = S.panes.slice(1); } else S.panes = S.panes.filter((x) => x !== t); sfx("click"); hideTip(); render(); });
     on("#city", "pointermove", cityTip);
     on("#city", "pointerdown", cityTip);
