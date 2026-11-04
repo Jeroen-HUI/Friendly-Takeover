@@ -223,6 +223,39 @@ button, input { font: inherit; color: inherit; }
   .menu h2 { display: none; }
 }
 
+/* ---------- Phone layout: compact top bar that stays put, swipeable player cards, tab bar at the bottom like an app ---------- */
+@media (max-width: 760px) {
+  .topbar { position: sticky; top: 0; z-index: 12; display: grid !important; grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: "logo round wallet wallet" "tools tools tools submit"; gap: 6px 8px; padding: 6px 8px; margin: 0 -2px; border-radius: 0 0 12px 12px; }
+  .topbar > .logo { grid-area: logo; }
+  .topbar .wordmark, .topbar .logo-full, .topbar .spacer, .topbar .sep { display: none !important; }
+  .topbar .logo canvas { width: 30px; height: 30px; }
+  .topbar .beta-pill { left: 16px; top: -6px; font-size: 7.5px; padding: 0 4px; }
+  .topbar .round { grid-area: round; font-size: 10px; letter-spacing: 0; white-space: nowrap; align-self: center; }
+  .topbar .tools { grid-area: tools; justify-self: start; align-self: center; gap: 4px; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .topbar .tools::-webkit-scrollbar { display: none; }
+  .topbar .tools .btn { padding: 7px 5px; font-size: 8px; letter-spacing: 0; min-height: 0; flex-shrink: 0; }
+  .topbar .wallet { grid-area: wallet; order: 0; width: auto; min-width: 0; justify-self: end; }
+  .topbar .wallet > span { padding: 3px 7px; flex: 0 0 auto; min-width: 0 !important; }
+  .topbar .wallet small { font-size: 9px; }
+  .topbar .w-cash b { font-size: 14px; }
+  .topbar .w-debt b { font-size: 12px; }
+  .topbar .w-left, .topbar .w-bar { display: none; }
+  .topbar #btn-submit { grid-area: submit; align-self: stretch; padding: 6px 10px; font-size: 10.5px; white-space: normal; line-height: 1.15; max-width: 96px; }
+  .topbar > :not(.logo):not(.round):not(.tools):not(.wallet):not(#btn-submit):not(.spacer):not(.sep) { grid-column: 1 / -1; }
+  .players { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 2px 6px; scrollbar-width: none; }
+  .players::-webkit-scrollbar { display: none; }
+  .players > * { flex: 0 0 210px; scroll-snap-align: start; }
+  .pcard { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 7px; padding: 7px 8px; }
+  .pcard .face { width: 40px; height: 40px; }
+  .menu { position: fixed; left: 0; right: 0; bottom: 0; z-index: 13; border-radius: 12px 12px 0 0; margin: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); grid-auto-columns: 66px; gap: 5px; box-shadow: 0 -8px 24px rgba(0,0,0,0.45), 0 0 0 3px var(--frame-dark); scrollbar-width: none; }
+  .menu::-webkit-scrollbar { display: none; }
+  .menu .mbtn { padding: 6px 1px 5px; gap: 3px; font-size: 7.5px; letter-spacing: 0; }
+  .menu .mbtn canvas { width: 26px; height: 26px; }
+  .menu .mbtn .badge { top: 1px; right: 2px; }
+  body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .popstack { bottom: calc(82px + env(safe-area-inset-bottom)); }
+}
+
 .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
 @media (max-width: 980px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 .card { background: var(--panel-2); border-radius: 8px; padding: 12px; display: grid; gap: 10px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.05); min-width: 0; }
@@ -4426,6 +4459,13 @@ details.howto[open] summary::after { content: "▾ hide"; }
     return false;
   }
   window.addEventListener("pagehide", () => { try { saveGame(); } catch (e) {} });
+  const isPhone = () => matchMedia("(max-width: 760px)").matches;
+  function phoneToPane() {
+    const p = document.getElementById("panes"), tb = document.querySelector(".topbar");
+    if (!p) return;
+    const y = p.getBoundingClientRect().top + scrollY - (tb ? tb.offsetHeight : 0) - 8;
+    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+  }
   function render() {
     if (!S) return;
     rememberWhere();
@@ -6485,7 +6525,11 @@ details.howto[open] summary::after { content: "▾ hide"; }
         const t = Math.min(1, (now - S.anim.start) / 1400);
         drawCity(1 - Math.pow(1 - t, 3));
         if (t >= 1) S.anim = null;
-      } else if (now - lastCityDraw > 90) { lastCityDraw = now; cityFrame++; drawCity(1); }
+      } else if (now - lastCityDraw > (isPhone() ? 180 : 90)) {
+        // Only animate while the skyline is on screen (saves battery and keeps phones snappy).
+        lastCityDraw = now; const r = $("#city").getBoundingClientRect();
+        if (r.bottom > 0 && r.top < innerHeight && !document.hidden) { cityFrame++; drawCity(1); }
+      }
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
@@ -6663,7 +6707,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     refreshDerived();
   }
   function refreshDerived() {
-    const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }); }
+    const w = document.querySelector(".wallet"); if (w && S.screen === "game") { w.outerHTML = walletHtml(); const nw = document.querySelector(".wallet"); nw.addEventListener("click", () => { S.tab = "finance"; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; if (isPhone()) phoneToPane(); }); }
 
     const cn = $("#cap-note"); if (cn) cn.textContent = capNote();
     const secEl = $("#sec-note"); if (secEl && S.draft) secEl.innerHTML = secNote(S.draft.securityBudget || 0);
@@ -6678,7 +6722,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     S.draft.guidance = S.guidanceOpen && Number.isFinite(u) && u >= 0 && Number.isFinite(p) ? { units: Math.round(u), profit: Math.round(p) } : null;
   }
   function bindAgenda() {
-    document.querySelectorAll(".agenda [data-tab]").forEach((el) => el.addEventListener("click", (e) => { if (e.currentTarget.dataset.tab === "chat") { toggleTalk(true); return; } S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; }));
+    document.querySelectorAll(".agenda [data-tab]").forEach((el) => el.addEventListener("click", (e) => { if (e.currentTarget.dataset.tab === "chat") { toggleTalk(true); return; } S.tab = e.currentTarget.dataset.tab; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; if (isPhone()) phoneToPane(); }));
   }
   function bind() {
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
@@ -6687,7 +6731,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       const t = e.currentTarget.dataset.tab;
       if (t === "chat") { toggleTalk(true); return; }
       if ((S.panes || []).includes(t)) { const el = document.querySelector(`.pane[data-pane="${t}"]`); if (el) { el.scrollIntoView({ behavior: PREFS.anim ? "smooth" : "auto", block: "start" }); el.classList.remove("flashpane"); void el.offsetWidth; el.classList.add("flashpane"); } return; }
-      S.tab = t; S.tabEnter = true; hideTip(); render(); S.tabEnter = false;
+      S.tab = t; S.tabEnter = true; hideTip(); render(); S.tabEnter = false; if (isPhone()) phoneToPane();
     });
     on(".menu [data-tab]", "pointerdown", tabDragStart);
     on("[data-pane-close]", "click", (e) => { const t = e.currentTarget.dataset.paneClose; if (t === S.tab) { S.tab = S.panes[0]; S.panes = S.panes.slice(1); } else S.panes = S.panes.filter((x) => x !== t); sfx("click"); hideTip(); render(); });
