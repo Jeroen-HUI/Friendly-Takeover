@@ -272,8 +272,9 @@ export const COSTS = {
   sensitivityRange: [0.85, 1.15] as [number, number],
 };
 
-/** Bulk buyer: takes leftover stock after the market at a low price (a share of last round's average price). */
-export const BULK = { priceShare: [0.4, 0.55] as [number, number], maxShareOfCapacity: 0.5 };
+/** Bulk buyer: takes leftover stock after the market at a low price (a share of last round's average price), but never
+ *  more than a share of the seller's own unit cost, so it only cuts losses and can't be farmed for profit. */
+export const BULK = { priceShare: [0.4, 0.55] as [number, number], maxShareOfCapacity: 0.5, maxShareOfCost: 0.8 };
 
 /** Live stock exchange during a round: price impact per share traded, fee, and the cap (control needs a takeover bid). */
 // Shares bought on the exchange count towards the difficulty's maxSharesPerRound, together with end-of-round takeover bids.

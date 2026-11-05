@@ -1382,11 +1382,12 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
     const { c, d } = w;
     const totalSold = w.sold + w.retailSold;
     const retailRevenue = w.retailSold * d.retailPrice;
-    const revenue = w.sold * d.price + retailRevenue + (state.market?.bulkPrice ?? 0) * Math.max(0, Math.min(d.bulkSell, w.available - (w.sold + w.retailSold), Math.round(c.capacity * BULK.maxShareOfCapacity)));
-    // Bulk buyer: takes leftover stock after the market at a low price.
-    const bulkPrice = state.market?.bulkPrice ?? 0;
+    // Bulk buyer: takes leftover stock after the market at a low price, and never more than a share of what a unit
+    // cost you to make. It cuts losses on leftovers; producing extra just to dump it there always loses money.
+    const bulkPrice = Math.round(Math.min(state.market?.bulkPrice ?? 0, w.avgCost * BULK.maxShareOfCost) * 100) / 100;
     const bulkSold = bulkPrice > 0 ? Math.max(0, Math.min(d.bulkSell, w.available - totalSold, Math.round(c.capacity * BULK.maxShareOfCapacity))) : 0;
     const bulkRevenue = bulkSold * bulkPrice;
+    const revenue = w.sold * d.price + retailRevenue + bulkRevenue;
     const cogs = (totalSold + bulkSold) * w.avgCost;
     const inventoryEnd = w.available - totalSold - bulkSold;
     const storeOpenCost = w.storesOpened * RETAIL.openCost;

@@ -4164,7 +4164,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       <div class="hint">This round's production uses the materials in stock first. Anything missing is bought on the spot market at today's price <b>+${Math.round(FT.COSTS.spotPremium * 100)}%</b>. ${o[1]}.</div>
       ${stepper("f-morder", "Buy materials now for next round (" + i.labels.unit + ")", d.materialOrder, 0, Math.round(c.capacity * 3), step, units, `<div class="hint muted" style="font-size:12.5px" id="morder-note">${morderNote()}</div>`)}
     </div>
-    <div class="card"><h3>Bulk buyer</h3><div class="hint">A discount chain takes stock you have left <b>after</b> the market, at <b>${eurX(M.bulkPrice || 0)}</b> per ${esc(i.labels.product)} (max ${units(Math.round(c.capacity * FT.BULK.maxShareOfCapacity))}). Cheap, but your warehouse is empty and you skip the holding cost.</div>
+    <div class="card"><h3>Bulk buyer</h3><div class="hint">A discount chain takes stock you have left <b>after</b> the market, at <b>${eurX(M.bulkPrice || 0)}</b> per ${esc(i.labels.product)} (max ${units(Math.round(c.capacity * FT.BULK.maxShareOfCapacity))}), but never more than <b>${Math.round(FT.BULK.maxShareOfCost * 100)}%</b> of what a ${esc(i.labels.product)} cost you to make. It's for clearing leftovers, not for profit: your warehouse is empty and you skip the holding cost.</div>
       ${stepper("f-bulk", "Sell leftovers to the bulk buyer (up to)", d.bulkSell, 0, Math.round(c.capacity * FT.BULK.maxShareOfCapacity), step, units)}</div>`;
   }
   function morderNote() {
