@@ -1974,6 +1974,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
       // Only download my report when a new round is out (it's the big one).
       const expect = g.status === "finished" ? g.current_round : g.current_round - 1;
       const rep = expect > MP.applied || !S || S.screen !== "game" ? await api().latestReport(MP.gameId, MP.playerId) : null;
+      // A finished game is cleaned up a day later: its report is gone, so there is nothing left to show.
+      if (!rep && g.status === "finished" && (!S || S.screen !== "game")) { mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: (S && S.opts) || DEFAULT_OPTS, modal: "online", onlineError: "That game has ended and been cleaned up." }; render(); return; }
       if (rep && rep.report && rep.report.view && (rep.round > MP.applied || !S || S.screen !== "game")) applyServer(rep.round, rep.report.view);
       else if (sig !== MP.sig && S && S.screen === "game") { MP.sig = sig; if (S.modal === "wait") { renderModal(); bindModal(); } const sb2 = $("#btn-submit"); if (sb2) sb2.outerHTML = submitButton(); bindSubmit(); }
       MP.sig = sig;
