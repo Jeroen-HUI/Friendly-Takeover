@@ -3577,6 +3577,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     on("[data-f-yes]", (e) => accAction(async () => { await api().rpc("respond_friend", { p_user: e.currentTarget.dataset.fYes, p_accept: true }); await refresh(); }, "Friend added."));
     on("[data-f-no]", (e) => accAction(async () => { await api().rpc("respond_friend", { p_user: e.currentTarget.dataset.fNo, p_accept: false }); await refresh(); }));
     on("[data-f-remove]", (e) => accAction(async () => { await api().rpc("remove_friend", { p_user: e.currentTarget.dataset.fRemove }); await refresh(); }));
+    // Opened from someone's invite link: send the request straight away (once), so nobody thinks it was sent when it wasn't.
+    if (S.friendCode && ACC.profile && !S.friendAuto && !ACC.busy && S.friendCode !== ACC.profile.friend_code) { S.friendAuto = true; const b = modal.querySelector("#f-add"); if (b) setTimeout(() => b.click(), 0); }
     on("#p-copy-friend", () => { const link = backUrl() + "?friend=" + ACC.profile.friend_code; try { navigator.clipboard.writeText(link); ACC.msg = "Link copied: send it to a friend."; } catch (e) { ACC.msg = link; } renderModal(); bindModal(); });
   }
 
