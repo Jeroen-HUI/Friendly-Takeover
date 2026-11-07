@@ -114,6 +114,22 @@ button, input { font: inherit; color: inherit; }
 .win-title button.x:hover { filter: brightness(1.15); }
 .win-title .x { margin-left: auto; width: 22px; height: 22px; border-radius: 5px; background: #d9443a; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3); display: grid; place-items: center; font-family: var(--font-pixel); font-size: 12px; }
 .win-body { padding: 14px; display: grid; gap: 14px; }
+/* How-to-play video */
+.win-title .tutbtn { margin-left: auto; border: 0; cursor: pointer; background: var(--accent, #f39a2e); color: #141414; font-family: var(--font-pixel); font-size: 10px; letter-spacing: .04em; padding: 4px 8px 5px; border-radius: 5px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); white-space: nowrap; text-transform: uppercase; }
+.win-title .tutbtn:hover { filter: brightness(1.1); }
+.win-title .tutbtn + .x { margin-left: 6px; }
+.tutwin { width: min(440px, 94vw); }
+.tutwin .win-body { padding: 10px; gap: 10px; }
+.tutvid { position: relative; width: 100%; aspect-ratio: 9 / 16; max-height: 72vh; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; }
+.tutvid video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
+.tutend { position: absolute; inset: 0; display: grid; place-content: center; gap: 14px; text-align: center; background: rgba(10,15,36,.86); padding: 16px; }
+.tutend[hidden] { display: none; }
+.tutend b { font-family: var(--font-display); font-size: 18px; }
+.tutend-btns { display: grid; gap: 8px; }
+.tutchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tutchip { border: 0; cursor: pointer; font: 700 12px/1 var(--font-body, Nunito), sans-serif; padding: 6px 9px; border-radius: 999px; background: rgba(255,255,255,.08); color: inherit; }
+.tutchip.on { background: var(--accent, #f39a2e); color: #141414; }
+.tutcta { justify-self: start; }
 
 /* Top bar */
 .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 10px 16px; }
@@ -1103,6 +1119,15 @@ details.howto[open] summary::after { content: "▾ hide"; }
   const READ_TABS = [["news", "News"], ["market", "Market"], ["reports", "Reports"]];
   const DECIDE_TABS = [["production", "Production"], ["rnd", "R&D"], ["marketing", "Marketing"], ["retail", "Retail"], ["finance", "Finance"], ["takeovers", "Takeovers"], ["boardroom", "Boardroom"]];
   const TABS = [...READ_TABS, ...DECIDE_TABS, ["street", "Street"]];
+  // The how-to-play video (docs/tutorial.mp4, 3 minutes). Each part starts at these seconds; a tab's "▶ How" button
+  // plays just its part. The single-file copy (artifact, saved file) streams it from the website.
+  const TUT = {
+    parts: [["intro", "The goal", 0], ["start", "Start a game", 15.66], ["news", "The news", 28.84], ["market", "Market & Reports", 37.22], ["production", "Production", 54.73],
+      ["rnd", "R&D and Marketing", 69.07], ["retail", "Your own stores", 83.84], ["finance", "Finance", 92.38], ["takeovers", "Takeovers", 106.48], ["boardroom", "Boardroom", 130.02],
+      ["deals", "Talk & Deals", 143.62], ["submit", "Submit & results", 152.81], ["friends", "Play with friends", 161.31], ["end", "", 173.92]],
+    forTab: { news: "news", market: "market", reports: "market", production: "production", rnd: "rnd", marketing: "rnd", retail: "retail", finance: "finance", takeovers: "takeovers", boardroom: "boardroom" },
+    src: () => (/^https?:/.test(location.protocol) && /friendlytakeovers\.com$|vercel\.app$|localhost$/.test(location.hostname) ? "/tutorial.mp4" : "https://friendlytakeovers.com/tutorial.mp4"),
+  };
   const hasStreetUI = () => !!(S && S.game && FT.hasStreet && FT.hasStreet(S.game));
   const decideTabs = () => (hasStreetUI() ? [...DECIDE_TABS.slice(0, 4), ["street", "Street"], ...DECIDE_TABS.slice(4)] : DECIDE_TABS);
   const INTRO = {
@@ -1854,6 +1879,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
       mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
     });
   }
+  document.addEventListener("click", (e) => { const tb = e.target.closest("[data-tut]"); if (tb && S) { e.preventDefault(); openTutorial(tb.dataset.tut); } });
   document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); if (e.target.closest("[data-giftcodes]") && S) openGifts(); if (e.target.closest("[data-bug]") && S) openBug(); if (e.target.closest("[data-bugs]") && S) openBugs(); });
   // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
   document.addEventListener("click", (e) => {
@@ -4872,7 +4898,8 @@ details.howto[open] summary::after { content: "▾ hide"; }
     const title = TAB_TITLES[tab];
     const body = me().merged && ["production", "rnd", "marketing", "finance", "retail"].includes(tab) ? mergedPanel() : { production: tabProduction, rnd: tabRnd, marketing: tabMarketing, finance: tabFinance, takeovers: tabTakeovers, boardroom: tabBoardroom, retail: tabRetail, street: tabStreet, market: tabMarket, reports: tabReports, news: tabNews }[tab]();
     const close = count > 1 ? `<button type="button" class="x live" data-pane-close="${tab}" aria-label="Close ${title}"${tipAttr("Close this window")}>×</button>` : "";
-    return `<section class="win pane" data-pane="${tab}" aria-label="${title}"><div class="win-title">${title}${close}</div><div class="win-body ${S.tabEnter && idx === 0 ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
+    const how = TUT.forTab[tab] ? `<button type="button" class="tutbtn" data-tut="${TUT.forTab[tab]}"${tipAttr("Watch how this works (short video)")}>▶ How</button>` : "";
+    return `<section class="win pane" data-pane="${tab}" aria-label="${title}"><div class="win-title">${title}${how}${close}</div><div class="win-body ${S.tabEnter && idx === 0 ? "enter" : ""}">${S.game.round <= 2 ? `<div class="intro">${INTRO[tab]}</div>` : ""}${body}</div></section>`;
   }
 
   function tabProduction() {
@@ -6181,6 +6208,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (S.modal === "vote") inner = voteModal();
     if (S.modal === "sheet") inner = sheetModal();
     if (S.modal === "help") inner = helpModal();
+    if (S.modal === "tutorial") inner = tutorialModal();
     if (S.modal === "show") inner = showModal();
     if (S.modal === "online") inner = onlineModal();
     if (S.modal === "mission") inner = briefingModal();
@@ -6211,6 +6239,7 @@ details.howto[open] summary::after { content: "▾ hide"; }
     if (!modal.querySelector(".overlay.again")) countUp(modal);  // count up once, not on every refresh
     if (S.modal === "show") runShow();
     if (S.modal === "board") runBoard();
+    if (S.modal === "tutorial") runTutorial();
     if (S.modal === "wait") { mpTick(); mountMinigame(modal.querySelector("#mg-slot")); }
     // The red × in a window's title: a real close button where the window can be closed, hidden where it can't.
     const x = modal.querySelector(".win-title span.x");
@@ -6270,8 +6299,51 @@ details.howto[open] summary::after { content: "▾ hide"; }
     </div></div>`;
   }
 
+  // ---------- How-to-play video: the whole thing, or one part of it (a tab's "▶ How" button)
+  function openTutorial(part) {
+    S.tut = { part: TUT.parts.some((p) => p[0] === part) ? part : "all", ended: false };
+    try { hideTip(); } catch (e) {}
+    S.modal = "tutorial"; track("/tutorial/" + S.tut.part); renderModal(); bindModal();
+  }
+  function tutRange(part) {
+    const i = TUT.parts.findIndex((p) => p[0] === part);
+    return i < 0 ? [0, null] : [TUT.parts[i][2], TUT.parts[i + 1] ? TUT.parts[i + 1][2] : null];
+  }
+  function tutorialModal() {
+    const t = S.tut || { part: "all" }, one = t.part !== "all", [from] = tutRange(t.part);
+    const name = one ? (TUT.parts.find((p) => p[0] === t.part) || [])[1] : "In 3 minutes";
+    const chips = TUT.parts.filter((p) => p[1]).map(([id, n]) => `<button type="button" class="tutchip ${id === t.part ? "on" : ""}" data-tutgo="${id}">${esc(n)}</button>`).join("");
+    return `<div class="win tutwin"><div class="win-title">How to play · ${esc(name)}<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <div class="tutvid"><video id="tut-vid" playsinline controls autoplay preload="auto" src="${TUT.src()}#t=${from}"></video>
+        <div class="tutend" id="tut-end" hidden><b>That's ${esc(name || "it")}.</b><div class="tutend-btns">${one ? `<button type="button" class="btn go" id="tut-more">Keep watching</button>` : ""}<button type="button" class="btn" id="tut-again">Watch again</button><button type="button" class="btn" id="tut-done">Back to the game</button></div></div></div>
+      <div class="tutchips" aria-label="Jump to a part">${chips}</div>
+    </div></div>`;
+  }
+  function runTutorial() {
+    const v = modal.querySelector("#tut-vid"), end = modal.querySelector("#tut-end");
+    if (!v) return;
+    const [from] = tutRange(S.tut.part);
+    const finish = () => { v.pause(); end.hidden = false; };
+    const seek = () => { if (Math.abs(v.currentTime - from) > 0.5) v.currentTime = from; };
+    if (v.readyState >= 1) seek(); else v.addEventListener("loadedmetadata", seek, { once: true });
+    // The part can change (chips, "Keep watching"), so look it up each time.
+    v.addEventListener("timeupdate", () => { if (!S.tut) return; const [, end2] = tutRange(S.tut.part); if (S.tut.part !== "all" && end2 && v.currentTime >= end2 - 0.05 && end.hidden) finish(); });
+    v.addEventListener("ended", finish);
+    v.addEventListener("play", () => { end.hidden = true; });
+    v.play().catch(() => {});  // some browsers want a tap first; the controls are there
+    const on = (sel, f) => { const el = modal.querySelector(sel); if (el) el.addEventListener("click", f); };
+    on("#tut-more", () => { S.tut.part = "all"; end.hidden = true; v.play(); modal.querySelector(".win-title").firstChild.textContent = "How to play · In 3 minutes"; });
+    on("#tut-again", () => { v.currentTime = tutRange(S.tut.part)[0]; v.play(); });
+    on("#tut-done", () => { S.modal = null; S.tut = null; renderModal(); });
+    modal.querySelectorAll("[data-tutgo]").forEach((b) => b.addEventListener("click", () => {
+      S.tut.part = b.dataset.tutgo; const [f] = tutRange(S.tut.part); end.hidden = true; v.currentTime = f; v.play().catch(() => {});
+      modal.querySelectorAll("[data-tutgo]").forEach((x) => x.classList.toggle("on", x === b));
+      modal.querySelector(".win-title").firstChild.textContent = "How to play · " + b.textContent;
+    }));
+  }
   function helpModal() {
     return `<div class="win"><div class="win-title">How to play<span class="x" aria-hidden="true">×</span></div><div class="win-body">
+      <button type="button" class="btn go tutcta" data-tut="all">▶ Watch the 3-minute video</button>
       <div class="intro">You run one company for ${S.game && S.game.config.rounds < 999 ? S.game.config.rounds : "a set number of"} rounds against your rivals. Whoever's company is worth the most at the end wins, unless someone takes control of every other company first: that's a monopoly, and it ends the game on the spot.</div>
       <ol class="steps">
         <li><span><b>Watch the news.</b> Each round starts with broadcasts: news that changes demand, costs or interest this round.</span></li>
