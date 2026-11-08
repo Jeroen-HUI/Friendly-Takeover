@@ -24,7 +24,7 @@ const setRounds = (n) => { const i = doc.querySelector("[data-cs-rounds]"); if (
 await wait(50);
 // The game opens on the title screen.
 if (!doc.querySelector(".title-screen")) throw new Error("title screen did not render");
-if (doc.querySelectorAll(".tcard").length !== 5) throw new Error("title cards missing");
+if (!doc.getElementById("t-play") || doc.querySelectorAll(".title-social .soc").length !== 4) throw new Error("play now / social links missing");
 if (!doc.getElementById("t-continue").disabled) throw new Error("continue should be disabled without a save");
 // First time online: the account screen (create / log in / guest), then the online menu.
 click("#t-online"); if (!/Create account/.test(doc.querySelector(".overlay").textContent) || !doc.querySelector("#a-name")) throw new Error("account screen first");
