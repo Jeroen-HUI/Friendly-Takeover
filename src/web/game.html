@@ -1060,10 +1060,36 @@ details.howto[open] summary::after { content: "▾ hide"; }
 .title-btns { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px 14px; width: min(760px, 100%); justify-self: center; }
 .title-btns .btn { grid-column: span 2; font-family: var(--font-display); font-weight: 700; font-size: clamp(14px, 1.7vw, 19px); padding: 15px 10px; position: relative; line-height: 1.05; }
 .title-btns .btn.row2a { grid-column: 2 / span 2; }
+.social { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.title-social { margin-top: 10px; }
+.soc { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 40px; padding: 0 10px; border-radius: 10px; color: #fff; text-decoration: none; font-family: var(--font-display); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; box-shadow: inset 0 -4px 0 rgba(0,0,0,.28), 0 0 0 2px #0b1027, 0 4px 0 rgba(0,0,0,.3); transition: transform .12s ease, filter .12s ease; }
+.soc svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
+.soc:hover, .soc:focus-visible { transform: translateY(-2px); filter: brightness(1.12); }
+.soc:active { transform: translateY(1px); }
+.soc-wide { padding: 0 16px 0 12px; }
+.title-social { flex-wrap: nowrap; }
+@media (max-width: 420px) { .soc-wide span { display: none; } .soc-wide::after { content: "Discord"; } .soc { height: 38px; } }
+.soc-discord { background: #5865f2; }
+.soc-tiktok { background: #111; box-shadow: inset 0 -4px 0 rgba(0,0,0,.4), 0 0 0 2px #0b1027, 0 4px 0 rgba(0,0,0,.3), -2px -2px 0 #25f4ee inset, 2px 2px 0 #fe2c55 inset; }
+.soc-youtube { background: #ff0033; }
+.soc-instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
 .title-btns .btn.playnow { grid-column: 1 / -1; font-size: clamp(20px, 2.6vw, 28px); padding: 18px 10px 16px; background: linear-gradient(#5fe08c, #2fa85c); color: #0b2414; box-shadow: inset 0 -5px 0 rgba(0,0,0,0.25), 0 0 0 2px #0b1027, 0 6px 0 rgba(0,0,0,0.3), 0 0 26px rgba(95,224,140,0.35); animation: playpulse 1.6s ease-in-out infinite; }
 .title-btns .btn.playnow small { display: block; font-family: var(--font-ui); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none; margin-top: 5px; color: #0f3b20; }
 @keyframes playpulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12); } }
-html[data-motion="off"] .title-btns .btn.playnow { animation: none; }
+html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.title-social { margin-top: 10px; }
+.soc { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 40px; padding: 0 10px; border-radius: 10px; color: #fff; text-decoration: none; font-family: var(--font-display); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; box-shadow: inset 0 -4px 0 rgba(0,0,0,.28), 0 0 0 2px #0b1027, 0 4px 0 rgba(0,0,0,.3); transition: transform .12s ease, filter .12s ease; }
+.soc svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
+.soc:hover, .soc:focus-visible { transform: translateY(-2px); filter: brightness(1.12); }
+.soc:active { transform: translateY(1px); }
+.soc-wide { padding: 0 16px 0 12px; }
+.title-social { flex-wrap: nowrap; }
+@media (max-width: 420px) { .soc-wide span { display: none; } .soc-wide::after { content: "Discord"; } .soc { height: 38px; } }
+.soc-discord { background: #5865f2; }
+.soc-tiktok { background: #111; box-shadow: inset 0 -4px 0 rgba(0,0,0,.4), 0 0 0 2px #0b1027, 0 4px 0 rgba(0,0,0,.3), -2px -2px 0 #25f4ee inset, 2px 2px 0 #fe2c55 inset; }
+.soc-youtube { background: #ff0033; }
+.soc-instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
+.title-btns .btn.playnow { animation: none; }
 .title-btns .btn.row2b { grid-column: 4 / span 2; }
 .title-btns .btn.navy { background: linear-gradient(#2c3a78, #1d2758); box-shadow: inset 0 -4px 0 rgba(0,0,0,0.35), 0 0 0 2px #0b1027, 0 6px 0 rgba(0,0,0,0.3); }
 .title-btns .btn.go small { display: block; font-size: 0.68em; }
@@ -1135,6 +1161,15 @@ html[data-motion="off"] .title-btns .btn.playnow { animation: none; }
   const READ_TABS = [["news", "News"], ["market", "Market"], ["reports", "Reports"]];
   const DECIDE_TABS = [["production", "Production"], ["rnd", "R&D"], ["marketing", "Marketing"], ["retail", "Retail"], ["finance", "Finance"], ["takeovers", "Takeovers"], ["boardroom", "Boardroom"]];
   const TABS = [...READ_TABS, ...DECIDE_TABS, ["street", "Street"]];
+  // Where to follow the game. Icons: Simple Icons (CC0), each in its brand colour.
+  const SOCIAL = [
+    { id: "discord", name: "Discord", label: "Join our Discord", url: "https://discord.gg/CVZnE4BqDe", path: "M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" },
+    { id: "tiktok", name: "TikTok", url: "https://www.tiktok.com/@friendlytakeovers", path: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" },
+    { id: "youtube", name: "YouTube", url: "https://www.youtube.com/@FriendlyTakeovers", path: "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" },
+    { id: "instagram", name: "Instagram", url: "https://www.instagram.com/friendlytakeovers/", path: "M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077" },
+  ];
+  const socialLinks = (cls = "") => `<nav class="social ${cls}" aria-label="Follow Friendly Takeovers">${SOCIAL.map((x) =>
+    `<a class="soc soc-${x.id}${x.label ? " soc-wide" : ""}" href="${x.url}" target="_blank" rel="noopener" data-out="${x.id}" aria-label="${x.label || x.name}"${x.label ? "" : ` title="${x.name}"`}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${x.path}"/></svg>${x.label ? `<span>${x.label}</span>` : ""}</a>`).join("")}</nav>`;
   // The how-to-play video (docs/tutorial.mp4, 3 minutes). Each part starts at these seconds; a tab's "▶ How" button
   // plays just its part. The single-file copy (artifact, saved file) streams it from the website.
   const TUT = {
@@ -1556,6 +1591,7 @@ html[data-motion="off"] .title-btns .btn.playnow { animation: none; }
             <button class="btn navy row2a" type="button" id="t-options">Options</button>
             <button class="btn navy row2b" type="button" data-title="help">How to play</button>
           </div>
+          ${socialLinks("title-social")}
         </div>
       </div>
       <div class="beta-note"><b>Beta</b> Still being built: expect bugs, balance changes and the odd reset. <button type="button" class="linkbtn" data-bug>Report a bug</button></div>
@@ -1898,6 +1934,7 @@ html[data-motion="off"] .title-btns .btn.playnow { animation: none; }
       mpStop(); mpForget(); MP.gameId = null; S = { screen: "title", opts: S.opts || DEFAULT_OPTS, modal: null }; render();
     });
   }
+  document.addEventListener("click", (e) => { const o = e.target.closest("[data-out]"); if (o) track("/out/" + o.dataset.out); });
   document.addEventListener("click", (e) => { const tb = e.target.closest("[data-tut]"); if (tb && S) { e.preventDefault(); openTutorial(tb.dataset.tut); } });
   document.addEventListener("click", (e) => { if (e.target.closest("[data-shop]") && S) openShop(); if (e.target.closest("[data-giftcodes]") && S) openGifts(); if (e.target.closest("[data-bug]") && S) openBug(); if (e.target.closest("[data-bugs]") && S) openBugs(); });
   // Links to the legal pages work from anywhere (title footer, Options, Profile, the pages themselves).
