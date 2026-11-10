@@ -237,9 +237,10 @@ for (let r = 1; r <= 8; r++) {
     // Live stock exchange: buy 5 of a rival right now; the price moves and the ticker shows it.
     click('[data-tab="takeovers"]');
     if (!doc.querySelector("#live-exchange")) throw new Error("stock exchange missing");
-    // One price chart per rival on the exchange; cash and debt sit in the top bar.
+    // One price chart per rival on the exchange, plus your own company first; cash and debt sit in the top bar.
     const rivals = window.__ftDebug.S.game.companies.filter((c) => c.id !== "you" && !c.bankrupt).length;
-    if (doc.querySelectorAll("#live-exchange svg.stockchart").length !== rivals) throw new Error("exchange should show a chart per company");
+    if (doc.querySelectorAll("#live-exchange svg.stockchart").length !== rivals + 1) throw new Error("exchange should show a chart per company");
+    if (!doc.querySelector("#live-exchange .stock.mine .stock-price")) throw new Error("own share price missing on the exchange");
     if (!doc.querySelector(".wallet #top-cash") || !/Debt/.test(doc.querySelector(".wallet").textContent)) throw new Error("cash and debt panel missing");
     const buy = doc.querySelector('[data-trade][data-qty="5"]:not([disabled])');
     if (buy) {

@@ -753,6 +753,8 @@ html.tvmode body { overflow: hidden; }
 .stocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
 .stock { display: grid; gap: 6px; padding: 10px 12px 12px; border-radius: 10px; background: var(--panel-2, rgba(0,0,0,0.18)); box-shadow: inset 4px 0 0 var(--pc); min-width: 0; }
 .stock-head { display: flex; align-items: center; gap: 6px; font-weight: 900; } .stock-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stock.mine { box-shadow: inset 4px 0 0 var(--pc), 0 0 0 2px var(--accent, #f3902f); }
+.stock .you-tag { margin-left: auto; font-family: var(--font-display); font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--accent, #f3902f); color: #1a1206; }
 .stock-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .stock-price > b { font-family: var(--font-display); font-size: 24px; }
 .stock-price span { font-weight: 900; font-size: 13px; } .stock-price small { font-weight: 800; color: var(--muted); font-size: 10px; text-transform: uppercase; }
@@ -4156,8 +4158,26 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       </div>`;
     }).join("");
     const X = FT.EXCHANGE;
+    // Your own company first: price and who holds you (no trade buttons; buy back under "Defend" below).
+    const own = (() => {
+      const p = livePx(c.id), p0 = startPriceOf(c.id), ch = p0 ? p / p0 - 1 : 0;
+      const h = (S.hist[c.id] || []).filter((v) => v > 0), pStart = h.length ? h[0] / 100 : p, chAll = pStart ? p / pStart - 1 : 0;
+      const pct = (x) => (Math.abs(x) < 0.0005 ? "±0.0%" : (x > 0 ? "▲" : "▼") + Math.abs(x * 100).toFixed(1) + "%");
+      const others = Object.entries(c.shares.holders || {}).filter(([k, n]) => k !== c.id && k !== "you" && n > 0 && byId(k)).sort((a, b) => b[1] - a[1]);
+      const outside = others.reduce((s, [, n]) => s + n, 0);
+      const who = others.length ? others.slice(0, 3).map(([k, n]) => `${esc(byId(k).companyName)} <b>${n}%</b>`).join(" · ") : "Nobody else owns you yet";
+      return `<div class="stock mine" style="--pc:${colVar(c.id)}">
+        <div class="stock-head"><span class="dot" style="background:${colVar(c.id)}"></span><b>${esc(c.companyName)}</b><span class="you-tag">YOU</span></div>
+        <div class="stock-price"><b class="num"${tipAttr("Your live share price " + eurX(p) + " (1% of your company)" + (p0 ? "\\nAt the start of this round " + eurX(p0) : ""))}>${eur(p)}</b>
+          <span class="num ${ch > 0.0005 ? "pos" : ch < -0.0005 ? "neg" : "muted"}"${tipAttr("This round")}>${pct(ch)} <small>today</small></span>
+          <span class="num ${chAll > 0.0005 ? "pos" : chAll < -0.0005 ? "neg" : "muted"}"${tipAttr("Since the start of the game")}>${pct(chAll)} <small>game</small></span></div>
+        ${stockChart(c)}
+        <div class="stock-foot"><span>Rivals own <b class="${outside >= 25 ? "neg" : ""}">${outside}%</b></span><span>For sale <b>${c.shares.float}%</b></span>${c.controlledBy ? `<span class="neg">Controlled by ${esc(byId(c.controlledBy).companyName)}</span>` : ""}</div>
+        <div class="hint muted" style="margin:0">${who}</div>
+      </div>`;
+    })();
     return `<div class="card exchange" id="live-exchange"><h3>Stock exchange <span class="livepill">LIVE</span><span class="ex-cash">Your cash <b class="num ${c.cash < 0 ? "neg" : ""}">${eur(c.cash)}</b></span></h3>
-      <div class="stocks">${cards}</div>
+      <div class="stocks">${own}${cards}</div>
       <div class="hint" id="ex-msg">One share is 1% of a company. The line shows the share price at the end of every round; the <b>LIVE</b> part is this round, with every trade as a dot (green bought, red sold). Every share moves the price ${(X.impactPerShare * 100).toFixed(1)}%; ${Math.round(X.fee * 100)}% fee. Up to ${X.maxHolding}% per company here, and at most <b>${diff().maxSharesPerRound} shares of each company per round</b> (exchange and takeover bids together). Control needs a takeover bid.</div></div>`;
   }
 
