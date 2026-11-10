@@ -109,6 +109,16 @@ Deno.serve(async (req) => {
     const results = [];
     for (const g of overdue ?? []) {
       try {
+        // Stuck game: the saved state is behind the round counter (a resolve died halfway). It can never resolve,
+        // and re-reading its (large) state every minute burns egress, so end it.
+        const { data: rr } = await admin.from("game_states").select("round:state->round").eq("game_id", g.id).maybeSingle();
+        if (!rr || Number(rr.round) !== g.current_round) {
+          if (Date.now() - new Date(g.round_deadline).getTime() > 10 * 60_000) {
+            await admin.from("games").update({ status: "finished", round_deadline: null }).eq("id", g.id).eq("current_round", g.current_round).eq("status", "playing");
+            results.push({ game: g.code, status: 410, body: "stuck: ended" });
+          }
+          continue;
+        }
         // Abandoned game: nobody submitted anything for the last 3 rounds, so this round becomes the final one
         // (otherwise an unlimited game keeps playing itself every few minutes, forever).
         if ((g.current_round ?? 0) >= 3) {
