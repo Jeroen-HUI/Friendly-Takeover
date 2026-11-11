@@ -659,6 +659,8 @@ button[data-tip] { cursor: pointer; }
 .vm { display: grid; gap: 4px; }
 .vm-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 8px; border-radius: 6px; background: var(--panel-3); font-weight: 800; font-size: 13.5px; }
 .vm-row b { font-family: var(--font-display); letter-spacing: 0.05em; }
+/* While Talk & deals is open the same messages are in the chat, so the pop-ups step aside instead of covering it. */
+body.talk-open .popstack { display: none; }
 .popstack { position: fixed; right: 16px; bottom: 16px; z-index: 65; display: grid; gap: 8px; width: min(340px, calc(100vw - 32px)); }
 .popmsg { position: relative; display: grid; gap: 3px; padding: 10px 30px 10px 12px; border-radius: 10px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px var(--frame-dark), inset 4px 0 0 var(--pc, var(--gold)); animation: popslide 260ms cubic-bezier(.2, 1.3, .4, 1); }
 .popmsg.deal { box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 3px var(--gold), inset 4px 0 0 var(--pc, var(--gold)); }
@@ -775,12 +777,15 @@ html.tvmode body { overflow: hidden; }
 .talkwin { position: fixed; right: 16px; top: 16px; bottom: 16px; width: 380px; z-index: 31; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 3px var(--frame-dark); }
 .talkwin[hidden] { display: none; }
 .talkwin .win-title { gap: 8px; }
-.talkbody { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 0; flex: 1; }
+.talkbody { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.talkbody > * { flex-shrink: 0; }
+/* With the deal form open the chat gets a small window of its own and the whole panel scrolls, so "Send offer" is always reachable. */
+.talkbody.has-form .tlog { flex: 0 0 auto; min-height: 0; max-height: 22vh; }
 .tchips { display: flex; gap: 6px; flex-wrap: wrap; }
 .tchip { position: relative; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 6px; padding: 5px 9px; background: var(--panel-3); color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 900; cursor: pointer; }
 .tchip.on { background: var(--gold); color: #2b1d00; }
 .tchip .badge, .chatbtn .badge { position: static; margin-left: 4px; }
-.tlog { flex: 1; min-height: 120px; overflow-y: auto; display: grid; align-content: start; gap: 6px; padding-right: 2px; }
+.tlog { flex: 1 1 auto; flex-shrink: 1; min-height: 120px; overflow-y: auto; display: grid; align-content: start; gap: 6px; padding-right: 2px; }
 .tmsg { display: grid; gap: 1px; padding: 6px 9px; border-radius: 8px; background: var(--panel-3); max-width: 88%; font-size: 13.5px; font-weight: 700; }
 .tmsg b { font-size: 12px; display: flex; align-items: center; gap: 6px; }
 .tm-flag { margin-left: auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; opacity: 0.55; }
@@ -809,7 +814,7 @@ html.tvmode body { overflow: hidden; }
 .stars button { border: 0; background: none; font-size: 30px; color: var(--panel-3); cursor: pointer; text-shadow: 0 2px 0 rgba(0,0,0,0.3); padding: 0 2px; }
 .stars button.on { color: var(--gold); }
 .btn.chatbtn[aria-pressed="true"] { background: linear-gradient(#5fd08a, #2e9a5c); color: #062614; }
-@media (max-width: 640px) { .talkwin { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 78vh; } }
+@media (max-width: 640px) { .talkwin { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 78vh; height: 78dvh; max-height: calc(100dvh - 16px); } }
 .legalwin { max-width: 760px; }
 .legal { font-size: 14.5px; line-height: 1.5; max-height: min(78vh, 900px); overflow-y: auto; }
 .legal h3 { margin: 10px 0 2px; font-size: 15px; color: var(--gold); }
@@ -2688,7 +2693,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     const canDeal = TALK.thread !== "all" && !me().bankrupt && !S.game.finished;
     const empty = TALK.thread === "all" ? "Say something to the whole table. Trash talk is allowed, threats are encouraged." : (S.mp ? "Private chat. Nobody else can read this." : "Bots read this too. Better: make them an offer they can't refuse.");
     return `<div class="win-title"><span>Talk &amp; deals</span><button class="x calc-x" type="button" id="talk-close" aria-label="Close">×</button></div>
-      <div class="win-body talkbody">
+      <div class="win-body talkbody${TALK.form && canDeal ? " has-form" : ""}">
         <div class="tchips" role="tablist">${chips}</div>
         <div class="tlog" id="tlog">${items.length ? items.map((x) => x.html).join("") : `<div class="hint">${empty}</div>`}</div>
         ${TALK.err ? `<div class="note neg">${esc(TALK.err)}</div>` : ""}
@@ -2793,6 +2798,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       talkEl.addEventListener("input", (e) => { if (TALK.form && /^d-(qty|price)$/.test(e.target.id)) { readDealForm(); const h = talkEl.querySelector(".dealform .hint"); if (h && TALK.form.company) { const fair = SP(S.game)[TALK.form.company] * (Number(TALK.form.qty) || 0); h.firstChild && (h.firstChild.textContent = h.firstChild.textContent.replace(/that's €[\d,.]+/, "that's " + eurX(fair))); } } });
     }
     talkEl.hidden = !TALK.open || !S || S.screen !== "game" || !S.game;
+    document.body.classList.toggle("talk-open", !talkEl.hidden);
     if (!S || S.screen !== "game" || !S.game) return;
     if (!talkEl.hidden) {
       const keep = $("#t-input") ? $("#t-input").value : "", rr = $("#r-reason") ? $("#r-reason").value : "", rn = $("#r-note") ? $("#r-note").value : "";
@@ -2816,7 +2822,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     if (q("#r-send")) { sendReport(); return; }
     if (q("#r-mute")) { const id = TALK.report.from, was = mutedIds().includes(id); setMuted(id, !was); TALK.report = null; TALK.reported = was ? "Their messages show again." : "Hidden: you won't see their messages on this device."; renderTalk(); return; }
     if (q("[data-thread]")) { TALK.thread = q("[data-thread]").dataset.thread; TALK.form = null; TALK.err = ""; renderTalk(); return; }
-    if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); return; }
+    if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); const df = talkEl && talkEl.querySelector(".dealform"); if (df) df.scrollIntoView({ block: "end" }); return; }
     if (q("[data-dkind]")) { readDealForm(); TALK.form.kind = q("[data-dkind]").dataset.dkind; renderTalk(); return; }
     if (q("[data-dlead]")) { readDealForm(); TALK.form.lead = q("[data-dlead]").dataset.dlead; renderTalk(); return; }
     if (q("[data-ddir]")) { readDealForm(); TALK.form.direction = q("[data-ddir]").dataset.ddir; TALK.form.company = ""; renderTalk(); return; }
