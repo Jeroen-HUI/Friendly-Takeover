@@ -62,6 +62,8 @@ export const BALANCE = {
   outsideOptionWeight: 0.25,
   /** Share of unmet demand that switches to a rival who still has stock. */
   switchRate: 0.5,
+  /** A seller with stock can take at most this many times its own market demand share of the switching shoppers. */
+  switchReach: 2,
   // Per-unit amounts below are multiples of the industry's baseUnitCost, so every industry has the same economics.
   /** Factory upkeep per unit of capacity per round. */
   fixedCostPerCapacity: 0.3,

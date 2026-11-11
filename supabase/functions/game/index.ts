@@ -43,7 +43,7 @@ async function publish(admin: Admin, gameId: string, round: number, state: State
 }
 
 /** Resolves the open round of a game. `who` is the caller (null = the scheduler, which only acts after the deadline). */
-async function resolveGame(admin: Admin, game: State, who: { userId: string } | null): Promise<{ status: number; body: unknown }> {
+async function resolveGame(admin: Admin, game: State, who: { userId: string } | null, depth = 0): Promise<{ status: number; body: unknown }> {
   if (game.status !== "playing") return { status: 409, body: { error: "The game is not running" } };
   const gameId = game.id;
   const { data: players } = await admin.from("players").select("*").eq("game_id", gameId).order("joined_at");
@@ -67,18 +67,20 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   const { data: dealRows } = await admin.from("deals").select("*").eq("game_id", gameId).eq("round", round).eq("status", "accepted").order("id");
   const deals = (dealRows ?? []).map((d: State) => ({ id: String(d.id), from: d.from_player_id, to: d.to_player_id, kind: d.kind, terms: d.terms }));
   const next = resolveOnlineRound(state, decisions, deals);
-  // A live trade or bid that landed while we computed: start over with the newest state.
-  const { data: fresh } = await admin.from("game_states").select("updated_at").eq("game_id", gameId).single();
-  if (fresh && fresh.updated_at !== stateRow!.updated_at) return resolveGame(admin, game, who);
   const nextDeadline = next.finished ? null : new Date(Date.now() + game.round_seconds * 1000).toISOString();
-  // Claim the round first so two simultaneous calls can never both write results.
-  const { data: claimed } = await admin
-    .from("games")
-    .update({ current_round: next.finished ? round : round + 1, status: next.finished ? "finished" : "playing", round_deadline: nextDeadline })
-    .eq("id", gameId).eq("current_round", round).eq("status", "playing")
-    .select("id");
-  if (!claimed?.length) return { status: 409, body: { error: "This round was already resolved" } };
-  await publish(admin, gameId, round, next, humanIds);
+  // One all-or-nothing save: the round is claimed and the state, live market, reports and results are written together,
+  // so a failure halfway can't leave the game with a round counter that is ahead of its state.
+  const { data: saved, error: saveError } = await admin.rpc("commit_round", {
+    p_game_id: gameId, p_round: round, p_expect_updated: stateRow!.updated_at, p_state: next, p_live: publicLive(next),
+    p_reports: humanIds.map((id) => ({ player_id: id, report: { view: viewFor(next, id) } })),
+    p_result: publicData(next, round), p_finished: !!next.finished, p_deadline: nextDeadline,
+  });
+  if (saveError) {
+    // A live trade or bid landed while we computed: start over with the newest state (a few times at most).
+    if (/STALE/.test(saveError.message ?? "") && depth < 3) return resolveGame(admin, game, who, depth + 1);
+    throw new Error(saveError.message ?? "Could not save the round");
+  }
+  if (saved !== true) return { status: 409, body: { error: "This round was already resolved" } };
   // Deal outcomes, and offers nobody answered in time.
   const now = new Date().toISOString();
   for (const d of (next.dealLog ?? []).filter((x: State) => /^\d+$/.test(String(x.id)))) {
@@ -86,6 +88,12 @@ async function resolveGame(admin: Admin, game: State, who: { userId: string } | 
   }
   await admin.from("deals").update({ status: "cancelled", note: "The round ended before anyone answered", updated_at: now }).eq("game_id", gameId).eq("round", round).eq("status", "offered");
   return { status: 200, body: { ok: true, resolved: round, finished: next.finished, deadline: nextDeadline } };
+}
+
+/** Ends a game that can't be resolved any more (only if it is still on the same round, so a late success wins). */
+async function endStuck(admin: Admin, g: State) {
+  console.error("ending stuck game", g.code, "round", g.current_round);
+  await admin.from("games").update({ status: "finished", round_deadline: null }).eq("id", g.id).eq("current_round", g.current_round).eq("status", "playing");
 }
 
 Deno.serve(async (req) => {
@@ -109,14 +117,12 @@ Deno.serve(async (req) => {
     const results = [];
     for (const g of overdue ?? []) {
       try {
-        // Stuck game: the saved state is behind the round counter (a resolve died halfway). It can never resolve,
-        // and re-reading its (large) state every minute burns egress, so end it.
+        // Stuck game: the saved state is behind the round counter. It can never resolve, and re-reading its (large)
+        // state every minute burns egress, so end it without loading the state.
+        const overdueMs = Date.now() - new Date(g.round_deadline).getTime();
         const { data: rr } = await admin.from("game_states").select("round:state->round").eq("game_id", g.id).maybeSingle();
         if (!rr || Number(rr.round) !== g.current_round) {
-          if (Date.now() - new Date(g.round_deadline).getTime() > 10 * 60_000) {
-            await admin.from("games").update({ status: "finished", round_deadline: null }).eq("id", g.id).eq("current_round", g.current_round).eq("status", "playing");
-            results.push({ game: g.code, status: 410, body: "stuck: ended" });
-          }
+          if (overdueMs > 10 * 60_000) { await endStuck(admin, g); results.push({ game: g.code, status: 410, body: "stuck: ended" }); }
           continue;
         }
         // Abandoned game: nobody submitted anything for the last 3 rounds, so this round becomes the final one
@@ -130,8 +136,14 @@ Deno.serve(async (req) => {
             }
           }
         }
-        results.push({ game: g.code, ...(await resolveGame(admin, g, null)) });
-      } catch (e) { results.push({ game: g.code, status: 500, body: String(e) }); }
+        const r = await resolveGame(admin, g, null);
+        results.push({ game: g.code, ...r });
+        // Still not closed 10 minutes after the deadline (it keeps failing): end it rather than retry every minute forever.
+        if (r.status !== 200 && Date.now() - new Date(g.round_deadline).getTime() > 10 * 60_000) await endStuck(admin, g);
+      } catch (e) {
+        results.push({ game: g.code, status: 500, body: String(e) });
+        try { if (Date.now() - new Date(g.round_deadline).getTime() > 10 * 60_000) await endStuck(admin, g); } catch { /* next minute */ }
+      }
     }
     return json({ ok: true, closed: results.filter((r) => r.status === 200).length, results });
   }

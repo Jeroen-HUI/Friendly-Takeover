@@ -38,7 +38,9 @@ export function startOnlineGame(settings: OnlineSettings, players: LobbyPlayer[]
   const setup = players.map((p) => ({ id: p.id, playerName: p.name, companyName: p.company, trait: p.trait }));
   for (let k = 0; k < Math.min(settings.botCount, 6, 8 - players.length); k++) {
     const id = `bot-${k + 1}`;
-    bots[id] = kinds[k] === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : lvl + kinds[k];
+    // Normal is a mixed table: every other bot plays at the hard level, so coasting on the starting plan no longer places.
+    const level = lvl === "smart-" && k % 2 === 1 ? "pro-" : lvl;
+    bots[id] = kinds[k] === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : level + kinds[k];
     setup.push({ id, playerName: names[k] + " (bot)", companyName: companies[k], trait: rng.pick(TRAITS) });
   }
   const rules = settings.rules && typeof settings.rules === "object" ? settings.rules : undefined;
@@ -100,13 +102,8 @@ export function resolveOnlineRound(state: GameState, human: Record<string, Parti
   return castBotVotes(next, Object.keys(next.bots ?? {}));
 }
 
-const HIDDEN_REPORT: Partial<RoundReport> = {
-  produced: 0, unmetDemand: 0, inventoryStart: 0, inventoryEnd: 0, capacity: 0, productionCost: 0, holdingCost: 0, fixedCost: 0,
-  marketingCost: 0, rndCost: 0, brandCost: 0, researchCost: 0, capacityInvest: 0, interest: 0, storeOpenCost: 0, storeUpkeep: 0,
-  wildcardCost: 0, legalCost: 0, staffCost: 0, workers: 0, auctionPaid: 0, sharePurchases: 0, buybackCost: 0, shareSales: 0,
-  loanChange: 0, emergencyLoan: 0, emergencyFee: 0, retailDemand: 0, cashStart: 0, dividendsPaid: 0, dividendsReceived: 0,
-  dealCash: 0, experienceFactor: 0, unitCostBase: 0, materialOrderUnits: 0, materialOrderCost: 0, materialFromStock: 0, materialSpot: 0, materialSpotCost: 0, materialStockEnd: 0, bulkSold: 0, bulkRevenue: 0, utilization: 0, overtimeUnits: 0, overtimeCost: 0, idleUnits: 0, idleCost: 0,
-};
+/** Round-report fields nobody else may see. */
+export const HIDDEN_REPORT_KEYS = ["produced", "unmetDemand", "inventoryStart", "inventoryEnd", "capacity", "productionCost", "holdingCost", "fixedCost", "marketingCost", "rndCost", "brandCost", "researchCost", "capacityInvest", "interest", "storeOpenCost", "storeUpkeep", "wildcardCost", "legalCost", "staffCost", "workers", "auctionPaid", "sharePurchases", "buybackCost", "shareSales", "loanChange", "emergencyLoan", "emergencyFee", "retailDemand", "cashStart", "dividendsPaid", "dividendsReceived", "dealCash", "experienceFactor", "unitCostBase", "materialOrderUnits", "materialOrderCost", "materialFromStock", "materialSpot", "materialSpotCost", "materialStockEnd", "bulkSold", "bulkRevenue", "utilization", "overtimeUnits", "overtimeCost", "idleUnits", "idleCost"] as const;
 
 /** What one player may see: everything public, their own company in full, rivals without their secrets. */
 export function viewFor(state: GameState, playerId: string): GameState {
@@ -150,7 +147,12 @@ export function viewFor(state: GameState, playerId: string): GameState {
       cleanCash: 0,
       lastDecisions: { ...last, lawyer: false, streetMove: null, launder: 0, legalVote: null, production: 0, marketingBudget: 0, investRnd: 0, investBrand: 0, investCapacity: 0, campaign: "tv", loanChange: 0, buyShares: {}, sellShares: {}, buyback: 0, research: [], wildcard: null, takeoverStake: 0, defenseStake: 0, auctionBid: 0, bankruptBids: {}, vote: null, journalistTarget: null, hire: 0, storesOpen: 0, storesClose: 0, guidance: null },
       // Rivals' investor calls: everyone hears whether they hit, not what they promised.
-      history: c.history.map((h) => ({ ...h, ...HIDDEN_REPORT, events: [], research: undefined, street: undefined, streetCost: 0, marketingPull: undefined, valueParts: undefined, guidance: h.guidance ? { units: 0, profit: 0, unitsErr: 0, profitErr: 0, result: h.guidance.result } : undefined }) as RoundReport),
+      // Rivals' secret numbers are left out of the download entirely (they'd all be 0); the client fills the zeros back in.
+      history: c.history.map((h) => {
+        const row = { ...h, events: [], research: undefined, street: undefined, streetCost: 0, marketingPull: undefined, valueParts: undefined, guidance: h.guidance ? { units: 0, profit: 0, unitsErr: 0, profitErr: 0, result: h.guidance.result } : undefined } as Record<string, unknown>;
+        for (const k of HIDDEN_REPORT_KEYS) delete row[k];
+        return row as unknown as RoundReport;
+      }),
     };
     (hidden as Company & { missionHidden?: boolean }).missionHidden = true;
     return hidden;

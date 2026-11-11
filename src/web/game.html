@@ -1752,7 +1752,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     // One tap from a video to playing: a standard game against bots with your last settings (or the defaults).
     on("#t-play", "click", () => { track("/play-now"); newGame({ ...DEFAULT_OPTS, ...(S.opts || {}), rounds: (S.opts && S.opts.rounds) || 8, quick: true, keepOpts: { ...DEFAULT_OPTS, ...(S.opts || {}) } }, true); });
     on("#t-continue", "click", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
-    on("#t-online", "click", () => { if (authNeeded()) { openAuth("create", "online"); return; } S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
+    on("#t-online", "click", () => { if (guestNeedsAccount()) { askAccount(); return; } if (authNeeded()) { openAuth("create", "online"); return; } S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
     on("#t-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
     bindAccountChip(); renderInviteBar();
     on("[data-title]", "click", (e) => {
@@ -1807,10 +1807,11 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
   // Privacy, terms, credits, the 18+ check for the Weed industry, and deleting your data.
   // ======================================================================
   const LEGAL = {
-    updated: "1 November 2026",
+    updated: "10 November 2026",
     owner: "Jeroen, an independent game developer in the Netherlands",
     email: "jeroenhuitema2000@gmail.com",   // contact for privacy requests and support (temporary)
     issues: "https://github.com/Jeroen-HUI/Friendly-Takeover/issues",
+    business: "", kvk: "", vat: "", address: "",   // business details for the terms: shown once filled in
   };
   const contactHtml = () => (LEGAL.email ? `email <a href="mailto:${esc(LEGAL.email)}">${esc(LEGAL.email)}</a> or ` : "") + `use <b>Report a bug</b> in the game, or open an issue on <a href="${LEGAL.issues}" target="_blank" rel="noopener">GitHub</a> (public) or use the in-game feedback`;
   function legalWin(title, body, extra = "") {
@@ -1838,7 +1839,8 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       <p>To run the game you ask to play (GDPR article 6(1)(b)), and to keep it safe and fair, for example handling reports and stopping abuse (our legitimate interest, article 6(1)(f)).</p>
       <h3>Who helps us</h3>
       <ul><li><b>Supabase</b> runs the database, login and game server. Data is stored in Ireland (EU). Login emails are sent through Supabase.</li>
-        <li><b>Vercel</b> (USA) hosts the website files. Like any web host it receives your IP address when the page loads. Vercel Web Analytics counts visits anonymously, including which steps of the game are reached (for example "started a game", "reached round 5", "finished a game"): no cookies, no account or IP address stored, and visitors can't be recognised across days or other sites.</li></ul>
+        <li><b>Vercel</b> (USA) hosts the website files. Like any web host it receives your IP address when the page loads. Vercel Web Analytics counts visits anonymously, including which steps of the game are reached (for example "started a game", "reached round 5", "finished a game"): no cookies, no account or IP address stored, and visitors can't be recognised across days or other sites.</li>
+        <li><b>Stripe</b> handles the payment if you buy the full game: your card or bank details go to Stripe, never to us. We keep a record that your account bought it (Stripe's reference and the amount). If a payment arrives without an account attached, we also keep the email on that payment so we can find you and unlock your game.</li></ul>
       <p>The fonts are built into the game, so loading it sends nothing to Google or other font services.</p>
       <h3>Cookies and browser storage</h3>
       <p>We don't use tracking cookies. The game keeps only what it needs to work in your browser's storage: your saved game, settings and online login. That kind of storage doesn't need a cookie banner.</p>
@@ -1862,7 +1864,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       <p>By playing Friendly Takeovers you agree to these terms. They're short, so please read them.</p>
       <h3>The game</h3>
       <p><b>The game is in beta.</b> It is still being built: there can be bugs, the balance can change between updates, and in rare cases games or stats may be reset. Please report anything odd.</p>
-      <p>Friendly Takeovers is a free business game. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
+      <p>Friendly Takeovers is a business game. Single-player, the daily challenge and your first online game are free; the full game (unlimited online play) is a one-time purchase. Everything in it is made up: the companies, the news, the people and the money. Public figures who appear are fictional parody characters, not real statements by real people. Any likeness to real companies is a joke.</p>
       <h3>No real money</h3>
       <p>All money in the game is pretend. You can't buy it, sell it, win it or cash it out. There is no gambling.</p>
       <h3>Age</h3>
@@ -1873,6 +1875,12 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       <p>Use the ⚑ button in chat to report a message or a name. We check reports and may remove content, rename companies or block accounts that break these terms. If we remove something of yours and you think we got it wrong, ${contactHtml()}. To report illegal content, use the ⚑ button or ${contactHtml()}.</p>
       <h3>What you write</h3>
       <p>Your messages and names stay yours. You let us store them and show them to the players in your game (and on its party-mode screen) so the game works.</p>
+      <h3>Buying the full game</h3>
+      <p>The full game is a one-time payment for unlimited online play on your account: no subscription, no ads. The price shown includes VAT. Payment runs through Stripe, who send your receipt.</p>
+      <p><b>14-day refund.</b> Changed your mind? Ask within 14 days of buying and you get your money back in full, no reason needed: ${contactHtml()}, from the email you paid with. The full game is then switched off on your account again. This comes on top of your legal rights as a consumer.</p>
+      <p>Bought it as a guest? Save your account with your email (Profile) so the full game follows you to other devices and isn't lost when you clear your browser.</p>
+      <h3>Who we are</h3>
+      <p>${esc(LEGAL.owner)}${LEGAL.business ? ", trading as " + esc(LEGAL.business) : ""}${LEGAL.kvk ? ". Chamber of Commerce (KvK): " + esc(LEGAL.kvk) : ""}${LEGAL.vat ? ". VAT: " + esc(LEGAL.vat) : ""}${LEGAL.address ? ". " + esc(LEGAL.address) : ""}. Contact: ${contactHtml()}.</p>
       <h3>Accounts</h3>
       <p>Keep your login email to yourself. Guest accounts nobody uses for 12 months are deleted. You can delete your account at any time under Privacy.</p>
       <h3>No guarantees</h3>
@@ -2126,6 +2134,8 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
   const TV_NOTE = `<div class="note pos tvnote">📺 The ranking and this round's news are on the TV. Look up!</div>`;
   function applyServer(round, view) {
     const v = JSON.parse(JSON.stringify(view).split(MP.playerId).join("you"));
+    // The server leaves rivals' secret numbers out of the download; put the zeros back so every screen can count on them.
+    for (const c of v.companies || []) if (c.id !== "you") for (const h of c.history || []) for (const k of FT.HIDDEN_REPORT_KEYS || []) if (h[k] === undefined) h[k] = 0;
     const fresh = !S || S.screen !== "game" || !S.mp || !S.game;
     if (fresh) {
       const color = {}; v.companies.forEach((c, i) => (color[c.id] = i));
@@ -2428,6 +2438,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       await mpEnter(res.game_id, res.player_id);
     } catch (e) {
       S.onlineBusy = false;
+      if (isAccountNeeded(e)) { askAccount(); return; }
       if (isPaywall(e)) { openShop(); return; }
       S.onlineError = /duplicate key.*company/i.test(e.message) ? "Someone in that game already uses that company name." : e.message;
       if (S.screen === "title") { S.modal = "online"; renderModal(); bindModal(); }
@@ -2636,7 +2647,10 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
   }
   const isBotId = (id) => (S.mp ? /^bot-/.test(id) : id !== "you");
   function dealText(d, mine) {
-    const t = d.terms, other = byId(d.from === "you" ? d.to : d.from), oName = esc(other ? other.companyName : "?");
+    // The terms were typed by another player: only ever show them as plain numbers and known ids, never as HTML.
+    const raw = d.terms && typeof d.terms === "object" ? d.terms : {}, n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+    const t = { company: String(raw.company || ""), survivor: String(raw.survivor || ""), direction: String(raw.direction || ""), qty: Math.round(n(raw.qty)), price: n(raw.price), amount: n(raw.amount), repay: n(raw.repay), rounds: Math.round(n(raw.rounds)), penalty: n(raw.penalty) };
+    const other = byId(d.from === "you" ? d.to : d.from), oName = esc(other ? other.companyName : "?");
     const youFirst = d.from === "you";
     if (d.kind === "shares") {
       const co = byId(t.company), coName = esc(co ? co.companyName : "?");
@@ -2943,7 +2957,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     const el = document.createElement("div");
     el.className = "floatemoji";
     el.style.left = 12 + Math.random() * 76 + "%";
-    el.innerHTML = `<span>${e}</span>${who ? `<small>${esc(who)}</small>` : ""}`;
+    el.innerHTML = `<span>${esc(String(e).slice(0, 16))}</span>${who ? `<small>${esc(who)}</small>` : ""}`;  // a reaction comes from another player: never trust it as HTML
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2400);
   }
@@ -2969,13 +2983,13 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       const res = await api().rpc("create_game", { p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait, p_industry: g.industry, p_difficulty: g.difficulty, p_mode: g.mode, p_rounds: g.rounds, p_league_id: g.league_id || g.id, p_round_seconds: g.round_seconds, p_bot_count: g.bot_count || 0, p_bot_skill: g.bot_skill || "normal" });
       if (g.rules && Object.keys(g.rules).length) { try { await api().rpc("set_house_rules", { p_game_id: res.game_id, p_rules: g.rules }); } catch (e) {} }
       S.modal = null; await mpEnter(res.game_id, res.player_id);
-    } catch (e) { if (isPaywall(e)) { openShop(); return; } MP.error = e.message; alertModal(e.message); }
+    } catch (e) { if (isAccountNeeded(e)) { askAccount(); return; } if (isPaywall(e)) { openShop(); return; } MP.error = e.message; alertModal(e.message); }
   }
   async function joinRematch() {
     const m = mpMe(), lobby = MP.leagueLobby;
     if (!m || !lobby) return;
     try { const res = await api().rpc("join_game", { p_code: lobby.code, p_player_name: m.player_name, p_company_name: m.company_name, p_trait: m.trait }); S.modal = null; await mpEnter(res.game_id, res.player_id); }
-    catch (e) { if (isPaywall(e)) { openShop(); return; } alertModal(e.message); }
+    catch (e) { if (isAccountNeeded(e)) { askAccount(); return; } if (isPaywall(e)) { openShop(); return; } alertModal(e.message); }
   }
   function alertModal(msg) { const b = modal.querySelector(".win-body"); if (b) b.insertAdjacentHTML("afterbegin", `<div class="note neg">${esc(msg)}</div>`); }
 
@@ -3249,7 +3263,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
       try {
         const res = await api().rpc("join_game", { p_code: code || inv.code, p_player_name: (ACC.profile && ACC.profile.name) || (o.name === "You" ? "Player" : o.name), p_company_name: o.company, p_trait: o.trait });
         await mpEnter(res.game_id, res.player_id);
-      } catch (er) { if (isPaywall(er)) { openShop(); return; } S.modal = "online"; S.onlineError = er.message; S.joinCode = inv.code; renderModal(); bindModal(); }
+      } catch (er) { if (isAccountNeeded(er)) { askAccount(); return; } if (isPaywall(er)) { openShop(); return; } S.modal = "online"; S.onlineError = er.message; S.joinCode = inv.code; renderModal(); bindModal(); }
     }
   }
 
@@ -3460,6 +3474,10 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     }));
   }
   const isPaywall = (e) => /^PAYWALL:/.test((e && e.message) || "");
+  // Online play can require a saved (email) account: the server says so with an ACCOUNT: error.
+  const isAccountNeeded = (e) => /^ACCOUNT:/.test((e && e.message) || "");
+  const guestNeedsAccount = () => !!(paywall().enabled && paywall().require_account && !ownsGame() && (!ACC.profile || ACC.profile.anonymous));
+  function askAccount() { openAuth("create", "online"); AUTHUI.accountOnly = true; AUTHUI.msg = "Online games need a free account, so your games and friends follow you. It takes a minute."; renderModal(); bindModal(); }
   function profileModal() {
     const p = ACC.profile;
     if (!p) return `<div class="win"><div class="win-title">Profile<span class="x" aria-hidden="true">×</span></div><div class="win-body">
@@ -3485,7 +3503,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
   // Creating an account turns the current guest into a saved account, so nothing is lost (friends, stats, the full game).
   const AUTHUI = { tab: "login", next: null, email: "", name: "", err: "", msg: "", busy: false, show: false, sent: "", reset: false };
   function openAuth(tab, next) {
-    Object.assign(AUTHUI, { tab: tab || "login", next: next === undefined ? AUTHUI.next : next, err: "", msg: "", busy: false, show: false, reset: tab === "password", magic: false });
+    Object.assign(AUTHUI, { tab: tab || "login", next: next === undefined ? AUTHUI.next : next, err: "", msg: "", busy: false, show: false, reset: tab === "password", magic: false, accountOnly: false });
     if (!AUTHUI.name && ACC.profile && ACC.profile.anonymous && ACC.profile.name) AUTHUI.name = ACC.profile.name;
     if (next) { try { localStorage.setItem("ft-auth-seen", "1"); } catch (e) {} }  // the welcome offer shows once
     S.modal = "auth"; renderModal(); bindModal();
@@ -3499,7 +3517,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     const field = (id, label, type, val, auto, ph) => `<div class="afield"><label for="${id}">${label}</label><input type="${type}" id="${id}" value="${esc(val || "")}" autocomplete="${auto}" placeholder="${ph || ""}" maxlength="${type === "email" ? 254 : 24}" /></div>`;
     const hero = (title, sub) => `<div class="auth-hero"><canvas data-authlogo width="16" height="16" aria-hidden="true"></canvas><div><div class="wordmark"><b>Friendly</b><b>Takeovers</b></div><p>${sub}</p></div></div>`;
     const tabs = `<div class="seg" role="radiogroup"><button type="button" role="radio" aria-checked="${A.tab === "login"}" data-atab="login">Log in</button><button type="button" role="radio" aria-checked="${A.tab === "create"}" data-atab="create">Create account</button></div>`;
-    const guest = A.next ? `<div class="auth-or">or</div><button class="btn" type="button" id="a-guest" style="justify-content:center">Play as guest for now</button>` : "";
+    const guest = A.next && !A.accountOnly ? `<div class="auth-or">or</div><button class="btn" type="button" id="a-guest" style="justify-content:center">Play as guest for now</button>` : "";
     let body = "", title = "Account";
     if (A.tab === "login") {
       title = "Log in";
@@ -4405,7 +4423,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     const rng = new FT.Rng(seed0);
     const lvl = o.botSkill === "hard" ? "pro-" : o.botSkill === "easy" ? "easy-" : "smart-";
     // Easy games have no raider: nobody comes after your shares while you learn.
-    const strategies = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider"]).slice(0, o.bots).map((x) => (x === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : lvl + x));
+    const strategies = rng.shuffle(["budget", "mainstream", "premium", "hype", "raider"]).slice(0, o.bots).map((x, k) => (x === "raider" ? (lvl === "easy-" ? "easy-mainstream" : "smart-raider") : (lvl === "smart-" && k % 2 === 1 ? "pro-" : lvl) + x));  // normal: every other bot plays at the hard level
     const names = rng.shuffle(COMPANY_NAMES[o.industry].filter((n) => n.toLowerCase() !== o.company.toLowerCase()));
     const bots = rng.shuffle(BOT_NAMES);
     const traits = ["ruthless", "visionary", "influencer", "pennyPincher"];

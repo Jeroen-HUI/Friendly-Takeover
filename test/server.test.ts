@@ -23,7 +23,7 @@ test("a player's view hides rivals' secrets but keeps their own company whole", 
   const me = v.companies.find((c) => c.id === "u1")!, rival = v.companies.find((c) => c.id === "u2")!;
   assert.equal(me.lastDecisions.marketingBudget, 222_000);
   assert.equal(rival.lastDecisions.marketingBudget, 0, "rival plan hidden");
-  assert.equal(rival.history.at(-1)!.marketingCost, 0, "rival costs hidden");
+  assert.equal(rival.history.at(-1)!.marketingCost, undefined, "rival costs are not in the download at all");
   assert.ok(rival.history.at(-1)!.sold > 0, "rival sales stay public");
   assert.equal(v.upcomingNews, undefined, "no peeking at next round's news");
   assert.equal(v.rngState, 0, "no predicting the dice");
@@ -50,7 +50,7 @@ test("views hide the hidden market drivers and rivals' cost details and promises
   const rival = v.companies.find((c) => c.id === "u2")!.history.at(-1)!, mine = v.companies.find((c) => c.id === "u1")!.history.at(-1)!;
   assert.ok(rival.guidance && ["hit", "close", "miss"].includes(rival.guidance.result), "everyone sees whether a rival hit");
   assert.equal(rival.guidance!.units, 0);
-  assert.equal(rival.unitCostBase, 0);
+  assert.equal(rival.unitCostBase, undefined);
   assert.equal(mine.guidance!.profit, 123_456, "my own promise stays");
   assert.ok(mine.unitCostBase! > 0);
   const json = JSON.stringify(v);
@@ -71,4 +71,13 @@ test("online deals with bots: the bot answers at once and a yes is carried out w
   s = resolveOnlineRound(s, {});
   assert.ok((s.pacts ?? []).some((p) => (p.a === "p1" && p.b === bot) || (p.b === "p1" && p.a === bot)), "pact signed");
   assert.equal((s.botDeals ?? []).length, 0);
+});
+
+test("absurd amounts from one player can't take the market down", () => {
+  const players = [{ id: "u1", name: "A", company: "A Co", trait: "ruthless" as const }, { id: "u2", name: "B", company: "B Co", trait: "visionary" as const }];
+  let st = startOnlineGame({ industry: "chocolate", difficulty: "standard", rounds: 6, botCount: 3, botSkill: "normal", seed: 777 }, players);
+  while (!st.finished) st = resolveOnlineRound(st, { u1: st.round === 2 ? { marketingBudget: 1e308, investCapacity: 1e308, investRnd: 1e308, takeoverStake: 1e308, auctionBid: 1e308 } : {} }, []);
+  assert.equal(st.round, 7, "the match runs its full length");
+  for (const c of st.companies) assert.ok(Number.isFinite(c.cash), "cash stays a real number");
+  assert.ok(st.companies.filter((c) => c.id.startsWith("bot")).every((c) => !c.bankrupt), "the bots survive someone else's overspending");
 });

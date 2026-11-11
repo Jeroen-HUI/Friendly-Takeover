@@ -2,3 +2,4 @@
 export * from "../engine";
 export { botDecisions, BOT_STRATEGIES } from "../sim/bots";
 export { botRespondDeal, botProposeDeal } from "../sim/deals";
+export { HIDDEN_REPORT_KEYS } from "../server/core";

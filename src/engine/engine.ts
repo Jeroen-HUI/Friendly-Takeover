@@ -42,7 +42,10 @@ import {
 } from "./types";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+/** A number a player sent in. Anything that isn't a finite number falls back; the size is capped so one absurd
+ *  amount can't overflow the books (two 1e308 budgets used to add up to Infinity and take the whole market down). */
+const INPUT_MAX = 1e9;
+const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-INPUT_MAX, Math.min(INPUT_MAX, v)) : fallback);
 const deepClone = <T>(v: T): T => (typeof structuredClone === "function" ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
 /** Still running a business: not bankrupt and not merged into another company. */
 export const operating = (c: Company) => !c.bankrupt && !c.merged;
@@ -430,7 +433,9 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
   const floor = state.round > 1 ? Math.min(c.qualityCap, c.history.at(-1)?.quality ?? 1) : 1;
   const quality = clamp(Math.round(num(d.quality, prev.quality)), floor, c.qualityCap);
   const production = Math.max(0, Math.round(num(d.production, prev.production)));
-  const nonNeg = (v: unknown, fb: number) => Math.max(0, num(v, fb));
+  // No single budget can be bigger than everything the company could ever fund this round (its cash plus the debt ceiling).
+  const spendCap = Math.max(0, c.cash) + BALANCE.maxDebt;
+  const nonNeg = (v: unknown, fb: number) => Math.min(spendCap, Math.max(0, num(v, fb)));
   // Investments and marketing default to last round's values, so an untouched screen repeats the plan.
   const loanRaw = num(d.loanChange, 0);
   // Repaying (almost) everything clears the debt to the cent, so no 30 cents are left over.
@@ -462,10 +467,10 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     buyback: Math.max(0, Math.floor(num(d.buyback, 0))),
     research: Array.isArray(d.research) ? [...new Set(d.research.filter((r): r is ResearchId => typeof r === "string" && r in RESEARCH))] : [],
     wildcard: d.wildcard && typeof d.wildcard === "object" && d.wildcard.card in WILDCARDS ? { card: d.wildcard.card, target: typeof d.wildcard.target === "string" ? d.wildcard.target : undefined } : null,
-    takeoverStake: Math.max(0, num(d.takeoverStake, 0)),
-    defenseStake: Math.max(0, num(d.defenseStake, prev.defenseStake ?? 0)),
-    auctionBid: Math.max(0, num(d.auctionBid, 0)),
-    bankruptBids: Object.fromEntries(Object.entries(d.bankruptBids ?? {}).map(([k, v]) => [k, Math.max(0, num(v, 0))]).filter(([k, v]) => (v as number) > 0 && state.companies.some((o) => o.id === k && o.bankrupt))),
+    takeoverStake: nonNeg(d.takeoverStake, 0),
+    defenseStake: nonNeg(d.defenseStake, prev.defenseStake ?? 0),
+    auctionBid: nonNeg(d.auctionBid, 0),
+    bankruptBids: Object.fromEntries(Object.entries(d.bankruptBids ?? {}).map(([k, v]) => [k, nonNeg(v, 0)]).filter(([k, v]) => (v as number) > 0 && state.companies.some((o) => o.id === k && o.bankrupt))),
     vote: d.vote === "a" || d.vote === "b" ? d.vote : null,
     journalistTarget: null,
     hire: clamp(Math.round(num(d.hire, 0)), -TYCOON.maxHirePerRound, TYCOON.maxHirePerRound),
@@ -474,7 +479,7 @@ export function sanitizeDecisions(state: GameState, c: Company, input: Partial<D
     retailPrice: clamp(num(d.retailPrice, prev.retailPrice ?? retailRefPrice(industry)), industry.priceRange[0], industry.priceRange[1]),
     materialOrder: Math.min(Math.round(c.capacity * 3), Math.max(0, Math.round(num(d.materialOrder, prev.materialOrder ?? Math.round(c.capacity * 0.8))))),
     bulkSell: Math.max(0, Math.round(num(d.bulkSell, 0))),
-    guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(d.guidance.units)), profit: Math.round(d.guidance.profit) } : null,
+    guidance: d.guidance && typeof d.guidance === "object" && Number.isFinite(d.guidance.units) && Number.isFinite(d.guidance.profit) ? { units: Math.max(0, Math.round(num(d.guidance.units, 0))), profit: Math.round(num(d.guidance.profit, 0)) } : null,
     productName: typeof d.productName === "string" ? cleanName(d.productName) : undefined,
     style: Number.isInteger(d.style) && (d.style as number) >= 0 && (d.style as number) <= 11 ? d.style : undefined,
     dividendPolicy: d.dividendPolicy === 0 || d.dividendPolicy === 25 || d.dividendPolicy === 50 ? d.dividendPolicy : c.dividendPolicy ?? 0,
@@ -1361,9 +1366,13 @@ export function resolveRound(input: GameState, decisionsByCompany: Record<string
   const switching = unmetPool * BALANCE.switchRate;
   const withStock = work.filter((w) => w.available - w.retailSold - w.sold > 0.5);
   const stockWeight = withStock.reduce((a, w) => a + w.demand, 0);
+  // Shoppers who find an empty shelf pick another brand they'd have considered anyway: a seller can win at most
+  // `switchReach` times its own share of the market's demand, so one overpriced leftover pile doesn't get the whole queue.
+  const allDemand = work.reduce((a, w) => a + w.demand, 0);
   if (switching > 0 && stockWeight > 0) {
     for (const w of withStock) {
-      const extra = Math.min(w.available - w.retailSold - w.sold, (switching * w.demand) / stockWeight);
+      const reach = allDemand > 0 ? (switching * BALANCE.switchReach * w.demand) / allDemand : 0;
+      const extra = Math.min(w.available - w.retailSold - w.sold, (switching * w.demand) / stockWeight, reach);
       w.sold += extra;
     }
   }
