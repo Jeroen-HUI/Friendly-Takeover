@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       return new Response("no account on this payment", { status: 200 });
     }
     const { error } = await admin.from("purchases").upsert(
-      { user_id: userId, product: "full_game", source: "stripe", stripe_session: session ?? "", amount, currency: currency ?? "", payment_intent: intent },
+      { user_id: userId, product: "full_game", source: "stripe", stripe_session: session, amount, currency: currency ?? "", payment_intent: intent },
       { onConflict: "user_id,product", ignoreDuplicates: true },
     );
     if (error) return new Response("database error: " + error.message, { status: 500 });  // Stripe retries
