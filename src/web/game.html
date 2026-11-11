@@ -2822,7 +2822,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     if (q("#r-send")) { sendReport(); return; }
     if (q("#r-mute")) { const id = TALK.report.from, was = mutedIds().includes(id); setMuted(id, !was); TALK.report = null; TALK.reported = was ? "Their messages show again." : "Hidden: you won't see their messages on this device."; renderTalk(); return; }
     if (q("[data-thread]")) { TALK.thread = q("[data-thread]").dataset.thread; TALK.form = null; TALK.err = ""; renderTalk(); return; }
-    if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); const df = talkEl && talkEl.querySelector(".dealform"); if (df) df.scrollIntoView({ block: "end" }); return; }
+    if (q("#t-newdeal")) { TALK.form = { kind: "shares", direction: "buy", company: "", qty: "10", price: "", amount: "500k", repay: "550k", rounds: 2, penalty: "300k" }; renderTalk(); const df = talkEl && talkEl.querySelector(".dealform"); if (df && df.scrollIntoView) df.scrollIntoView({ block: "end" }); return; }
     if (q("[data-dkind]")) { readDealForm(); TALK.form.kind = q("[data-dkind]").dataset.dkind; renderTalk(); return; }
     if (q("[data-dlead]")) { readDealForm(); TALK.form.lead = q("[data-dlead]").dataset.dlead; renderTalk(); return; }
     if (q("[data-ddir]")) { readDealForm(); TALK.form.direction = q("[data-ddir]").dataset.ddir; TALK.form.company = ""; renderTalk(); return; }
