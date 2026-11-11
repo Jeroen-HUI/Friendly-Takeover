@@ -1750,7 +1750,7 @@ html[data-motion="off"] .social { display: flex; flex-wrap: wrap; justify-conten
     const on = (sel, ev, fn) => document.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, fn));
     on("#t-new", "click", () => { S.modal = "setup"; S.setup = null; renderModal(); bindModal(); });
     // One tap from a video to playing: a standard game against bots with your last settings (or the defaults).
-    on("#t-play", "click", () => { track("/play-now"); newGame({ ...DEFAULT_OPTS, ...(S.opts || {}), rounds: (S.opts && S.opts.rounds) || 8, quick: true, keepOpts: { ...DEFAULT_OPTS, ...(S.opts || {}) } }, true); });
+    on("#t-play", "click", () => { track("/play-now"); newGame({ ...DEFAULT_OPTS, ...(S.opts || {}), rounds: (S.opts && S.opts.rounds) || 8, botSkill: "easy", quick: true, keepOpts: { ...DEFAULT_OPTS, ...(S.opts || {}) } }, true); });
     on("#t-continue", "click", () => { const save = loadSave(); if (!save) return; S = save; S.screen = "game"; S.modal = null; render(); });
     on("#t-online", "click", () => { if (guestNeedsAccount()) { askAccount(); return; } if (authNeeded()) { openAuth("create", "online"); return; } S.modal = "online"; S.onlineError = ""; renderModal(); bindModal(); });
     on("#t-options", "click", () => { S.modal = "options"; renderModal(); bindModal(); });
